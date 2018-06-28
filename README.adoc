@@ -333,7 +333,7 @@ The gspec syntax has a number of advantages:
 
 - It's inline, so you can see at a glance what kind of data a function expects and returns right under the docstring and arg list, for example when previewing the function definition in your editor
 
-- Renaming/refactoring parameters is a breeze - just use your IDE's symbol rename functionality and all references in the predicate functions will be handled correctly.
+- Renaming/refactoring parameters is a breeze – just use your IDE's symbol rename functionality and all references in the predicate functions will be handled correctly.
 
 - You can reliably bypass Ghostwheel temporarily by simply changing `>defn` to `defn` - the minimal performance impact of evaluating the gspec vector as the first body form aside, nothing will break because `>defn` syntax is valid `defn` syntax.
 
@@ -430,7 +430,7 @@ The two should check out fine:
 
 image::image-17.png[,700]
 
-We will then decide that it's a good idea to send an email every time two numbers are added together and modify `addition`:
+We will then decide that it's a good idea to send an email every time two numbers are added together and modify `addition` accordingly:
 
 ```clojure
 (>defn addition
@@ -461,7 +461,7 @@ Don't be too quick to breathe a sigh of relief. The checks are fine, but that's 
 
 NOTE: That being said, some work's being done to make the testing and stubbing of side-effectful functions easy as well, but we ain't there yet.
 
-Having recognised your wrongdoing, please go ahead and remove the side effect from `addition!`:
+Having recognised the error of your ways, please go ahead and remove the side effect from `addition!`:
 
 ```clojure
 (>defn addition!
@@ -477,7 +477,7 @@ To preserve the balance in the universe, purity can spread just as efficiently a
 
 image::image-17.png[,700]
 
-That's nice. You can relax now. If any false positives/negatives come up, just add `::g/ignore-fx true` to the function metadata to disable side effect detection and open an issue on github to help improve it.
+This is nice. You can relax now. If any false positives/negatives come up, just add `::g/ignore-fx true` to the function metadata to disable side effect detection and open an issue on github to help improve it.
 
 CAUTION: If you set `::g/ignore-fx true` for an actually unsafe function that has been incorrectly named as safe, and have `::g/check` enabled, `::g/num-tests` set to > 0 as well as a valid gspec and a call to `(g/check)` at the bottom of the namespace, generative testing _will_ be performed, side effects and all. This could be bad.
 
