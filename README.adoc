@@ -25,7 +25,7 @@ Random put down his cup and cocked his head to one side.
 
 {zwsp}
 
-image:https://img.shields.io/clojars/v/gnl/ghostwheel.svg[link=https://clojars.org/gnl/ghostwheel] image:https://img.shields.io/badge/License-EPL%202.0-orange.svg[link=https://choosealicense.com/licenses/epl-2.0]
+image:clojars.svg[link=https://clojars.org/gnl/ghostwheel] image:license.svg[link=https://choosealicense.com/licenses/epl-2.0]
 
 toc::[]
 
@@ -105,7 +105,7 @@ image::image-14.png[,700]
 
 . Add the artifact to your build configuration:
 +
-image:https://img.shields.io/clojars/v/gnl/ghostwheel.svg[link=https://clojars.org/gnl/ghostwheel]
+image:clojars.svg[link=https://clojars.org/gnl/ghostwheel]
 +
 TIP: It is currently recommended that you follow this walkthrough in a ClojureScript environment running in Chrome using https://github.com/thheller/shadow-cljs[Shadow CLJS] or https://github.com/bhauman/lein-figwheel[Figwheel] for hot-reloading – the Clojure port is still quite bare-bones as described in the introduction.
 
