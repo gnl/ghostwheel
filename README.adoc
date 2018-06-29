@@ -3,6 +3,7 @@
 :toc:
 :toc-placement!:
 :hardbreaks:
+:sectanchors:
 ifdef::env-github[]
 :imagesdir: https://gnl.gitlab.io/images
 :tip-caption: :bulb:
@@ -95,53 +96,61 @@ image::image-14.png[,700]
 
 ## Walkthrough
 
-### Getting Started
-
 [quote, 'James S.A. Corey, Nemesis Games, The Expanse series']
 “There was a button,“ Holden said. “I pushed it.“ +
 “Jesus Christ. That really is how you go through life, isn't it?“
 
 {zwsp}
 
+### How to Read a Readme
+
+It's the age of smartphone notifications, cat videos and Twitter. You are not unlikely to have the attention span of a sleep-deprived parakeet and this walkthrough looks terrifyingly long (it's just the pictures, really). Here's your personal read-it/skim-it guide:
+
+*Definitely read:*
+
+CAUTION: <- Danger zone.
+
+WARNING: Read this or strange things might happen that'll freak you out.
+
+Stuff you simply need to know in order to use Ghostwheel effectively is written as regular text, like this.
+
+*Better read:*
+
+TIP: Tips and tricks to make the most of Ghostwheel. Not critical but highly recommended.
+
+*Maybe skim:*
+
+NOTE: This is additional information on how and/or why something works the way it does. Read if you are curious or intend to open an issue and aren't certain if it's Ghostwheel's fault. Otherwise non-essential so feel free to skip or skim it. I'll be silently judging you.
+
+### Getting Started
+
 . Add the artifact to your build configuration:
 +
 image:clojars.svg[link=https://clojars.org/gnl/ghostwheel]
 +
-TIP: It is currently recommended that you follow this walkthrough in a ClojureScript environment running in Chrome using https://github.com/thheller/shadow-cljs[Shadow CLJS] or https://github.com/bhauman/lein-figwheel[Figwheel] for hot-reloading – the Clojure port is still quite bare-bones as described in the introduction.
+[WARNING]
+--
+It is currently recommended that you follow this walkthrough in a ClojureScript environment running in Chrome using https://github.com/thheller/shadow-cljs[Shadow CLJS] or https://github.com/bhauman/lein-figwheel[Figwheel] for hot-reloading – the Clojure port is still quite bare-bones as described in the introduction.
 
-. ClojureScript only - setup link:https://github.com/binaryage/cljs-devtools[CLJS DevTools]
+Shadow CLJS has the additional advantage of apparently being the only build tool able to pick up changes in namespace metadata when hot-reloading (and without cleaning the whole build) because it is not affected by https://dev.clojure.org/jira/browse/CLJS-1926[this bug].
+--
+. ClojureScript only – setup link:https://github.com/binaryage/cljs-devtools[CLJS DevTools]
 
-. ClojureScript only – add `:ghostwheel true` to the `:compiler` options in your development build config.
+. ClojureScript only – add `:external-config {:ghostwheel {}}` to the compiler options in your development build config.
 +
-```clojure
-:cljsbuild {:builds [{:id       "dev-build"
-                      :compiler {:ghostwheel true}
-                      ...}]}
-```
-+
-CAUTION: Make sure not to add `:ghostwheel true` to your production build config or you might end up with tracing code in production. There is no danger of that in Clojure at the moment, because tracing isn't implemented yet.
-+
-WARNING: If you are using Figwheel, it'll show an error on launch about `:ghostwheel` being an unknown configuration option and let you decide how to proceed – just force it to start anyway. This should be fixed soon.
+CAUTION: Make sure not to add `:ghostwheel` to your production build config or you might end up with tracing code in production. There is no danger of that in Clojure at the moment, because tracing isn't implemented yet.
 
 . Require it from the namespaces you intend to use it in
 +
-.ClojureScript
-```cljs
-(:require [ghostwheel.core :as g
-            ;; `?` is an optional shortcut for `s/nilable`
-            :refer-macros [>defn >defn- >fdef ?]
-            ;; Optional - you can use `:ret`, `:st` and `:gen` instead.
-            :refer [=> | <-]])
-```
-+
-.Clojure
 ```clojure
 (:require [ghostwheel.core :as g
-            :refer [>defn >defn- >fdef ? => | <-]])
+            :refer [>defn >defn- >fdef => | <- ?]]) ;; <1>
 ```
+<1> `\=>`, `|`, `\<-` and `?` <<gspec-syntax, are optional>>
+
 . Optional – override the default configuration
 +
-Ghostwheel's behaviour is determined individually for each function by merging the configuration maps – default config -> global/compiler config (`:ghostwheel true` is equivalent to `:ghostwheel {}`) -> namespace metadata -> function metadata. The more intrusive functionality is disabled by default to avoid any nasty surprises.
+Ghostwheel's behaviour is determined individually for each function by merging the configuration maps – default config -> global/compiler config -> namespace metadata -> function metadata. The more intrusive functionality is disabled by default to avoid any nasty surprises.
 +
 Here's the default configuration map – each option (except `::extrument`) can be overridden on any level and will be explained in more detail in the relevant sections below.
 +
@@ -224,17 +233,19 @@ Function specs are generally defined inline using the `>defn` macro, except when
    (+ start (long (rand (- end start)))))
 ```
 
-Note that the actual parameter symbols are used in the anonymous functions instead of `(\-> % :args :start)`, which is not only shorter, but also lets you do quick and clean rename refactorings in your IDE instead of having to hunt down non-namespaced keywords in multiple nested forms.
+TIP: Leave out the function body or set it to nil and you get an automatically generated, spec-instrumented stub, which, when passed the correct arguments, returns random data according to the spec.
+
+TIP: The gspec can be set to nil – in which case no `s/fdef` block is generated – but it cannot be left out.
+
+
+[NOTE]
+--
+Note that the actual parameter symbols are used in the anonymous predicates instead of `(\-> % :args :start)`, which is not only shorter, but also lets you do quick and clean rename refactorings in your IDE instead of having to hunt down non-namespaced keywords in multiple nested forms.
 
 From the point of view of the programmer and the editor, the function arguments are bound to their respective symbols and can be freely referenced in any expression as expected, including the gspec which is considered just another body form inside the function.
 
 In fact you can even use argument destructuring with this, except if you go too crazy with it (= more than one level of nesting) things can break due to an imperfect workaround for Clojure bugs https://dev.clojure.org/jira/browse/CLJ-2003[CLJ-2003] and https://dev.clojure.org/jira/browse/CLJ-2021[CLJ-2021].
-
-TIP: Leave out the function body or set it to nil and you get an automatically generated, spec-instrumented stub, which, when passed the correct arguments, returns random data according to the spec.
-
-NOTE: The gspec can be set to nil – in which case no `s/fdef` block is generated – but it cannot be left out.
-
-// TODO Add note on destructuring support and why it's broken because of spec
+--
 
 `>fdef` is pretty much the same, except for the missing body forms:
 
@@ -273,6 +284,7 @@ TIP: If you're using link:https://cursive-ide.com/[Cursive IDE], it's probably a
 
 NOTE: If `::g/check` is `false` and `::g/trace` is `0`, as in the default configuration, Ghostwheel does nothing other than generate a `defn` and an `fdef` block. When `:ghostwheel` isn't set to a truthy value in the compiler options, it doesn't generate any code whatsoever other than the plain `defn` block with the gspec vectors stripped – this is recommended for production builds.
 
+[[gspec-syntax]]
 #### The Gspec Syntax
 
 `[arg-specs* (| arg-preds+)? \=> ret-spec (| fn-preds+)? (\<- generator-fn)?]`
@@ -293,6 +305,13 @@ The number of `arg-specs` must match the number of function arguments, including
   [number? (s/* number?) => number?])
 ```
 
+[NOTE]
+--
+The `arg-preds`, if defined, are `s/and`-wrapped together with the `arg-specs` when desugared.
+
+The `fn-preds` are equivalent to (and desugar to) spec's `:fn` predicates, except that the anonymous function parameter is the ret, and the args are referenced using their symbols. That's because in the gspec syntax spec's `:fn` is simply considered a 'such that' clause on the ret.
+--
+
 `?` can be used as a shorthand for `s/nilable`:
 
 ```clojure
@@ -300,10 +319,6 @@ The number of `arg-specs` must match the number of function arguments, including
   [coll]
   [(? seqable?) => boolean?])
 ```
-
-The `arg-preds`, if defined, are `s/and`-wrapped together with the `arg-specs` when desugared.
-
-The `fn-preds` are equivalent to (and desugar to) spec's `:fn` predicates, except that the anonymous function parameter is the ret, and the args are referenced using their symbols. That's because in the gspec syntax spec's `:fn` is simply considered a 'such that' clause on the ret.
 
 Nested gspecs are defined using the exact same syntax:
 
@@ -323,10 +338,19 @@ In the rare cases when a nilable gspec is needed `?` is put in a vector rather t
   [atom? [? [any? => any?]] => any?])
 ```
 
-NOTE: Nested gspecs with one or more `any?` argspecs desugar to `ifn?`, so as not to mess up generative testing. The assumption here is that `any?` does not imply that the function can in fact handle any type of argument. This can be overridden by passing a generator – even an empty one, that is simply adding `\<-` or `:gen` to the gspec – in which case the gspec will desugar exactly as specified.
+TIP: For nested gspecs there's no way to reference the args in the `arg-preds` or `fn-preds` by symbol. The recommended approach here is to register the required gspec separately by using `>fdef` with a keyword <<fdef-keyword,as described>> in the previous section.
+//You can do it with `#(\-> % :arg1)` in the `arg-preds`, but that won't work in the `fn-preds` and it's quite messy anyway. You could theoretically use a nested `(s/fspec ...)` instead of a gspec, but that gets unwieldy quick.
+
+TIP: The `ghostwheel.specs.clojure.core` namespace contains specs for many of the functions in `clojure.core`. It's not recommended that you try and instrument it as a whole at this point – there's a number of ways in which that's likely to blow up in your face – but it can serve as a good reference on how to write different types of gspecs correctly.
+
+NOTE: Nested gspecs with one or more `any?` argspecs desugar to `ifn?`, so as not to mess up generative testing. This can be overridden by passing a generator – even an empty one, that is simply adding `\<-` or `:gen` to the gspec – in which case the gspec will desugar exactly as specified.
+{zwsp}
+The assumption here is that `any?` does not imply that the function can in fact handle any type of argument.
 {zwsp}
 You should still write out nested gspecs, even if they are as simple as `[any? \=> any?]` – this is useful as succinct documentation that this particular function receives exactly one argument.
 
+[NOTE]
+--
 The gspec syntax has a number of advantages:
 
 - It's much more concise and easier to write and read (see the <<gspec-comparison,comparison>> in the introduction section above)
@@ -336,14 +360,7 @@ The gspec syntax has a number of advantages:
 - Renaming/refactoring parameters is a breeze – just use your IDE's symbol rename functionality and all references in the predicate functions will be handled correctly.
 
 - You can reliably bypass Ghostwheel temporarily by simply changing `>defn` to `defn` - the minimal performance impact of evaluating the gspec vector as the first body form aside, nothing will break because `>defn` syntax is valid `defn` syntax.
-
-...but it's not all roses:
-
-- For nested gspecs there's no way to reference the args in the `arg-preds` or `fn-preds` by symbol. You can do it with `#(\-> % :arg1)` in the `arg-preds`, but that won't work in the `fn-preds` and it's quite messy anyway. You could theoretically use a nested `(s/fspec ...)` instead of a gspec, but that gets unwieldy quick.
-+
-The recommended approach here is to register the required gspec separately by using `>fdef` with a keyword <<fdef-keyword,as described>> in the previous section.
-
-TIP: The `ghostwheel.specs.clojure.core` namespace contains specs for many of the functions in `clojure.core`. It's not recommended that you try and instrument it as a whole at this point – there's a number of ways in which that's likely to blow up in your face – but it can serve as a good reference on how to write different types of gspecs correctly.
+--
 
 #### Testing Specced Functions
 
@@ -376,23 +393,26 @@ Yay! Ghostwheel is already proving invaluable. Fix it by changing `(- a b)` to `
 
 image::image-16.png[,700]
 
-NOTE: In multi-arity functions each arity is tested as a separate function to ensure adequate test coverage, so a function with 3 arities and `::g/num-tests 5` will have 15 spec checks run against it.
-
-NOTE: Only enabling `::g/check` and leaving `::g/num-tests` at the default value of 0 would enable the various side effect and Ghostwheel coverage checks – `::g/check-coverage` – but no generative testing.
-
 [[shadow-hooks]]
-TIP: You can make re-rendering in a ClojureScript hot-reloading workflow dependent on successful test completion. If you're using Shadow CLJS you can set the after-load hook like this:
+[TIP]
+--
+You can make re-rendering in a ClojureScript hot-reloading workflow dependent on successful test completion. If you're using Shadow CLJS you can set the after-load hook like this:
 `:devtools {:after-load-async ghostwheel.core/post-check-async}`
 And use metadata on the re-render function to add it to the queue:
 `(defn ^:dev/after-load mount-root [] ...)`
-{zwsp}
+
 The Ghostwheel hook will short-circuit the hook queue if a test fails in any namespace and no re-render will be triggered.
+--
+
+NOTE: In multi-arity functions each arity is tested as a separate function to ensure adequate test coverage, so a function with 3 arities and `::g/num-tests 5` will have 15 spec checks run against it.
+
+NOTE: Only enabling `::g/check` and leaving `::g/num-tests` at the default value of 0 would enable the various side effect and Ghostwheel coverage checks – `::g/check-coverage` – but no generative testing.
 
 #### Performance Considerations or How Much Generative Testing Is Enough
 
 Depending on the number and kind of functions in a namespace as well as the dependencies between namespaces, even basic testing on every reload could take long enough to make your fancy hot-reloading workflow useless. The general idea here is to keep `::g/num-tests` low enough that the tests complete in a reasonable amount of time, but high enough that you still catch a relatively large number of errors on every run.
 
-Also, keep in mind that the tests are only executed per namespace reload – whenever `(g/check)` is called – so if you're working on some view and hot-reloading its namespace, only the tests defined there (if any) would run. If you change something deep down in a namespace that's heavily depended on, more namespaces will be reloaded and more tests will run.
+NOTE: Keep in mind that the tests are only executed per namespace reload – whenever `(g/check)` is called – so if you're working on some view and hot-reloading its namespace, only the tests defined there (if any) would run. If you change something deep down in a namespace that's heavily depended on, more namespaces will be reloaded and more tests will run.
 
 Either way – _you should not be relying on this alone_, especially for functions with complex input and a larger number of parameters. Setup a separate test build config just like you would when writing unit tests, set `:ghostwheel {:extensive-tests true}` in the compiler options, set `::g/num-tests-ext` as high as possible without making your test times unacceptable, and run the whole thing in a CI environment and/or on a regular basis – before coffee breaks, merges to master, releases, etc.
 
@@ -412,6 +432,16 @@ By default functions are considered pure and during compile time Ghostwheel will
 It won't run any automatic generative tests if a function is found to be unsafe, whether it's due to detected side effects or explicit annotation.
 
 NOTE: Actually Ghostwheel assumes functions to be (STM- and test-) safe by default, that is – not having unsafe/permanent side effects, which isn't necessarily the same thing as pure. For the purpose of this guide we will however use the terms interchangeably, to the absolute horror of purists everywhere.
+
+You can disable side effect detection with the `::g/ignore-fx` option in which case Ghostwheel will simply trust the name of the function (`...!` = unsafe) and behave accordingly.
+
+CAUTION: If you set `::g/ignore-fx true` for an actually unsafe function that has been incorrectly named as safe, and have `::g/check` enabled, `::g/num-tests` set to > 0 as well as a valid gspec and a call to `(g/check)` at the bottom of the namespace, generative testing _will_ be performed, side effects and all. This could be bad.
+
+CAUTION: Side effect detection is a heuristic and in no way fail-safe operation, relying heavily on the assumption that you're not actively trying to shoot yourself in the foot. That being said, so far it seems to work pretty great in practice, and where it occasionally fails, the likelihood of false positives is significantly higher than that of false negatives so the chances of side effects actually seeping through the cracks and setting your hair on fire are relatively low.
+
+This is pretty much the gist of it – read on for a more detailed description of what all this looks like in practice.
+
+#### Getting Your Hands Dirty with Side Effects
 
 Let's take the function we defined in the previous section and map it over a collection of numbers, but make sure you have `::g/check` and `::g/num-tests` <<testing-config,set correctly>> first.
 
@@ -479,9 +509,6 @@ image::image-17.png[,700]
 
 This is nice. You can relax now. If any false positives/negatives come up, just add `::g/ignore-fx true` to the function metadata to disable side effect detection and open an issue on github to help improve it.
 
-CAUTION: If you set `::g/ignore-fx true` for an actually unsafe function that has been incorrectly named as safe, and have `::g/check` enabled, `::g/num-tests` set to > 0 as well as a valid gspec and a call to `(g/check)` at the bottom of the namespace, generative testing _will_ be performed, side effects and all. This could be bad.
-
-NOTE: Side effect detection is a heuristic and in no way fail-safe operation, relying heavily on the assumption that you're not actively trying to shoot yourself in the foot. That being said, so far it seems to work pretty great in practice, and where it occasionally fails, the likelihood of false positives is significantly higher than that of false negatives so the chances of side effects actually seeping through the cracks and setting your hair on fire are relatively low.
 
 ### Evaluation Tracing and Program Observability
 
@@ -524,6 +551,8 @@ Specs are all nice and good, but often enough we want to take a peek at what's g
 
 TIP: `::g/trace true` is equivalent to `::g/trace 4`, so you can just add the `^::g/trace` metadata to the function name.
 
+[TIP]
+--
 A great workflow for working on a function is enabling the trace and passing a callback to `g/check` to have the function automatically called on namespace reload after the checks have completed successfully:
 
 ```clojure
@@ -540,8 +569,9 @@ A great workflow for working on a function is enabling the trace and passing a c
 For this to work you'll also have to <<shadow-hooks,set your build system hooks>> correctly.
 
 This way you immediately see <<tracing-screenshot,data flowing through the function>> on file save after every change (or the check results, if you messed up). Take a moment to zen out and revel in the intoxicating sense of power.
+--
 
-If you don't like the painstakingly selected default shade of blue-violet, you can change it with the `::g/trace-color` option. Philistine.
+TIP: If you don't like the painstakingly selected default shade of blue-violet, you can change it with the `::g/trace-color` option. Philistine.
 
 ## Contributions and Roadmap
 
@@ -578,7 +608,7 @@ For debugging the code generating functions in `ghostwheel.core` there's a code 
 
 ## FAQ
 
-- *Q: Can I trust Ghostwheel not to break my code?*
+- *_Q: Can I trust Ghostwheel not to break my code?_*
 +
 *A*: Every build is extensively tested with a combination of manually written and generated tests for a large number of configuration option combinations (including all tracing levels) with production and development build configurations in three environments - Clojure, node, and headless Chrome. The generated code is evaluated to make sure it behaves exactly like the code that went in and the fspec generation is tested with a number of convoluted gspecs to make sure everything desugars as expected.
 +
@@ -590,13 +620,13 @@ Purely cosmetic bugs in tracing and reporting are more difficult to test and thu
 +
 All that being said, Ghostwheel is Alpha software and you should proceed with care, especially on Clojure where it's even more Alpha.
 
-- *Q: What does tracing have to do with testing and why is it not a separate project?*
+- *_Q: What does tracing have to do with testing and why is it not a separate project?_*
 +
 *A*: Primarily because tracing needs to be aware of the automated testing so as not to interfere with it. That aside, I rely heavily on both spec-checking and tracing in my own workflow and like having the UI tightly integrated like this.
 +
 If you're only interested in tracing you can use `>defn` with nil gspecs and the default configuration plus a per function `^::g/trace`. There are also some vague plans in the works to involve tracing in the testing process, but that's still taking shape.
 
-- *Q: Why not use a statically typed language?*
+- *_Q: Why not use a statically typed language?_*
 +
 *A*: Not touching that one with a ten foot pole.
 
