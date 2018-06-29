@@ -1,4 +1,4 @@
-(defproject gnl/ghostwheel "0.2.1"
+(defproject gnl/ghostwheel "0.2.2-SNAPSHOT"
   :description "Hassle-free clojure.spec, side effect detection and evaluation tracing for Clojure(-Script)"
   :url "https://github.com/gnl/ghostwheel"
   :license {:name "Eclipse Public License"
