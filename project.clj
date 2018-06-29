@@ -7,7 +7,6 @@
                             :sign-releases false}}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"]
-                 [org.clojure/core.match "0.3.0-alpha5"]
                  [org.clojure/spec.alpha "0.1.143"]
                  [org.clojure/test.check "0.10.0-alpha2"]
                  [com.rpl/specter "1.1.1"]
