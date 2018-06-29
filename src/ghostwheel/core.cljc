@@ -971,9 +971,11 @@
                                     :else trace)
                               0)                      ; TODO: Clojure
           ;;; Code generation
-          instrumentation   (when (and check (not empty-bodies))
-                              (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
-                                    instrument `(st/instrument ~quoted-qualified-fn-name)
+          fdef-body         (generate-fspec-body fn-bodies)
+          fdef              (when fdef-body `(s/fdef ~fn-name ~@fdef-body))
+          instrumentation   (when (not empty-bodies)
+                              (cond (and fdef-body instrument) `(st/instrument ~quoted-qualified-fn-name)
+                                    (and fdef-body outstrument) `(ost/instrument ~quoted-qualified-fn-name)
                                     :else `(do (st/unstrument ~quoted-qualified-fn-name)
                                                ;; REVIEW - check if orchestra is in the requires
                                                ;; before unstrumenting - necessary?
@@ -982,8 +984,6 @@
                                                              (map (partial ns-required? env))
                                                              (some true?)))
                                                (ost/unstrument ~quoted-qualified-fn-name))))
-          fdef-body         (generate-fspec-body fn-bodies)
-          fdef              (when fdef-body `(s/fdef ~fn-name ~@fdef-body))
           individual-arity-fspecs
                             (map (fn [{:keys [args gspec]}]
                                    (when gspec
