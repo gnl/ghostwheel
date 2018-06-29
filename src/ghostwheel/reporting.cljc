@@ -157,7 +157,7 @@
                (log-bold msg)
                (do
                  (when-let [args (::st/args data)]
-                   (log "Call:" (cons fn-name args)))
+                   (log "\nCall:" (cons fn-name args)))
                  (log)
                  (when (= (::s/failure data) :instrument)
                    (js/console.log (-> msg cs/lines first (str "\n"))))
