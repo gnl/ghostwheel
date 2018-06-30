@@ -44,17 +44,17 @@
     ;; perfectly fine for that to end up in the production code
     {}))
 
-;; This isn't necessary, strictly speaking, but it makes hacking on
-;; Ghostwheel easier, because it allows env to be stubbed in order to
-;; trace-debug code generating functions at runtime in ClojureScript
 (defn get-ns-meta [env]
   (if (cljs-env? env)
-    (some-> env :ns :meta)
+    ;; This isn't necessary, strictly speaking, but it makes hacking on
+    ;; Ghostwheel easier, because it allows env to be stubbed in order to
+    ;; trace-debug code generating functions at runtime in ClojureScript
+    (or (meta *ns*) (some-> env :ns :meta))
     (meta *ns*)))
 
 (defn get-ns-name [env]
   (if (cljs-env? env)
-    (some-> env :ns :name)
+    (or (.-name *ns*) (some-> env :ns :name))
     (.-name *ns*)))
 
 (defn clj->cljs
