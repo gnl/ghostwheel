@@ -15,6 +15,8 @@
             [ghostwheel.utils :as u :refer [DBG]]
             [ghostwheel.tracing :as tr :refer [ghostwheel-colors get-styled-label pr-clog log-bold log]]))
 
+;; TODO: Chance all `js/console.log` calls to `log`
+
 (def all-tests-successful** (atom true))
 
 (def wrap (partial u/wrap-line 80))
