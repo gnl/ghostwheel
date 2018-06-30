@@ -32,7 +32,8 @@
 (defn get-ghostwheel-compiler-config [env]
   (if (cljs-env? env)
     (when cljs.env/*compiler*
-      (let [compiler-config (get-in @cljs.env/*compiler* [:options :ghostwheel])]
+      (let [compiler-config (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
+                                (get-in @cljs.env/*compiler* [:options :ghostwheel]))]
         (cond
           (map? compiler-config) (setval [MAP-KEYS NAMESPACE] (str `ghostwheel.core) compiler-config)
           (true? compiler-config) {}
