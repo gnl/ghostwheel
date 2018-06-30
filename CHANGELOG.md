@@ -17,4 +17,4 @@ All notable changes to this project will be documented in this file. This change
 
 ## 0.2.1 – 2018-06-28 – Initial release
 
-[Unreleased]: https://github.com/your-name/ghostwheel/compare/0.2.1...HEAD
+[Unreleased]: https://github.com/gnl/ghostwheel/compare/0.2.1...HEAD
