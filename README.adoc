@@ -144,9 +144,9 @@ CAUTION: Make sure not to add `:ghostwheel` to your production build config or y
 +
 ```clojure
 (:require [ghostwheel.core :as g
-            :refer [>defn >defn- >fdef => | <- ?]]) ;; <1>
+            :refer [>defn >defn- >fdef => | <- ?]])
 ```
-<1> `\=>`, `|`, `\<-` and `?` <<gspec-syntax, are optional>>
+NOTE: `\=>`, `|`, `\<-` and `?` <<gspec-syntax, are optional>>
 
 . Optional – override the default configuration
 +
