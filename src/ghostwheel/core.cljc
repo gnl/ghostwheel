@@ -7,6 +7,7 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ghostwheel.core
+  #?(:cljs (:require-macros ghostwheel.core))
   (:require [cuerdas.core :as cs]
             [clojure.set :refer [union difference map-invert]]
             [clojure.walk :as walk]
