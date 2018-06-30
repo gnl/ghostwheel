@@ -48,6 +48,34 @@
             (do nil)
             (+ a b)))))
 
+(deftest >defn-arity-1-nil-gspec-test
+  (is (= (expand (>defn foobar-1-prod
+                   {::g/check true
+                    ::g/trace 5}
+                   [a b]
+                   nil
+                   (do nil)
+                   (+ a b)))
+         '(defn foobar-1-prod
+            {::g/check true
+             ::g/trace 5}
+            [a b]
+            (do nil)
+            (+ a b))))
+  (is (= (expand (>defn- foobar-1-prod
+                   {::g/check true
+                    ::g/trace 5}
+                   [a b]
+                   nil
+                   (do nil)
+                   (+ a b)))
+         '(defn- foobar-1-prod
+            {::g/check true
+             ::g/trace 5}
+            [a b]
+            (do nil)
+            (+ a b)))))
+
 (deftest >defn-arity-n-test
   (is (= (expand (>defn foobar-n-prod
                    {::g/check true
@@ -76,6 +104,44 @@
                     (+ a b))
                    ([a b c]
                     [int? int? int? => int?]
+                    (+ a b c))))
+         '(defn- foobar-n-prod
+            {::g/check true
+             ::g/trace 5}
+            ([a b]
+             (do nil)
+             (+ a b))
+            ([a b c]
+             (+ a b c))))))
+
+(deftest >defn-arity-n-nil-gspec-test
+  (is (= (expand (>defn foobar-n-prod
+                   {::g/check true
+                    ::g/trace 5}
+                   ([a b]
+                    nil
+                    (do nil)
+                    (+ a b))
+                   ([a b c]
+                    nil
+                    (+ a b c))))
+         '(defn foobar-n-prod
+            {::g/check true
+             ::g/trace 5}
+            ([a b]
+             (do nil)
+             (+ a b))
+            ([a b c]
+             (+ a b c)))))
+  (is (= (expand (>defn- foobar-n-prod
+                   {::g/check true
+                    ::g/trace 5}
+                   ([a b]
+                    nil
+                    (do nil)
+                    (+ a b))
+                   ([a b c]
+                    nil
                     (+ a b c))))
          '(defn- foobar-n-prod
             {::g/check true
