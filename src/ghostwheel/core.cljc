@@ -76,14 +76,6 @@
   (let [namespace (if *ns* (.-name *ns*) 'undefined)]
     (symbol (str namespace) (str sym-name))))
 
-;; REVIEW: this doesn't seem to be needed.
-(defn- ns-required? [env nspace]
-  (if (cljs-env? env)
-    (let [required-nspaces (->> env :ns :requires (map second) set)]
-      (contains? required-nspaces nspace))
-    ;; TODO implement Clojure
-    nil))
-
 (defn- count-args
   "Returns a tuple with the number of regular and non-variadic arguments."
   [conformed-args]
@@ -977,12 +969,6 @@
                               (cond (and fdef-body instrument) `(st/instrument ~quoted-qualified-fn-name)
                                     (and fdef-body outstrument) `(ost/instrument ~quoted-qualified-fn-name)
                                     :else `(do (st/unstrument ~quoted-qualified-fn-name)
-                                               ;; REVIEW - check if orchestra is in the requires
-                                               ;; before unstrumenting - necessary?
-                                               #_~(when (->> ['orchestra-cljs.spec.test
-                                                              'orchestra.spec.test]
-                                                             (map (partial ns-required? env))
-                                                             (some true?)))
                                                (ost/unstrument ~quoted-qualified-fn-name))))
           individual-arity-fspecs
                             (map (fn [{:keys [args gspec]}]
