@@ -5,16 +5,18 @@ All notable changes to this project will be documented in this file. This change
 
 ### Fixed
 
+- Namespace metadata ignored when using Figwheel or cljs.main
+
 - Instrumentation requires `::g/check` option – #1
 
 ### Changed
 
 - Global/compiler configuration is now set via the `:external-config` compiler option. The old behaviour is deprecated.
 
-- Ghostwheel is now enabled via `:ghostwheel {}` instead of `:ghostwheel true`. The latter is deprecated
+- Ghostwheel is now enabled via `:ghostwheel {}` instead of `:ghostwheel true`. The latter is deprecated.
 
 - Requiring `ghostwheel.core` in CLJS is now simpler and works the same way as in Clojure – #2
 
 ## 0.2.1 – 2018-06-28 – Initial release
 
-[Unreleased]: https://github.com/gnl/ghostwheel/compare/0.2.1...HEAD
+[Unreleased]: https://github.com/gnl/ghostwheel/compare/v0.2.1...HEAD
