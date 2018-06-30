@@ -26,7 +26,7 @@ Random put down his cup and cocked his head to one side.
 
 {zwsp}
 
-image:clojars.svg[link=https://clojars.org/gnl/ghostwheel] image:license.svg[link=https://choosealicense.com/licenses/epl-2.0]
+image:clojars.svg[link=https://clojars.org/gnl/ghostwheel] image:https://cljdoc.xyz/badge/gnl/ghostwheel[link=https://cljdoc.xyz/jump/release/gnl/ghostwheel]image:license.svg[link=https://choosealicense.com/licenses/epl-2.0]
 
 toc::[]
 
@@ -210,6 +210,8 @@ Note that Ghostwheel uses `ghostwheel.core`-qualified keywords for its configura
 +
 There's no need for this in the function metadata – if you alias Ghostwheel with `ghostwheel.core :as g` you can just reference the options as `::g/check`.
 
+// TODO: A note on metadata
+
 ### Staying Sane with Function Specs
 
 [quote, 'Neil Gaiman & Terry Pratchett, Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch']
@@ -280,7 +282,12 @@ Ghostwheel handles this by simply passing a qualified keyword to `>fdef` instead
    [int? string? => string?])
 ```
 
-TIP: If you're using link:https://cursive-ide.com/[Cursive IDE], it's probably a good idea to use IntelliJ's QuickFix feature to tell Cursive to resolve `>defn` and `>fdef` as `defn`, and `>defn-` as `defn-` – this way you get proper highlighting, formatting, error handling, structural navigation, symbol resolution, and refactoring support.
+[TIP]
+--
+If you're using link:https://cursive-ide.com/[Cursive IDE], it's probably a good idea to use IntelliJ's intention actions to tell Cursive to resolve `>defn` and `>fdef` as `defn`, and `>defn-` as `defn-` – this way you get proper highlighting, formatting, error handling, structural navigation, symbol resolution, and refactoring support.
+
+Just place the cursor on `>defn`, click on the light bulb that appears (or press Alt+Enter) and select `Resolve as...` -> `defn`.
+--
 
 NOTE: If `::g/check` is `false` and `::g/trace` is `0`, as in the default configuration, Ghostwheel does nothing other than generate a `defn` and an `fdef` block. When `:ghostwheel` isn't set to a truthy value in the compiler options, it doesn't generate any code whatsoever other than the plain `defn` block with the gspec vectors stripped – this is recommended for production builds.
 
@@ -619,6 +626,12 @@ Test coverage for the somewhat less critical parts (testing, instrumentation, et
 Purely cosmetic bugs in tracing and reporting are more difficult to test and thus more likely.
 +
 All that being said, Ghostwheel is Alpha software and you should proceed with care, especially on Clojure where it's even more Alpha.
+
+- *_Q: Can I use Ghostwheel for test generation with existing fspecs defined with `s/fdef`?_*
++
+*A*: Adding support for this was considered and ultimately decided against for the time being. It would add complexity and a maintenance workload in order to enable the use of a small subset of Ghostwheel's functionality in a subpar manner, because there's a number of checks and validations Ghostwheel cannot perform without the inline gspecs, and some aspects of its behaviour would change as well.
++
+You can however still use Ghostwheel with nil gspecs and take advantage of the side effect detection, tracing functionality and easy instrumentation. Extracting the test generation code into a separate library may be considered further down the line.
 
 - *_Q: What does tracing have to do with testing and why is it not a separate project?_*
 +
