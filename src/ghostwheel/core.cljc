@@ -968,8 +968,8 @@
           fdef-body         (generate-fspec-body fn-bodies)
           fdef              (when fdef-body `(s/fdef ~fn-name ~@fdef-body))
           instrumentation   (when (not empty-bodies)
-                              (cond instrument `(st/instrument ~quoted-qualified-fn-name)
-                                    outstrument `(ost/instrument ~quoted-qualified-fn-name)
+                              (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
+                                    instrument `(st/instrument ~quoted-qualified-fn-name)
                                     :else `(do (st/unstrument ~quoted-qualified-fn-name)
                                                (ost/unstrument ~quoted-qualified-fn-name))))
           individual-arity-fspecs
