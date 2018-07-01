@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file. This change
 
 - Allow instrumentation with nil gspecs – trust that there's an external fspec/fdef and simply fail if there isn't.
 
+- `::outstrument` overrides `::instrument` when they are used together. Don't use them together. 
+
 ## [0.2.2]
 
 ### Fixed
