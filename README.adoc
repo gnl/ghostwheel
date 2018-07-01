@@ -124,7 +124,7 @@ NOTE: This is additional information on how and/or why something works the way i
 
 ### Getting Started
 
-. Add the artifact to your build configuration:
+. Make sure your Clojure version is at least 1.9.0 and add the artifact to your build configuration:
 +
 image:clojars.svg[link=https://clojars.org/gnl/ghostwheel]
 +
@@ -224,7 +224,7 @@ There's no need for this in the function metadata – if you alias Ghostwheel wi
 
 Function specs are generally defined inline using the `>defn` macro, except when defining them for functions in external namespaces – mainly for instrumentation – in which case `>fdef` is used.
 
-`>defn` is almost identical to `defn`, except that the first body form must be an inline spec definition using the gspec syntax:
+`>defn` is almost identical to `defn`, except that the first body form must be an inline spec definition using the gspec syntax (to be explained in detail in the <<gspec-syntax,next section>>):
 
 [[gspec-example]]
 ```clojure
@@ -256,7 +256,7 @@ In fact you can even use argument destructuring with this, except if you go too 
 (>fdef ranged-rand
    [start end]
    [int? int? | #(< start end)
-    => int? | #(>= % start) #(< % end)]
+    => int? | #(>= % start) #(< % end)])
 ```
 
 Specs for multi-arity functions are defined in a similar way. For example, this is what a spec for `clojure.core/drop` would look like:
@@ -335,7 +335,7 @@ Nested gspecs are defined using the exact same syntax:
   ([f]
    [[nat-int? any? => any?] => fn?])
   ([f coll]
-   [[nat-int? any? => any?] (s/nilable seqable?) => seq?]))
+   [[nat-int? any? => any?] (? seqable?) => seq?]))
 ```
 
 In the rare cases when a nilable gspec is needed `?` is put in a vector rather than a list:
@@ -641,6 +641,10 @@ What _is_ on the roadmap however, is the ability to convert fspecs to gspecs for
 *A*: Primarily because tracing needs to be aware of the automated testing so as not to interfere with it. That aside, I rely heavily on both spec-checking and tracing in my own workflow and like having the UI tightly integrated like this.
 +
 If you're only interested in tracing you can use `>defn` with nil gspecs and the default configuration plus a per function `^::g/trace`. There are also some vague plans in the works to involve tracing in the testing process, but that's still taking shape.
+
+- *_Q: How are `>defn` and `>fdef` pronounced in conversation?_*
++
+*A*: Ghostwheel-def-n / g-def-n and ghostwheel-f-def / g-f-def respectively.
 
 - *_Q: Why not use a statically typed language?_*
 +
