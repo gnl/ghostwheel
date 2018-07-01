@@ -631,7 +631,9 @@ All that being said, Ghostwheel is Alpha software and you should proceed with ca
 +
 *A*: Adding support for this was considered and ultimately decided against for the time being. It would add complexity and a maintenance workload in order to enable the use of a small subset of Ghostwheel's functionality in a subpar manner, because there's a number of checks and validations Ghostwheel cannot perform without the inline gspecs, and some aspects of its behaviour would change as well.
 +
-You can however still use Ghostwheel with nil gspecs and take advantage of the side effect detection, tracing functionality and easy instrumentation. Extracting the test generation code into a separate library may be considered further down the line.
+You can still use Ghostwheel with nil gspecs and take advantage of the side effect detection, tracing functionality and easy instrumentation. Extracting the test generation code into a separate library may be considered further down the line.
++
+What _is_ on the roadmap however, is the ability to convert fspecs to gspecs for an easier migration of existing code bases.
 
 - *_Q: What does tracing have to do with testing and why is it not a separate project?_*
 +
