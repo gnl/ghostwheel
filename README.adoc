@@ -138,7 +138,7 @@ Shadow CLJS has the additional advantage of apparently being the only build tool
 
 . ClojureScript only – add `:external-config {:ghostwheel {}}` to the compiler options in your development build config.
 +
-CAUTION: Make sure not to add `:ghostwheel` to your production build config or you might end up with tracing code in production. There is no danger of that in Clojure at the moment, because tracing isn't implemented yet.
+CAUTION: Make sure not to add `:ghostwheel` to your production build config or you might end up with tracing, testing or instrumentation code in production.
 
 . Require it from the namespaces you intend to use it in
 +
@@ -185,8 +185,9 @@ Here's the default configuration map – each option (except `::extrument`) can 
  ;; Spec-instrument functions on namespace reload.
  ::instrument      false
 
- ;; Spec-instrument functions on namespace reload using orchestra,
- ;; which spec-checks the output in addition to the input.
+ ;; Spec-instrument functions on namespace reload using
+ ;; orchestra, which spec-checks the output in addition to
+ ;; the input. Use either this or `::instrument`, not both.
  ::outstrument     false
 
  ;; Nilable vector of qualified external namespaces or functions

@@ -157,8 +157,9 @@
              ;; Spec-instrument functions on namespace reload.
              ::instrument      false
 
-             ;; Spec-instrument functions on namespace reload using orchestra,
-             ;; which spec-checks the output in addition to the input.
+             ;; Spec-instrument functions on namespace reload using
+             ;; orchestra, which spec-checks the output in addition to
+             ;; the input. Use either this or `::instrument`, not both.
              ::outstrument     false
 
              ;; Nilable vector of qualified external namespaces or functions
