@@ -46,7 +46,7 @@
 (def ghostwheel-colors tr/ghostwheel-colors)
 (def ^:private test-suffix "__ghostwheel-test")
 
-(def ^:private post-check-callbacks** (atom []))
+(def ^:private **post-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
 
 (def ^:dynamic *global-trace-allowed?* true)
@@ -1023,10 +1023,10 @@
       `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test))))
 
 (defn post-check-async [done]
-  (let [success @r/all-tests-successful**]
-    (when success (doseq [f @post-check-callbacks**] (f)))
-    (reset! r/all-tests-successful** true)
-    (reset! post-check-callbacks** [])
+  (let [success @r/**all-tests-successful]
+    (when success (doseq [f @**post-check-callbacks] (f)))
+    (reset! r/**all-tests-successful true)
+    (reset! **post-check-callbacks [])
     (when success (done))))
 
 (defn- generate-check [env callbacks]
@@ -1053,7 +1053,7 @@
                      {::r/plain-defns    ~plain-defns
                       ::r/check-coverage ~check-coverage})))
          ~(when (seq callbacks)
-            `(swap! post-check-callbacks** (comp vec concat) ~(vec callbacks)))
+            `(swap! **post-check-callbacks (comp vec concat) ~(vec callbacks)))
          (when *global-check-allowed?*
            ~@(remove nil?
                      [(when extrument

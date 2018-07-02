@@ -17,7 +17,7 @@
 
 ;; TODO: Chance all `js/console.log` calls to `log`
 
-(def all-tests-successful** (atom true))
+(def **all-tests-successful (atom true))
 
 (def wrap (partial u/wrap-line 80))
 
@@ -209,4 +209,4 @@
                (js/console.groupEnd)))))
 
 (defmethod t/report [::default :end-run-tests] [m]
-  (swap! all-tests-successful** #(and %1 %2) (t/successful? m)))
+  (swap! **all-tests-successful #(and %1 %2) (t/successful? m)))
