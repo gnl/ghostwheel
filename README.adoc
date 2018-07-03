@@ -128,6 +128,8 @@ NOTE: This is additional information on how and/or why something works the way i
 +
 image:clojars.svg[link=https://clojars.org/gnl/ghostwheel]
 +
+See the changelog for the pre-release version and the newest features and fixes.
++
 [WARNING]
 --
 It is currently recommended that you follow this walkthrough in a ClojureScript environment running in Chrome using https://github.com/thheller/shadow-cljs[Shadow CLJS] or https://github.com/bhauman/lein-figwheel[Figwheel] for hot-reloading – the Clojure port is still quite bare-bones as described in the introduction.
