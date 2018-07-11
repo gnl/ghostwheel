@@ -55,7 +55,7 @@ image::image-2.png[,700]
 +
 image::image-3.png[,700]
 
-- *Automagical generative testing of specced, side-effect-free functions on namespace reload, with human-readable expound-powered reporting and support for spec instrumentation of internal and external namespaces, including experimental specs for most of clojure.core*
+- *Automagical generative testing – off by default – of specced, side-effect-free functions on namespace reload, with human-readable expound-powered reporting and support for spec instrumentation of internal and external namespaces, including experimental specs for most of clojure.core*
 +
 The test generation works on Clojure, but the automatic execution on namespace reload and the fancy reporting are ClojureScript only for now.
 +
