@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^:dev/always ghostwheel.tracing
+(ns ghostwheel.tracing
   (:require [cuerdas.core :as cs]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config get-ns-meta clj->cljs]]))
 
