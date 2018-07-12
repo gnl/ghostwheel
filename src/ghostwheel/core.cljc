@@ -1042,6 +1042,7 @@
                                :defs
                                (filter #(-> % val :fn-var))
                                (remove #(-> % key meta ::ghostwheel))
+                               (remove #(false? (-> % key meta ::check-coverage)))
                                (remove #(-> % key str (cs/ends-with? test-suffix)))
                                (map (comp str key))
                                vec))]
