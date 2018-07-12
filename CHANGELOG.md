@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file. This change
 
 ### Changed
 
+- Updated clojure.spec and test.check
+
 - `::outstrument` overrides `::instrument` when they are used together. Don't use them together. 
 
 ## [0.2.2] – 2018-06-30
