@@ -26,7 +26,7 @@ Random put down his cup and cocked his head to one side.
 
 {zwsp}
 
-image:clojars.svg[link=https://clojars.org/gnl/ghostwheel] image:https://cljdoc.xyz/badge/gnl/ghostwheel[link=https://cljdoc.xyz/jump/release/gnl/ghostwheel] image:license.svg[link=https://choosealicense.com/licenses/epl-2.0]
+image:clojars-0.2.3.svg[link=https://clojars.org/gnl/ghostwheel] image:https://cljdoc.xyz/badge/gnl/ghostwheel[link=https://cljdoc.xyz/jump/release/gnl/ghostwheel] image:license.svg[link=https://choosealicense.com/licenses/epl-2.0]
 
 toc::[]
 
@@ -39,6 +39,8 @@ It's about getting the mundane, frustrating stuff out of the way in order to let
 It's currently in Alpha and was originally written for ClojureScript – the Clojure port is functional but incomplete.
 
 Here are some buzzwords and pictures:
+
+// TODO: Add notes on runtime and compile time performance impact
 
 [[gspec-comparison]]
 - *Inline fspec definitions with a concise syntax for single- and multi-arity functions for improved readability and minimal effort spec writing and refactoring*
@@ -126,7 +128,7 @@ NOTE: This is additional information on how and/or why something works the way i
 
 . Make sure your Clojure version is at least 1.9.0 and add the artifact to your build configuration:
 +
-image:clojars.svg[link=https://clojars.org/gnl/ghostwheel]
+image:clojars-0.2.3.svg[link=https://clojars.org/gnl/ghostwheel]
 +
 See the changelog for the pre-release version and the newest features and fixes.
 +

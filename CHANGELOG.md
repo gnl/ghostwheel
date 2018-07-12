@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## [0.2.3-SNAPSHOT] – Pre-Release
+## [0.2.3] – 2018-07-13
 
 ### Fixed
 
@@ -39,5 +39,5 @@ All notable changes to this project will be documented in this file. This change
 
 ## 0.2.1 – 2018-06-28 – Initial release
 
-[0.2.3-SNAPSHOT]: https://github.com/gnl/ghostwheel/compare/v0.2.2...HEAD
+[0.2.3]: https://github.com/gnl/ghostwheel/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/gnl/ghostwheel/compare/v0.2.1...v0.2.2
