@@ -149,10 +149,8 @@
 (defn- report-spec-check [{:keys [::spec-checks ::fn-name]}]
   #?(:cljs (doseq [check spec-checks
                    :let [test-ret (:clojure.test.check/ret check)]
-                   :when (not (:result test-ret))
-                   :let [spec-error (-> test-ret
-                                        :result-data
-                                        :clojure.test.check.properties/error)
+                   :when (not (:pass? test-ret))
+                   :let [spec-error (:result test-ret)
                          data       (.-data spec-error)
                          msg        (.-message spec-error)]]
              (if-not data

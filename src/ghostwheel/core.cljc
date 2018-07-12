@@ -545,7 +545,7 @@
        `(t/deftest ~(symbol (str fn-name test-suffix))
           (let [spec-checks# ~spec-checks]
             ; TODO This trips up clairvoyant and prevents tracing during ghostwheel development
-            (t/is (and (every? #(-> % :clojure.test.check/ret :result) spec-checks#)
+            (t/is (and (every? #(-> % :clojure.test.check/ret :pass?) spec-checks#)
                        (not ~unexpected-fx)
                        (not ~unexpected-safety))
                   {::r/fn-name        (quote ~fn-name)
