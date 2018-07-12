@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file. This change
 
 ### Fixed
 
+- Incorrect generation of empty-arg fspecs => test execution errors
+
 - The ghostwheel core, tracing and reporting namespaces are unnecessarily recompiled on every hot-reload with Shadow CLJS
 
-### Changed
+### Added
+
+- Plain `defn` functions can be excluded from coverage checks with `::g/check-coverage false`
 
 - Allow instrumentation with nil gspecs – trust that there's an external fspec/fdef and simply fail if there isn't.
+
+### Changed
 
 - `::outstrument` overrides `::instrument` when they are used together. Don't use them together. 
 
