@@ -171,7 +171,7 @@
 
 (deftest >fdef-empty-arg-test
   (let [empty-arg-fdef
-        '(cljs.spec.alpha/fdef empty-arg-fdef :ret int?)
+        '(cljs.spec.alpha/fdef empty-arg-fdef :args (cljs.spec.alpha/cat) :ret int?)
 
         fdef
         (process-fdef

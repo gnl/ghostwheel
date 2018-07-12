@@ -624,7 +624,8 @@
                 (remove nil? `(fn ~name [~bindings] ~body))))
 
             processed-args
-            (when argspec-def
+            (if-not argspec-def
+              `(s/cat)
               (let [wrapped-params (->> argspec-def
                                         :args
                                         (map extract-spec)
@@ -659,7 +660,7 @@
 
             final-fspec
             (concat (when anon-fspec? [`s/fspec])
-                    (when processed-args [:args processed-args])
+                    [:args processed-args]
                     [:ret (extract-spec retspec)]
                     (when fn-spec [:fn fn-spec])
                     (when gen-fn [:gen gen-fn]))]
