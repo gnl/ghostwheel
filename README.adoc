@@ -263,6 +263,13 @@ In fact you can even use argument destructuring with this, except if you go too 
     => int? | #(>= % start) #(< % end)])
 ```
 
+[TIP]
+--
+If you're using link:https://cursive-ide.com/[Cursive IDE], it's probably a good idea to use IntelliJ's intention actions to tell Cursive to resolve `>defn` and `>fdef` as `defn`, and `>defn-` as `defn-` – this way you get proper highlighting, formatting, error handling, structural navigation, symbol resolution, and refactoring support.
+
+Just place the cursor on `>defn`, click on the light bulb that appears (or press Alt+Enter) and select `Resolve as...` -> `defn`.
+--
+
 Specs for multi-arity functions are defined in a similar way. For example, this is what a spec for `clojure.core/drop` would look like:
 
 ```clojure
@@ -286,13 +293,6 @@ Ghostwheel handles this by simply passing a qualified keyword to `>fdef` instead
    [i s]
    [int? string? => string?])
 ```
-
-[TIP]
---
-If you're using link:https://cursive-ide.com/[Cursive IDE], it's probably a good idea to use IntelliJ's intention actions to tell Cursive to resolve `>defn` and `>fdef` as `defn`, and `>defn-` as `defn-` – this way you get proper highlighting, formatting, error handling, structural navigation, symbol resolution, and refactoring support.
-
-Just place the cursor on `>defn`, click on the light bulb that appears (or press Alt+Enter) and select `Resolve as...` -> `defn`.
---
 
 NOTE: If `::g/check` is `false` and `::g/trace` is `0`, as in the default configuration, Ghostwheel does nothing other than generate a `defn` and an `fdef` block. When `:ghostwheel` isn't set to a truthy value in the compiler options, it doesn't generate any code whatsoever other than the plain `defn` block with the gspec vectors stripped – this is recommended for production builds.
 
