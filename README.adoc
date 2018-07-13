@@ -169,8 +169,10 @@ Here's the default configuration map – each option (except `::extrument`) can 
  ;; performed and no test code is generated.
  ::check           false
 
- ;; Determines whether Ghostwheel should warn on
- ;; missing fspecs and plain (non-Ghostwheel) defn usage
+ ;; Determines whether Ghostwheel should warn on missing fspecs
+ ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
+ ;; namespace or higher level, you can exclude individual `defn`s or
+ ;; `declare`s by setting it to false in their respective metadata
  ::check-coverage  false
 
  ;; Disable side effect detection

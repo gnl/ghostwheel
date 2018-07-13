@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file. This change
 
 ### Added
 
-- Plain `defn` functions can be excluded from coverage checks with `::g/check-coverage false`
+- Plain `defn` as well as `declare`d functions can be excluded from coverage checks with the `::g/check-coverage false` metadata
 
 - Allow instrumentation with nil gspecs – trust that there's an external fspec/fdef and simply fail if there isn't.
 
