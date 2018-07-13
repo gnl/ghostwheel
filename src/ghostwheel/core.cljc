@@ -972,8 +972,7 @@
           instrumentation   (when (not empty-bodies)
                               (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
                                     instrument `(st/instrument ~quoted-qualified-fn-name)
-                                    :else `(do (st/unstrument ~quoted-qualified-fn-name)
-                                               (ost/unstrument ~quoted-qualified-fn-name))))
+                                    :else nil))
           individual-arity-fspecs
                             (map (fn [{:keys [args gspec]}]
                                    (when gspec
