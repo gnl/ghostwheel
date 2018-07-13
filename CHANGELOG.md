@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## [0.2.4-SNAPSHOT] – Pre-Release
 
+### Fixed
+
+- Remove unnecessary calls to `s/unstrument` on namespace reload.
+
 ## [0.2.3] – 2018-07-13
 
 ### Fixed

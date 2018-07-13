@@ -467,6 +467,8 @@ Let's take the function we defined in the previous section and map it over a col
   [increment numbers]
   [int? (s/coll-of int?) => (s/coll-of int?)]
   (map (partial addition increment) numbers))
+
+(g/check)
 ```
 The two should check out fine:
 
