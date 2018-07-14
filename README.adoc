@@ -32,7 +32,7 @@ toc::[]
 
 ## Introduction
 
-Ghostwheel makes using clojure.spec easy, detects unexpected side effects at compile time and helps you see what your code is doing so that you can play, explore and refactor fearlessly.
+Ghostwheel makes using clojure.spec easy, minimises the need for unit tests, detects unexpected side effects at compile time, and helps you see what your code is doing so that you can play, explore and refactor fearlessly.
 
 It's about getting the mundane, frustrating stuff out of the way in order to let you focus on the creative side of building software and maybe even get some link:https://gnl.gitlab.io/images/clojurian-using-ghostwheel.gif[quality hammock time^] without cryptic stack traces invading your dreams.
 
@@ -441,11 +441,11 @@ Tweak the `::g/num-tests` and `::g/num-tests-ext` numbers on a global, namespace
 
 {zwsp}
 
-By default functions are considered pure and during compile time Ghostwheel will do its magic to detect potential side effects in any function defined with `>defn` – calling functions with an ! at the end, `do` blocks, multiple-form `when`, `let` and `defn`/`fn`, known unsafe operations, stuff like that – and store the evidence so that it can link:https://gnl.gitlab.io/images/ghostwheel-and-side-effects.gif[politely inform you^] of your transgressions during testing.
+By default functions are considered pure and during compile time Ghostwheel will do its magic to detect potential side effects in any function defined with `>defn` – calling functions with an `!` at the end, `do` blocks, multiple-form `when`, `let` and `defn`/`fn`, known unsafe operations, stuff like that – and store the evidence so that it can link:https://gnl.gitlab.io/images/ghostwheel-and-side-effects.gif[politely inform you^] of your transgressions during testing.
 
 It won't run any automatic generative tests if a function is found to be unsafe, whether it's due to detected side effects or explicit annotation.
 
-NOTE: Actually Ghostwheel assumes functions to be (STM- and test-) safe by default, that is – not having unsafe/permanent side effects, which isn't necessarily the same thing as pure. For the purpose of this guide we will however use the terms interchangeably, to the absolute horror of purists everywhere.
+NOTE: Ghostwheel assumes functions to be (STM- and test-) safe by default, that is – not having unsafe/permanent side effects, which isn't necessarily the same thing as pure. For the purpose of this guide we will however use the terms interchangeably, to the absolute horror of purists everywhere.
 
 You can disable side effect detection with the `::g/ignore-fx` option in which case Ghostwheel will simply trust the name of the function (`...!` = unsafe) and behave accordingly.
 
@@ -491,7 +491,7 @@ image::image-18.png[,700]
 
 So that didn't go too well. Both `addition` and its caller `increase-numbers` fail their checks – `addition` because of the detected side effects, and `increase-numbers` because it's calling the former, the body of which is now replaced with exception-throwing code until the whole messy situation is remedied.
 
-NOTE: The whole "replaced with exception-throwing code" thing does sound kinda scary, admittedly, but it's necessary – otherwise, while `addition` may fail its checks, `increase-numbers` would still be happily passing its own and sending out mails.
+NOTE: The whole "replaced with exception-throwing code" thing does sound kinda scary, admittedly, but it's necessary – otherwise, while `addition` may fail its side effect checks and thus be excluded from testing, `increase-numbers` would still be happily passing its own, calling `addition` and sending out mails.
 
 If you're serious about the impurity, traitor to the Church of Functional Programming that you are, you can make Ghostwheel shut up by renaming your function to suffix it with a `!` thus officially marking it as unsafe. Use your IDE to rename `addition` to `addition!` now.
 
@@ -706,7 +706,7 @@ When it comes to defining function specs, however, it's quite verbose and the ac
 
 Generating the nil-body stubs and automatically defining the tests naturally followed from there, which in turn inspired the heuristic side effect detection to serve as a safeguard against inadvertently doing I/O during testing and to provide additional insight into the code by helping keep unsafe operations explicit.
 
-It is my hope that Ghostwheel will help lower the barrier to using spec and contribute to its wider adoption, which will do wonders for overall Clojure code quality.
+It is my hope that Ghostwheel will help lower the barrier to using spec and contribute to its wider adoption, which will reduce the need for writing unit tests to a minimum and generally do wonders for overall Clojure code quality.
 
 While spec provides the ability to quickly track down many type and logic errors, it doesn't remove the need to observe the function in operation, as a tool for both debugging and thinking. Common techniques for achieving this include:
 
