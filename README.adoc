@@ -126,7 +126,7 @@ NOTE: This is additional information on how and/or why something works the way i
 
 ### Getting Started
 
-. Make sure your Clojure version is at least 1.9.0 and add the artifact to your build configuration:
+. Make sure your Clojure version is at least 1.9.0 and add the artifact to your project dependencies:
 +
 image:clojars-0.2.3.svg[link=https://clojars.org/gnl/ghostwheel]
 +
