@@ -26,7 +26,7 @@ Random put down his cup and cocked his head to one side.
 
 {zwsp}
 
-image:clojars-0.2.3.svg[link=https://clojars.org/gnl/ghostwheel] image:https://cljdoc.xyz/badge/gnl/ghostwheel[link=https://cljdoc.xyz/jump/release/gnl/ghostwheel] image:license.svg[link=https://choosealicense.com/licenses/epl-2.0]
+image:clojars-0.2.3.svg[link=https://clojars.org/gnl/ghostwheel] image:https://cljdoc.xyz/badge/gnl/ghostwheel[link=https://cljdoc.xyz/jump/release/gnl/ghostwheel] image:license.svg[link=https://choosealicense.com/licenses/epl-2.0] image:https://circleci.com/gh/marco-m/ghostwheel.svg?style=svg["CircleCI", link="https://circleci.com/gh/marco-m/ghostwheel"]
 
 toc::[]
 
