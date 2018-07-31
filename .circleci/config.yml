@@ -10,9 +10,7 @@ jobs:
       - run:
           name: Install deps
           command: |
-            npm install karma karma-cljs-test --save-dev
-            npm install karma-chrome-launcher --save-dev
-            npm install karma-firefox-launcher --save-dev
+            npm install
             sudo npm install -g karma-cli
 
       # TODO: cache the node-modules directory, but how to detect new versions???
