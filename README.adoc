@@ -607,7 +607,6 @@ Or maybe you just like breaking things and telling people about it. Either way, 
 Other than that, here's the rather loose roadmap, not necessarily sorted by priority or particularly rich on detail. PRs are welcome if anything should tickle your fancy (or annoy the hell out of you), but if you are planning on doing anything bigger maybe open an issue first so we can discuss it.
 
 * Complete Clojure port including support for a global compiler-level configuration similar to ClojureScript.
-* Setup continuous integration
 * Solve miscellaneous issues around fully instrumenting the `ghostwheel.specs.clojure.core` namespace during testing
 * Get the Closure type annotations working properly
 * Integrate link:https://github.com/bhauman/spell-spec[bhauman/spell-spec]
