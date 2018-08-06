@@ -154,7 +154,7 @@ NOTE: `\=>`, `|`, `\<-` and `?` <<gspec-syntax, are optional>>
 
 . Optional – override the default configuration
 +
-Ghostwheel's behaviour is determined individually for each function by merging the configuration maps – default config -> global/compiler config -> namespace metadata -> function metadata. The more intrusive functionality is disabled by default to avoid any nasty surprises.
+Ghostwheel's behaviour is determined individually for each function by merging the configuration maps – default config -> global/compiler config -> namespace metadata -> function metadata. The more intrusive and performance-wise expensive functionality is disabled by default to avoid any nasty surprises.
 +
 Here's the default configuration map – each option (except `::extrument`) can be overridden on any level and will be explained in more detail in the relevant sections below.
 +
