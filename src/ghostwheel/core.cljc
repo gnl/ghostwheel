@@ -46,7 +46,7 @@
 (def ghostwheel-colors tr/ghostwheel-colors)
 (def ^:private test-suffix "__ghostwheel-test")
 
-(def ^:private *post-check-callbacks (atom []))
+(def ^:private *after-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
 
 (def ^:dynamic *global-trace-allowed?* true)
@@ -1025,15 +1025,38 @@
                                   5 (clairvoyant-trace traced-defn nil))))]
       `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test))))
 
-(defn post-check-async [done]
+(defn after-check-async [done]
   (let [success @r/*all-tests-successful]
-    (when success (doseq [f @*post-check-callbacks] (f)))
+    (when success (doseq [f @*after-check-callbacks] (f)))
     (reset! r/*all-tests-successful true)
-    (reset! *post-check-callbacks [])
+    (reset! *after-check-callbacks [])
     (when success (done))))
 
-(defn- generate-check [env callbacks]
-  (let [{:keys [::extrument ::check ::check-coverage]}
+(defn- generate-check [env]
+  (let [{:keys [::check ::extrument]}
+        (merge (get-ghostwheel-compiler-config env)
+               (get-ns-meta env))]
+    ;; TODO implement for clj
+    (when (and check (cljs-env? env))
+      `(when *global-check-allowed?*
+         ~@(remove nil?
+                   [(when extrument
+                      `(st/instrument (quote ~extrument)))
+                    `(binding [*global-trace-allowed?* false]
+                       (t/run-tests (t/empty-env ::r/default)))
+                    (when extrument
+                      `(st/unstrument (quote ~extrument)))])))))
+
+(defn- after-check [env callbacks]
+  (let [{:keys [::check]}
+        (merge (get-ghostwheel-compiler-config env)
+               (get-ns-meta env))]
+    ;; TODO implement for clj
+    (when (and check (seq callbacks))
+      `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
+
+(defn- generate-coverage-check [env]
+  (let [{:keys [::check ::check-coverage]}
         (merge (get-ghostwheel-compiler-config env)
                (get-ns-meta env))
 
@@ -1048,24 +1071,11 @@
                                (remove #(-> % key str (cs/ends-with? test-suffix)))
                                (map (comp str key))
                                vec))]
-    ;; TODO implement for clj
-    (when (and check (cljs-env? env))
-      `(do
-         ~(when (seq plain-defns)
-            `(t/deftest ~(symbol (str "coverage__" (gensym) test-suffix))
-               (t/is true
-                     {::r/plain-defns    ~plain-defns
-                      ::r/check-coverage ~check-coverage})))
-         ~(when (seq callbacks)
-            `(swap! *post-check-callbacks (comp vec concat) ~(vec callbacks)))
-         (when *global-check-allowed?*
-           ~@(remove nil?
-                     [(when extrument
-                        `(st/instrument (quote ~extrument)))
-                      `(binding [*global-trace-allowed?* false]
-                         (t/run-tests (t/empty-env ::r/default)))
-                      (when extrument
-                        `(st/unstrument (quote ~extrument)))]))))))
+    (when (and check (not-empty plain-defns))
+      `(t/deftest ~(symbol (str "coverage__" (gensym) test-suffix))
+         (t/is true
+               {::r/plain-defns    ~plain-defns
+                ::r/check-coverage ~check-coverage})))))
 
 
 ;;;; Main macros and public API
@@ -1136,7 +1146,7 @@
   is called correctly from your build system after reloading."
   [& post-check-callbacks]
   (when (get-ghostwheel-compiler-config &env)
-    (cond-> (generate-check &env post-check-callbacks)
+    (cond-> (generate-check &env)
             (cljs-env? &env) (clj->cljs false))))
 
 (s/def ::>fdef-args
