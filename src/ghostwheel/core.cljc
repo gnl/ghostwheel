@@ -1047,7 +1047,7 @@
                     (when extrument
                       `(st/unstrument (quote ~extrument)))])))))
 
-(defn- after-check [env callbacks]
+(defn- generate-after-check [env callbacks]
   (let [{:keys [::check]}
         (merge (get-ghostwheel-compiler-config env)
                (get-ns-meta env))]
@@ -1139,12 +1139,24 @@
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn- forms)))
 
+(defmacro after-check
+  [& callbacks]
+  (when (get-ghostwheel-compiler-config &env)
+    (cond-> (generate-after-check &env callbacks)
+            (cljs-env? &env) (clj->cljs false))))
+
+(defmacro coverage-check
+  []
+  (when (get-ghostwheel-compiler-config &env)
+    (cond-> (generate-coverage-check &env)
+            (cljs-env? &env) (clj->cljs false))))
+
 (defmacro check
   "Runs all tests in the namespace. The optional callbacks are for a
   hot-reloading environment and will be executed only if all reloaded
   namespaces test successfully and `ghostwheel.core/post-check-async`
   is called correctly from your build system after reloading."
-  [& post-check-callbacks]
+  []
   (when (get-ghostwheel-compiler-config &env)
     (cond-> (generate-check &env)
             (cljs-env? &env) (clj->cljs false))))
