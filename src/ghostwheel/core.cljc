@@ -1032,7 +1032,7 @@
     (reset! *after-check-callbacks [])
     (when success (done))))
 
-(defn- generate-check [env]
+(defn- generate-check [env things]
   (let [{:keys [::check ::extrument]}
         (merge (get-ghostwheel-compiler-config env)
                (get-ns-meta env))]
@@ -1043,7 +1043,11 @@
                    [(when extrument
                       `(st/instrument (quote ~extrument)))
                     `(binding [*global-trace-allowed?* false]
-                       (t/run-tests (t/empty-env ::r/default)))
+                       ~(if (empty? things)
+                          `(t/run-tests (t/empty-env ::r/default))
+                          `(do
+                             ~@(for [nspace things]
+                                 `(t/run-tests (t/empty-env ::r/default) ~nspace)))))
                     (when extrument
                       `(st/unstrument (quote ~extrument)))])))))
 
@@ -1156,9 +1160,9 @@
   hot-reloading environment and will be executed only if all reloaded
   namespaces test successfully and `ghostwheel.core/post-check-async`
   is called correctly from your build system after reloading."
-  []
+  [& things]
   (when (get-ghostwheel-compiler-config &env)
-    (cond-> (generate-check &env)
+    (cond-> (generate-check &env things)
             (cljs-env? &env) (clj->cljs false))))
 
 (s/def ::>fdef-args
