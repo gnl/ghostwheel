@@ -44,7 +44,7 @@
 
 
 (def ghostwheel-colors tr/ghostwheel-colors)
-(def ^:private test-suffix "__ghostwheel-test")
+(def ^:private test-suffix (str (gensym "__") "__ghostwheel-test"))
 
 (def ^:private *after-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
@@ -1047,7 +1047,7 @@
                           `(t/run-tests (t/empty-env ::r/default))
                           `(do
                              ~@(for [thing things]
-                                 (let [thing (if (seq? thing) (second thing) thing)
+                                 (let [thing     (if (seq? thing) (second thing) thing)
                                        function? (or (cs/includes? (str thing) "/")
                                                      (not (cs/includes? (str thing) ".")))]
                                    (if function?
