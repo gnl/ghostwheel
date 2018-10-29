@@ -1046,8 +1046,15 @@
                        ~(if (empty? things)
                           `(t/run-tests (t/empty-env ::r/default))
                           `(do
-                             ~@(for [nspace things]
-                                 `(t/run-tests (t/empty-env ::r/default) ~nspace)))))
+                             ~@(for [thing things]
+                                 (let [thing (if (seq? thing) (second thing) thing)
+                                       function? (or (cs/includes? (str thing) "/")
+                                                     (not (cs/includes? (str thing) ".")))]
+                                   (if function?
+                                     `(binding [cljs.test/*current-env*
+                                                (t/empty-env ::r/default)]
+                                        (~(symbol (str thing test-suffix))))
+                                     `(t/run-tests (t/empty-env ::r/default) (quote ~thing))))))))
                     (when extrument
                       `(st/unstrument (quote ~extrument)))])))))
 
