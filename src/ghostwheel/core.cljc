@@ -17,6 +17,7 @@
             [clojure.spec.test.alpha :as st]
             [clojure.spec.gen.alpha :as gen]
             [clairvoyant.core :as cv :include-macros true]
+            [cljs.analyzer.api :as ana-api]
             [ghostwheel.reporting :as r]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config
                                             get-ns-meta get-ns-name clj->cljs DBG]]
@@ -45,7 +46,6 @@
 
 (def ghostwheel-colors tr/ghostwheel-colors)
 (def ^:private test-suffix (str (gensym "__") "__ghostwheel-test"))
-
 (def ^:private *after-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
 
@@ -1025,12 +1025,46 @@
                                   5 (clairvoyant-trace traced-defn nil))))]
       `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test))))
 
+
 (defn after-check-async [done]
   (let [success @r/*all-tests-successful]
     (when success (doseq [f @*after-check-callbacks] (f)))
     (reset! r/*all-tests-successful true)
     (reset! *after-check-callbacks [])
     (when success (done))))
+
+
+(defn- get-coverage-test-name [nspace]
+  (let [escaped-nspace (cs/replace (str nspace) "." "_")]
+    (symbol (str "coverage__" escaped-nspace test-suffix))))
+
+
+(defn- def-coverage-test [env nspace]
+  (let [{:keys [::check ::check-coverage]}
+        (merge (get-ghostwheel-compiler-config env)
+               (:meta (ana-api/find-ns nspace)))
+
+        plain-defns (when (and check check-coverage)
+                      ;; TODO: Make this work on clj in addition to cljs
+                      (some->> (ana-api/ns-interns nspace)
+                               (filter #(-> % val :fn-var))
+                               (remove #(-> % key meta ::ghostwheel))
+                               (remove #(false? (-> % key meta ::check-coverage)))
+                               (remove #(-> % key str (cs/ends-with? test-suffix)))
+                               (map (comp str key))
+                               vec))]
+    (when (and check (not-empty plain-defns))
+      `(t/deftest ~(get-coverage-test-name nspace)
+         (t/is true
+               {::r/nspace         ~(str nspace)
+                ::r/plain-defns    ~plain-defns
+                ::r/check-coverage ~check-coverage})))))
+
+
+(defn- undef-coverage-test [env nspace]
+  `(ns-unmap (quote ~(get-ns-name env))
+             (quote ~(get-coverage-test-name nspace))))
+
 
 (defn- generate-check [env things]
   (let [{:keys [::check ::extrument]}
@@ -1043,20 +1077,46 @@
                    [(when extrument
                       `(st/instrument (quote ~extrument)))
                     `(binding [*global-trace-allowed?* false]
-                       ~(if (empty? things)
-                          `(t/run-tests (t/empty-env ::r/default))
-                          `(do
-                             ~@(for [thing things]
-                                 (let [thing     (if (seq? thing) (second thing) thing)
-                                       function? (or (cs/includes? (str thing) "/")
-                                                     (not (cs/includes? (str thing) ".")))]
-                                   (if function?
-                                     `(binding [cljs.test/*current-env*
-                                                (t/empty-env ::r/default)]
-                                        (~(symbol (str thing test-suffix))))
-                                     `(t/run-tests (t/empty-env ::r/default) (quote ~thing))))))))
+                       ~(cond
+                          ;; only check current namespace
+                          (nil? things)
+                          (let [nspace (get-ns-name env)]
+                            `(do
+                               ~(def-coverage-test env nspace)
+                               (t/run-tests (t/empty-env ::r/default))
+                               ~(undef-coverage-test env nspace)))
+
+                          ;; check target namespaces or functions
+                          (or (seq? things) (vector? things))
+                          (let [things (if (vector? things) things [things])]
+                            `(do
+                               ~@(for [quoted-thing things]
+                                   (let [thing     (second quoted-thing)
+                                         function? (cs/includes? (str thing) "/")]
+                                     (if function?
+                                       `(binding [cljs.test/*current-env*
+                                                  (t/empty-env ::r/default)]
+                                          (~(symbol (str thing test-suffix))))
+                                       `(do
+                                          ~(def-coverage-test env thing)
+                                          (t/run-tests (t/empty-env ::r/default)
+                                                       (quote ~thing))
+                                          ~(undef-coverage-test env thing)))))))
+
+                          ;; check all namespaces matching regex
+                          :else                       ; `things` is a regex
+                          (let [allns (->> (ana-api/all-ns)
+                                           (filter #(re-matches things (str %)))
+                                           vec)]
+                            `(do
+                               ~@(remove nil? (for [nspace allns]
+                                                (def-coverage-test env nspace)))
+                               (cljs.test/run-all-tests ~things (t/empty-env ::r/default))
+                               ~@(remove nil? (for [nspace allns]
+                                                (undef-coverage-test env nspace)))))))
                     (when extrument
                       `(st/unstrument (quote ~extrument)))])))))
+
 
 (defn- generate-after-check [env callbacks]
   (let [{:keys [::check]}
@@ -1065,28 +1125,6 @@
     ;; TODO implement for clj
     (when (and check (seq callbacks))
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
-
-(defn- generate-coverage-check [env]
-  (let [{:keys [::check ::check-coverage]}
-        (merge (get-ghostwheel-compiler-config env)
-               (get-ns-meta env))
-
-        plain-defns (when check-coverage
-                      ;; TODO: Make this work on clj in addition to cljs
-                      (some->> env
-                               :ns
-                               :defs
-                               (filter #(-> % val :fn-var))
-                               (remove #(-> % key meta ::ghostwheel))
-                               (remove #(false? (-> % key meta ::check-coverage)))
-                               (remove #(-> % key str (cs/ends-with? test-suffix)))
-                               (map (comp str key))
-                               vec))]
-    (when (and check (not-empty plain-defns))
-      `(t/deftest ~(symbol (str "coverage__" (gensym) test-suffix))
-         (t/is true
-               {::r/plain-defns    ~plain-defns
-                ::r/check-coverage ~check-coverage})))))
 
 
 ;;;; Main macros and public API
@@ -1105,6 +1143,7 @@
            (let [[head-forms body-forms tail-attr-map] (partition-by (complement seq?) forms)]
              `(~op ~@head-forms ~@(map strip-gspec body-forms) ~@tail-attr-map)))
          (remove nil?))))
+
 
 (s/def ::>defn-args
   (s/and seq?                                         ; REVIEW
@@ -1150,27 +1189,27 @@
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn- forms)))
 
+
 (defmacro after-check
+  "The callbacks are for a hot-reloading environment and
+  will be executed only if all reloaded namespaces test
+  successfully and `ghostwheel.core/after-check-async` is
+  called correctly from the build system after reloading."
   [& callbacks]
   (when (get-ghostwheel-compiler-config &env)
     (cond-> (generate-after-check &env callbacks)
             (cljs-env? &env) (clj->cljs false))))
 
-(defmacro coverage-check
-  []
-  (when (get-ghostwheel-compiler-config &env)
-    (cond-> (generate-coverage-check &env)
-            (cljs-env? &env) (clj->cljs false))))
 
 (defmacro check
-  "Runs all tests in the namespace. The optional callbacks are for a
-  hot-reloading environment and will be executed only if all reloaded
-  namespaces test successfully and `ghostwheel.core/post-check-async`
-  is called correctly from your build system after reloading."
-  [& things]
-  (when (get-ghostwheel-compiler-config &env)
-    (cond-> (generate-check &env things)
-            (cljs-env? &env) (clj->cljs false))))
+  "Runs all tests in the namespace."
+  ([]
+   `(check nil))
+  ([things]
+   (when (get-ghostwheel-compiler-config &env)
+     (cond-> (generate-check &env things)
+             (cljs-env? &env) (clj->cljs false)))))
+
 
 (s/def ::>fdef-args
   (s/and seq?                                         ;REVIEW

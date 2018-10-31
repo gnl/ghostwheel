@@ -64,10 +64,9 @@
 
 
 (defmethod t/report [::default :pass] [m]
-  #?(:cljs (let [{:keys [::fn-name ::fspec ::spec-checks ::check-coverage ::marked-unsafe ::plain-defns]}
+  #?(:cljs (let [{:keys [::fn-name ::fspec ::spec-checks ::check-coverage ::marked-unsafe ::plain-defns ::nspace]}
                  (:message m)
                  warning-style {::tr/background (:orange0 ghostwheel-colors)}]
-
              (do
                (t/inc-report-counter! :pass)
                ;; REVIEW : We don't expect
@@ -77,7 +76,7 @@
                          (t/inc-report-counter! :warn)
                          (apply js/console.group
                                 (get-styled-label
-                                 (str "WARNING: Namespace contains functions defined using plain `defn` => Ghostwheel coverage incomplete.")
+                                 (str "WARNING: Namespace " nspace " contains functions defined using plain `defn` => Ghostwheel coverage incomplete.")
                                  warning-style))
                          (js/console.log plain-defns)
                          (log-bold "=> Use `>defn` instead.")
