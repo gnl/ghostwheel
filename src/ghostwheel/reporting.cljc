@@ -21,10 +21,19 @@
 
 (def wrap (partial u/wrap-line 80))
 
+
 (defmethod t/report [::default :begin-test-ns] [m]
-  #?(:cljs (apply js/console.group
-                  (get-styled-label (str "Checking " (:ns m) " ...")
-                                    {::tr/background (:base01 ghostwheel-colors)}))))
+  #?(:cljs (do
+             #_(dorun (repeatedly 5 js/console.groupEnd))
+             ;(js/console.groupEnd)
+             (apply js/console.group
+                    (get-styled-label (str "Checking " (:ns m) " ...")
+                                      {::tr/background (:base01 ghostwheel-colors)})))))
+
+
+(defmethod t/report [::default :end-test-ns] [m]
+  #?(:cljs (js/console.groupEnd)))
+
 
 (defmethod t/report [::default :summary] [m]
   #?(:cljs (let [{:keys [fail error pass test warn]} m
@@ -41,6 +50,7 @@
                                         (when (> error 0)
                                           (str "; " error " test error(s)"))))]
              (do
+               (js/console.groupEnd)
                (when (or (not passed?) warnings?)
                  (js/console.log ""))
                (apply js/console.log (get-styled-label label {::tr/background color}))
@@ -51,6 +61,7 @@
                ;; Might be overkill, but we want to make sure we reset the group nesting
                ;; in DevTools if anything should blow up above
                (dorun (repeatedly 5 js/console.groupEnd))))))
+
 
 (defmethod t/report [::default :pass] [m]
   #?(:cljs (let [{:keys [::fn-name ::fspec ::spec-checks ::check-coverage ::marked-unsafe ::plain-defns]}
@@ -94,6 +105,7 @@
 
                        :else nil))))))
 
+
 ;; REVIEW: We don't seem to be needing this anymore.
 (defn- explain-problem-str [failure-type problem]
   (let [{:keys [pred val in path via]} problem]
@@ -105,11 +117,13 @@
                         [(when (seq via) [:via via])])
       :else problem)))
 
+
 (def ^:private issue-msg
   (str "\n"
        (cs/clean
         "Please file an issue at https://github.com/gnl/ghostwheel/issues if
         you encounter false positives or negatives in side effect detection.")))
+
 
 (defn- report-unexpected-side-effects [message]
   #?(:cljs (let [{:keys [::fn-name ::found-fx]} message]
@@ -132,6 +146,7 @@
                   log)
              (log (wrap issue-msg)))))
 
+
 (defn- report-unexpected-safety [message]
   (let [safe-name (cs/strip-suffix (name (::fn-name message)) "!")]
     (log-bold "No side effects detected in function marked as unsafe.")
@@ -145,6 +160,7 @@
          log)
     (log (wrap issue-msg))
     log))
+
 
 (defn- report-spec-check [{:keys [::spec-checks ::fn-name]}]
   #?(:cljs (doseq [check spec-checks
@@ -169,6 +185,7 @@
                  (js/console.log data)
                  (js/console.groupEnd))))))
 
+
 (defmethod t/report [::default :fail] [m]
   #?(:cljs (let [message     (:message m)
                  {:keys [::fn-name ::failure]} message
@@ -190,6 +207,7 @@
                  (js/console.log message)))
              (js/console.groupEnd))))
 
+
 ;; NOTE - test this and clean it up
 (defmethod t/report [::default :error] [m]
   #?(:cljs (let [[fn-name spec-check] (:message m)]
@@ -205,6 +223,7 @@
                (when-let [message (:message m)] (println message))
                (t/print-comparison m)
                (js/console.groupEnd)))))
+
 
 (defmethod t/report [::default :end-run-tests] [m]
   (swap! *all-tests-successful #(and %1 %2) (t/successful? m)))
