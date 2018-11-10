@@ -1060,7 +1060,8 @@
          (binding [cljs.test/*current-env* (t/empty-env ::r/default)]
            (~test-name))
          (ns-unmap (quote ~(get-ns-name env))
-                   (quote ~test-name))))))
+                   (quote ~test-name))
+         nil))))
 
 
 (defn- generate-check [env things]
@@ -1190,6 +1191,32 @@
   (when (get-ghostwheel-compiler-config &env)
     (cond-> (generate-after-check &env callbacks)
             (cljs-env? &env) (clj->cljs false))))
+
+
+(s/def ::ns-or-fn-sym
+  (s/or :fn (s/and symbol?
+                   #(let [s (str %)]
+                      (or (cs/includes? s "/")
+                          (not (cs/includes? s ".")))))
+        :ns symbol?))
+
+
+(s/def ::quoted-ns-or-fn-sym
+  (s/and seq? (s/cat :quote #{'quote} :sym ::ns-or-fn-sym)))
+
+
+(s/def ::check-args
+  (s/or :arity-0 (s/cat)
+        :arity-1 (s/cat :thing (s/alt :nil nil?
+                                      :single ::quoted-ns-or-fn-sym
+                                      :multi (s/and vector?
+                                                    (s/cat :things (s/+ ::quoted-ns-or-fn-sym)))
+                                      :regex #?(:clj  #(instance? java.util.regex.Pattern %)
+                                                :cljs regexp?)))))
+
+
+(s/fdef check
+  :args ::check-args)
 
 
 (defmacro check
