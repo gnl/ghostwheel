@@ -1103,12 +1103,28 @@
                             `(do
                                ~@(for [target conformed-targets
                                        :let [[type sym] (:sym target)]]
-                                   (if (= type :fn)
-                                     `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
-                                        (~(symbol (str sym test-suffix))))
-                                     `(do
-                                        (t/run-tests (t/empty-env ::r/default) (quote ~sym))
-                                        ~(generate-coverage-check env sym))))))
+                                   (case type
+                                     :fn (let [analysis-map (ana-api/resolve env sym)]
+                                           (cond (not analysis-map)
+                                                 `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
+                                                          ~(str "Cannot resolve `" (str sym) "`")))
+
+                                                 (not (:fn-var analysis-map))
+                                                 `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
+                                                          ~(str "`" sym "` is not a function.")))
+
+                                                 (not (get-in analysis-map [:meta ::ghostwheel]))
+                                                 `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
+                                                          ~(str "`" sym
+                                                                "` is not a Ghostwheel function => Use `>defn` to define it.")))
+
+                                                 :else
+                                                 `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
+                                                    (~(symbol (str sym test-suffix))))))
+                                     :ns `(do
+                                            ;`(quote ~(ana-api/find-ns sym))
+                                            (t/run-tests (t/empty-env ::r/default) (quote ~sym))
+                                            ~(generate-coverage-check env sym))))))
 
                           ;; check all namespaces matching regex
                           #{:regex}
