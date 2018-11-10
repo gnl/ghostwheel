@@ -108,7 +108,7 @@
                                            #(re-matches #"#[a-fA-F0-9]+" %)
                                            #(or (= (count %) 7)
                                                 (= (count %) 4)))))
-(s/def ::check boolean?)
+(s/def ::check-enabled boolean?)
 (s/def ::check-coverage boolean?)
 (s/def ::ignore-fx boolean?)
 (s/def ::num-tests nat-int?)
@@ -120,7 +120,7 @@
 
 ;; TODO: Integrate bhaumann/spell-spec
 (s/def ::ghostwheel-config
-  (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
+  (s/and (s/keys :req [::trace ::trace-color ::check-enabled ::check-coverage ::ignore-fx
                        ::num-tests ::num-tests-ext ::extensive-tests
                        ::instrument ::outstrument ::extrument])))
 
@@ -135,7 +135,7 @@
 
              ;; When disabled no checks of any kind are
              ;; performed and no test code is generated.
-             ::check           false
+             ::check-enabled   false
 
              ;; Determines whether Ghostwheel should warn on missing fspecs
              ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
@@ -511,7 +511,7 @@
                       vec)])
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config]
-    (let [{:keys [::check ::num-tests ::num-tests-ext ::extensive-tests
+    (let [{:keys [::check-enabled ::num-tests ::num-tests-ext ::extensive-tests
                   ::check-coverage ::ignore-fx]}
           config
 
@@ -962,7 +962,7 @@
           color             (if-let [color (get ghostwheel-colors (::trace-color config))]
                               color
                               (:black ghostwheel-colors))
-          {:keys [::instrument ::outstrument ::trace ::check]} config
+          {:keys [::instrument ::outstrument ::trace ::check-enabled]} config
           trace             (if (cljs-env? env)
                               (cond empty-bodies 0
                                     (true? trace) 4
@@ -980,7 +980,7 @@
                                    (when gspec
                                      (gspec->fspec* args gspec true false false)))
                                  (val fn-bodies))
-          [unexpected-fx generated-test] (when (and check (not empty-bodies))
+          [unexpected-fx generated-test] (when (and check-enabled (not empty-bodies))
                                            (let [fspecs (case arity
                                                           :arity-1 [(when fdef-body `(s/fspec ~@fdef-body))]
                                                           :arity-n individual-arity-fspecs)]
@@ -1035,11 +1035,11 @@
 
 
 (defn- gen-coverage-check [env nspace]
-  (let [{:keys [::check ::check-coverage]}
+  (let [{:keys [::check-enabled ::check-coverage]}
         (merge (get-ghostwheel-compiler-config env)
                (:meta (ana-api/find-ns nspace)))
 
-        plain-defns (when (and check check-coverage)
+        plain-defns (when (and check-enabled check-coverage)
                       ;; TODO: Make this work on clj in addition to cljs
                       (some->> (ana-api/ns-interns nspace)
                                (filter #(-> % val :fn-var))
@@ -1065,11 +1065,11 @@
 
 
 (defn- generate-check [env things]
-  (let [{:keys [::check ::extrument]}
+  (let [{:keys [::check-enabled ::extrument]}
         (merge (get-ghostwheel-compiler-config env)
                (get-ns-meta env))]
     ;; TODO implement for clj
-    (when (and check (cljs-env? env))
+    (when (and check-enabled (cljs-env? env))
       `(when *global-check-allowed?*
          ~@(remove nil?
                    [(when extrument
@@ -1111,11 +1111,11 @@
 
 
 (defn- generate-after-check [env callbacks]
-  (let [{:keys [::check]}
+  (let [{:keys [::check-enabled]}
         (merge (get-ghostwheel-compiler-config env)
                (get-ns-meta env))]
     ;; TODO implement for clj
-    (when (and check (seq callbacks))
+    (when (and check-enabled (seq callbacks))
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
 
 
