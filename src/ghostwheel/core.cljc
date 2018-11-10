@@ -1225,6 +1225,10 @@
 
 (defmacro check
   "Runs all tests in the namespace."
+  {:arglists '([]
+               [quoted-ns-or-fn]
+               [[quoted-ns-or-fns]]
+               [ns-regex])}
   ([]
    `(check nil))
   ([things]
