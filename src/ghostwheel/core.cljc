@@ -1034,12 +1034,7 @@
     (when success (done))))
 
 
-(defn- get-coverage-test-name [nspace]
-  (let [escaped-nspace (cs/replace (str nspace) "." "_")]
-    (symbol (str "coverage__" escaped-nspace test-suffix))))
-
-
-(defn- def-coverage-test [env nspace]
+(defn- gen-coverage-check [env nspace]
   (let [{:keys [::check ::check-coverage]}
         (merge (get-ghostwheel-compiler-config env)
                (:meta (ana-api/find-ns nspace)))
@@ -1052,18 +1047,20 @@
                                (remove #(false? (-> % key meta ::check-coverage)))
                                (remove #(-> % key str (cs/ends-with? test-suffix)))
                                (map (comp str key))
-                               vec))]
-    (when (and check (not-empty plain-defns))
-      `(t/deftest ~(get-coverage-test-name nspace)
-         (t/is true
-               {::r/nspace         ~(str nspace)
-                ::r/plain-defns    ~plain-defns
-                ::r/check-coverage ~check-coverage})))))
-
-
-(defn- undef-coverage-test [env nspace]
-  `(ns-unmap (quote ~(get-ns-name env))
-             (quote ~(get-coverage-test-name nspace))))
+                               vec))
+        test-name   (let [escaped-nspace (cs/replace (str nspace) "." "_")]
+                      (symbol (str "coverage__" escaped-nspace test-suffix)))]
+    (when (not-empty plain-defns)
+      `(do
+         (t/deftest ~test-name
+           (t/is true
+                 {::r/nspace         ~(str nspace)
+                  ::r/plain-defns    ~plain-defns
+                  ::r/check-coverage ~check-coverage}))
+         (binding [cljs.test/*current-env* (t/empty-env ::r/default)]
+           (~test-name))
+         (ns-unmap (quote ~(get-ns-name env))
+                   (quote ~test-name))))))
 
 
 (defn- generate-check [env things]
@@ -1080,11 +1077,9 @@
                        ~(cond
                           ;; only check current namespace
                           (nil? things)
-                          (let [nspace (get-ns-name env)]
-                            `(do
-                               ~(def-coverage-test env nspace)
-                               (t/run-tests (t/empty-env ::r/default))
-                               ~(undef-coverage-test env nspace)))
+                          `(do
+                             (t/run-tests (t/empty-env ::r/default))
+                             ~(gen-coverage-check env (get-ns-name env)))
 
                           ;; check target namespaces or functions
                           (or (seq? things) (vector? things))
@@ -1094,14 +1089,11 @@
                                    (let [thing     (second quoted-thing)
                                          function? (cs/includes? (str thing) "/")]
                                      (if function?
-                                       `(binding [cljs.test/*current-env*
-                                                  (t/empty-env ::r/default)]
+                                       `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
                                           (~(symbol (str thing test-suffix))))
                                        `(do
-                                          ~(def-coverage-test env thing)
-                                          (t/run-tests (t/empty-env ::r/default)
-                                                       (quote ~thing))
-                                          ~(undef-coverage-test env thing)))))))
+                                          (t/run-tests (t/empty-env ::r/default) (quote ~thing))
+                                          ~(gen-coverage-check env thing)))))))
 
                           ;; check all namespaces matching regex
                           :else                       ; `things` is a regex
@@ -1109,11 +1101,10 @@
                                            (filter #(re-matches things (str %)))
                                            vec)]
                             `(do
-                               ~@(remove nil? (for [nspace allns]
-                                                (def-coverage-test env nspace)))
                                (cljs.test/run-all-tests ~things (t/empty-env ::r/default))
-                               ~@(remove nil? (for [nspace allns]
-                                                (undef-coverage-test env nspace)))))))
+                               ~@(remove nil?
+                                         (for [nspace allns]
+                                           (gen-coverage-check env nspace)))))))
                     (when extrument
                       `(st/unstrument (quote ~extrument)))])))))
 
