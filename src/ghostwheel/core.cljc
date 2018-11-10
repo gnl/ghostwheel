@@ -112,7 +112,7 @@
 (s/def ::check-coverage boolean?)
 (s/def ::ignore-fx boolean?)
 (s/def ::num-tests-quick nat-int?)
-(s/def ::num-tests-extensive nat-int?)
+(s/def ::num-tests-ext nat-int?)
 (s/def ::extensive-tests boolean?)
 (s/def ::instrument boolean?)
 (s/def ::outstrument boolean?)
@@ -121,48 +121,48 @@
 ;; TODO: Integrate bhaumann/spell-spec
 (s/def ::ghostwheel-config
   (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
-                       ::num-tests-quick ::num-tests-extensive ::extensive-tests
+                       ::num-tests-quick ::num-tests-ext ::extensive-tests
                        ::instrument ::outstrument ::extrument])))
 
 (def ghostwheel-default-config
   (s/assert ::ghostwheel-config
             ;; TODO: Add check to make sure instrument and outstrument aren't both on
             {;; Evaluation trace verbosity level. 0 disables all tracing code generation.
-             ::trace               0
+             ::trace           0
 
              ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
-             ::trace-color         :violet
+             ::trace-color     :violet
 
              ;; When disabled no checks of any kind are
              ;; performed and no test code is generated.
-             ::check               false
+             ::check           false
 
              ;; Determines whether Ghostwheel should warn on missing fspecs
              ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
              ;; namespace or higher level, you can exclude individual `defn`s or
              ;; `declare`s by setting it to false in their respective metadata
-             ::check-coverage      false
+             ::check-coverage  false
 
              ;; Disable side effect detection
-             ::ignore-fx           false
+             ::ignore-fx       false
 
              ;; Number of generative tests performed when quick-checking (on hot-reload)
-             ::num-tests-quick     0
+             ::num-tests-quick 0
 
              ;; Number of generative tests performed when checking extensively (test suite)
-             ::num-tests-extensive 100
+             ::num-tests-ext   100
 
              ;; Determines which of the above two options should take
              ;; precedence. Set to true in your test build configuration.
-             ::extensive-tests     false
+             ::extensive-tests false
 
              ;; Spec-instrument functions on namespace reload.
-             ::instrument          false
+             ::instrument      false
 
              ;; Spec-instrument functions on namespace reload using
              ;; orchestra, which spec-checks the output in addition to
              ;; the input. Use either this or `::instrument`, not both.
-             ::outstrument         false
+             ::outstrument     false
 
              ;; Nilable vector of qualified external namespaces or functions
              ;; (unquoted) to spec-instrument before and unstrument after
@@ -171,7 +171,7 @@
              ;; the relevant functions in a `require`d namespace using either
              ;; `s/fdef` or Ghostwheel's `>fdef`. Only works down to the
              ;; namespace level, cannot be set for an individual function.
-             ::extrument           nil}))
+             ::extrument       nil}))
 
 ;; These are lifted straight from clojure.core.specs.alpha, because it
 ;; didn't seem possible to access them directly in the original namespace.
@@ -521,11 +521,11 @@
                       vec)])
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config]
-    (let [{:keys [::check ::num-tests-quick ::num-tests-extensive ::extensive-tests
+    (let [{:keys [::check ::num-tests-quick ::num-tests-ext ::extensive-tests
                   ::check-coverage ::ignore-fx]}
           config
 
-          num-tests         (if extensive-tests num-tests-extensive num-tests-quick)
+          num-tests         (if extensive-tests num-tests-ext num-tests-quick)
           marked-unsafe     (s/valid? ::bang-suffix fn-name)
           found-fx          (if ignore-fx
                               []
