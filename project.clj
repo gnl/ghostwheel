@@ -8,11 +8,10 @@
   :repositories {"clojars" {:url           "https://clojars.org/repo"
                             :sign-releases false}}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.10.339"]
-                 [org.clojure/spec.alpha "0.2.168"]
+                 [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/test.check "0.10.0-alpha3"]
-                 [com.rpl/specter "1.1.1"]
-                 [orchestra "2017.11.12-1"]
+                 [com.rpl/specter "1.1.2"]
+                 [orchestra "2018.11.07-1"]
                  [expound "0.7.2-SNAPSHOT"]
                  [gnl/re-frame-tracer "0.1.7"]
                  [org.clojars.stumitchell/clairvoyant "0.2.1"]
