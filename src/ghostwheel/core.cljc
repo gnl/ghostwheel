@@ -326,6 +326,16 @@
                            :arity-n (s/cat :bodies (s/+ (s/spec ::args+body))
                                            :attr (s/? map?))))))
 
+
+(s/def ::check-target
+  (s/or :nil nil?
+        :single ::quoted-ns-or-fn-sym
+        :multi (s/and vector?
+                      (s/+ ::quoted-ns-or-fn-sym))
+        :regex #?(:clj  #(instance? java.util.regex.Pattern %)
+                  :cljs regexp?)))
+
+
 (s/def ::deftest
   (s/and seq?
          (s/cat :op #{'clojure.test/deftest 'cljs.test/deftest}
@@ -1064,10 +1074,13 @@
          nil))))
 
 
-(defn- generate-check [env things]
+(defn- generate-check [env targets]
   (let [{:keys [::check-enabled ::extrument]}
         (merge (get-ghostwheel-compiler-config env)
-               (get-ns-meta env))]
+               (get-ns-meta env))
+
+        conformed-targets (s/conform ::check-target targets)
+        targets-type      (key conformed-targets)]
     ;; TODO implement for clj
     (when (and check-enabled (cljs-env? env))
       `(when *global-check-allowed?*
@@ -1075,34 +1088,35 @@
                    [(when extrument
                       `(st/instrument (quote ~extrument)))
                     `(binding [*global-trace-allowed?* false]
-                       ~(cond
+                       ~(condp contains? targets-type
                           ;; only check current namespace
-                          (nil? things)
+                          #{:nil}
                           `(do
                              (t/run-tests (t/empty-env ::r/default))
                              ~(gen-coverage-check env (get-ns-name env)))
 
-                          ;; check target namespaces or functions
-                          (or (seq? things) (vector? things))
-                          (let [things (if (vector? things) things [things])]
+                          ;; check target namespace(s) or function(s)
+                          #{:single :multi}
+                          (let [conformed-targets (if (= targets-type :multi)
+                                                    (val conformed-targets)
+                                                    [(val conformed-targets)])]
                             `(do
-                               ~@(for [quoted-thing things]
-                                   (let [thing     (second quoted-thing)
-                                         function? (cs/includes? (str thing) "/")]
-                                     (if function?
-                                       `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
-                                          (~(symbol (str thing test-suffix))))
-                                       `(do
-                                          (t/run-tests (t/empty-env ::r/default) (quote ~thing))
-                                          ~(gen-coverage-check env thing)))))))
+                               ~@(for [target conformed-targets
+                                       :let [[type sym] (:sym target)]]
+                                   (if (= type :fn)
+                                     `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
+                                        (~(symbol (str sym test-suffix))))
+                                     `(do
+                                        (t/run-tests (t/empty-env ::r/default) (quote ~sym))
+                                        ~(gen-coverage-check env sym))))))
 
                           ;; check all namespaces matching regex
-                          :else                       ; `things` is a regex
+                          #{:regex}
                           (let [allns (->> (ana-api/all-ns)
-                                           (filter #(re-matches things (str %)))
+                                           (filter #(re-matches targets (str %)))
                                            vec)]
                             `(do
-                               (cljs.test/run-all-tests ~things (t/empty-env ::r/default))
+                               (cljs.test/run-all-tests ~targets (t/empty-env ::r/default))
                                ~@(remove nil?
                                          (for [nspace allns]
                                            (gen-coverage-check env nspace)))))))
@@ -1205,18 +1219,8 @@
   (s/and seq? (s/cat :quote #{'quote} :sym ::ns-or-fn-sym)))
 
 
-(s/def ::check-args
-  (s/or :arity-0 (s/cat)
-        :arity-1 (s/cat :thing (s/alt :nil nil?
-                                      :single ::quoted-ns-or-fn-sym
-                                      :multi (s/and vector?
-                                                    (s/cat :things (s/+ ::quoted-ns-or-fn-sym)))
-                                      :regex #?(:clj  #(instance? java.util.regex.Pattern %)
-                                                :cljs regexp?)))))
-
-
 (s/fdef check
-  :args ::check-args)
+  :args (s/cat :target (s/? ::check-target)))
 
 
 (defmacro check
