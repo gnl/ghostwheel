@@ -1044,7 +1044,7 @@
     (when success (done))))
 
 
-(defn- gen-coverage-check [env nspace]
+(defn- generate-coverage-check [env nspace]
   (let [{:keys [::check ::check-coverage]}
         (merge (get-ghostwheel-compiler-config env)
                (:meta (ana-api/find-ns nspace)))
@@ -1093,7 +1093,7 @@
                           #{:nil}
                           `(do
                              (t/run-tests (t/empty-env ::r/default))
-                             ~(gen-coverage-check env (get-ns-name env)))
+                             ~(generate-coverage-check env (get-ns-name env)))
 
                           ;; check target namespace(s) or function(s)
                           #{:single :multi}
@@ -1108,7 +1108,7 @@
                                         (~(symbol (str sym test-suffix))))
                                      `(do
                                         (t/run-tests (t/empty-env ::r/default) (quote ~sym))
-                                        ~(gen-coverage-check env sym))))))
+                                        ~(generate-coverage-check env sym))))))
 
                           ;; check all namespaces matching regex
                           #{:regex}
@@ -1119,7 +1119,7 @@
                                (cljs.test/run-all-tests ~targets (t/empty-env ::r/default))
                                ~@(remove nil?
                                          (for [nspace allns]
-                                           (gen-coverage-check env nspace)))))))
+                                           (generate-coverage-check env nspace)))))))
                     (when extrument
                       `(st/unstrument (quote ~extrument)))])))))
 
