@@ -327,15 +327,6 @@
                                            :attr (s/? map?))))))
 
 
-(s/def ::check-target
-  (s/or :nil nil?
-        :single ::quoted-ns-or-fn-sym
-        :multi (s/and vector?
-                      (s/+ ::quoted-ns-or-fn-sym))
-        :regex #?(:clj  #(instance? java.util.regex.Pattern %)
-                  :cljs regexp?)))
-
-
 (s/def ::deftest
   (s/and seq?
          (s/cat :op #{'clojure.test/deftest 'cljs.test/deftest}
@@ -1223,20 +1214,25 @@
             (cljs-env? &env) (clj->cljs false))))
 
 
-(s/def ::ns-or-fn-sym
-  (s/or :fn (s/and symbol?
-                   #(let [s (str %)]
-                      (or (cs/includes? s "/")
-                          (not (cs/includes? s ".")))))
-        :ns symbol?))
+(s/def ::check-target
+  (s/or :fn (s/and seq?
+                   (s/cat :quote #{'quote}
+                          :sym (s/and symbol?
+                                      #(let [s (str %)]
+                                         (or (cs/includes? s "/")
+                                             (not (cs/includes? s ".")))))))
+        :ns (s/and seq? (s/cat :quote #{'quote} :sym symbol?))
+        :regex #?(:clj  #(instance? java.util.regex.Pattern %)
+                  :cljs regexp?)))
 
 
-(s/def ::quoted-ns-or-fn-sym
-  (s/and seq? (s/cat :quote #{'quote} :sym ::ns-or-fn-sym)))
+(s/def ::check-targets
+  (s/or :single ::check-target
+        :multi (s/spec (s/+ ::check-target))))
 
 
 (s/fdef check
-  :args (s/cat :target (s/? ::check-target)))
+  :args (s/spec (s/? ::check-targets)))
 
 
 (defmacro check
