@@ -82,3 +82,7 @@
   (pprint/cl-format nil
                     (str "~{~<~%~1," size ":;~A~> ~}")
                     (cs/split text #" ")))
+
+(defn gen-exception [env msg]
+  `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.) ~msg)))
+

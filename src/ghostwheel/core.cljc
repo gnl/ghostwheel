@@ -1036,11 +1036,11 @@
 
 
 (defn- generate-coverage-check [env nspace]
-  (let [{:keys [::check ::check-coverage]}
+  (let [{:keys [::check-coverage]}
         (merge (get-ghostwheel-compiler-config env)
                (:meta (ana-api/find-ns nspace)))
 
-        plain-defns (when (and check check-coverage)
+        plain-defns (when check-coverage
                       ;; TODO: Make this work on clj in addition to cljs
                       (some->> (ana-api/ns-interns nspace)
                                (filter #(-> % val :fn-var))
@@ -1066,69 +1066,59 @@
 
 
 (defn- generate-check [env targets]
-  (let [{:keys [::check ::extrument]}
-        (merge (get-ghostwheel-compiler-config env)
-               (get-ns-meta env))
+  (let [compiler-config   (get-ghostwheel-compiler-config env)
+        {:keys [::extrument]} compiler-config
+        conformed-targets (let [conformed-targets (s/conform ::check-targets targets)]
+                            (if (= (key conformed-targets) :multi)
+                              (val conformed-targets)
+                              [(val conformed-targets)]))
+        processed-targets (mapcat (fn [[type target]]
+                                    (if (not= type :regex)
+                                      [[type (:sym target)]]
+                                      (for [ns (ana-api/all-ns)
+                                            :when (re-matches target (str ns))]
+                                        [:ns ns])))
+                                  conformed-targets)
+        errors            (remove nil?
+                                  (for [target processed-targets
+                                        :let [[type sym] target]]
+                                    (case type
+                                      :fn (let [analysis-map (ana-api/resolve env sym)]
+                                            (cond (not analysis-map)
+                                                  (str "Cannot resolve `" (str sym) "`")
 
-        conformed-targets (s/conform ::check-target targets)
-        targets-type      (key conformed-targets)]
+                                                  (not (:fn-var analysis-map))
+                                                  (str "`" sym "` is not a function.")
+
+                                                  (not (get-in analysis-map [:meta ::ghostwheel]))
+                                                  (str "`" sym "` is not a Ghostwheel function => Use `>defn` to define it.")
+
+                                                  :else
+                                                  nil))
+                                      :ns (when (not (ana-api/find-ns sym))
+                                            (str "Cannot resolve `" (str sym) "`")))))]
     ;; TODO implement for clj
-    (when (and check (cljs-env? env))
+    ;(when (and check (cljs-env? env)))
+    (if (not-empty errors)
+      (u/gen-exception env (str "\n" (cs/join "\n" errors)))
       `(when *global-check-allowed?*
-         ~@(remove nil?
-                   [(when extrument
-                      `(st/instrument (quote ~extrument)))
-                    `(binding [*global-trace-allowed?* false]
-                       ~(condp contains? targets-type
-                          ;; only check current namespace
-                          #{:nil}
-                          `(do
-                             (t/run-tests (t/empty-env ::r/default))
-                             ~(generate-coverage-check env (get-ns-name env)))
-
-                          ;; check target namespace(s) or function(s)
-                          #{:single :multi}
-                          (let [conformed-targets (if (= targets-type :multi)
-                                                    (val conformed-targets)
-                                                    [(val conformed-targets)])]
-                            `(do
-                               ~@(for [target conformed-targets
-                                       :let [[type sym] (:sym target)]]
-                                   (case type
-                                     :fn (let [analysis-map (ana-api/resolve env sym)]
-                                           (cond (not analysis-map)
-                                                 `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
-                                                          ~(str "Cannot resolve `" (str sym) "`")))
-
-                                                 (not (:fn-var analysis-map))
-                                                 `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
-                                                          ~(str "`" sym "` is not a function.")))
-
-                                                 (not (get-in analysis-map [:meta ::ghostwheel]))
-                                                 `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
-                                                          ~(str "`" sym
-                                                                "` is not a Ghostwheel function => Use `>defn` to define it.")))
-
-                                                 :else
-                                                 `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
-                                                    (~(symbol (str sym test-suffix))))))
-                                     :ns `(do
-                                            ;`(quote ~(ana-api/find-ns sym))
-                                            (t/run-tests (t/empty-env ::r/default) (quote ~sym))
-                                            ~(generate-coverage-check env sym))))))
-
-                          ;; check all namespaces matching regex
-                          #{:regex}
-                          (let [allns (->> (ana-api/all-ns)
-                                           (filter #(re-matches targets (str %)))
-                                           vec)]
-                            `(do
-                               (cljs.test/run-all-tests ~targets (t/empty-env ::r/default))
-                               ~@(remove nil?
-                                         (for [nspace allns]
-                                           (generate-coverage-check env nspace)))))))
-                    (when extrument
-                      `(st/unstrument (quote ~extrument)))])))))
+         (binding [*global-trace-allowed?* false]
+           (do
+             ~(when extrument
+                `(st/instrument (quote ~extrument)))
+             ~@(for [target processed-targets
+                     :let [[type sym] target]]
+                 (case type
+                   :fn `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
+                          (~(symbol (str sym test-suffix))))
+                   :ns `(t/run-tests (t/empty-env ::r/default) (quote ~sym))))
+             ~@(remove nil?
+                       (for [target processed-targets
+                             :let [[type sym] target]
+                             :when (= type :ns)]
+                         (generate-coverage-check env sym)))
+             ~(when extrument
+                `(st/unstrument (quote ~extrument)))))))))
 
 
 (defn- generate-after-check [env callbacks]
@@ -1242,7 +1232,7 @@
                [[quoted-ns-or-fns]]
                [ns-regex])}
   ([]
-   `(check nil))
+   `(check ~(get-ns-name &env)))
   ([things]
    (when (get-ghostwheel-compiler-config &env)
      (cond-> (generate-check &env things)
