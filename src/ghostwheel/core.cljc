@@ -1241,7 +1241,7 @@
                [ns-regex-or-quoted-ns-or-fn]
                [[ns-regex-or-quoted-ns-or-fn+]])}
   ([]
-   `(check ~(get-ns-name &env)))
+   `(check (quote ~(get-ns-name &env))))
   ([things]
    (when (get-ghostwheel-compiler-config &env)
      (cond-> (generate-check &env things)
