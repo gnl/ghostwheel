@@ -70,17 +70,16 @@
              (do
                (t/inc-report-counter! :pass)
                ;; REVIEW : We don't expect
-               (when (and check-coverage (not marked-unsafe))
-                 (cond plain-defns
+               (when check-coverage
+                 (cond marked-unsafe
                        (do
                          (t/inc-report-counter! :warn)
-                         (apply js/console.group
+                         (apply js/console.log
                                 (get-styled-label
-                                 (str "WARNING: Namespace " nspace " contains functions defined using plain `defn` => Ghostwheel coverage incomplete.")
-                                 warning-style))
-                         (js/console.log plain-defns)
-                         (log-bold "=> Use `>defn` instead.")
-                         (js/console.groupEnd))
+                                 (str "WARNING: "
+                                      fn-name
+                                      " - Function marked as unsafe => Generative testing disabled.")
+                                 warning-style)))
 
                        (not fspec)
                        (do
@@ -99,7 +98,7 @@
                                 (get-styled-label
                                  (str "WARNING: "
                                       fn-name
-                                      " - [:num-tests 0] => Generative testing disabled => Test coverage incomplete.")
+                                      " - Number of tests set to 0 => Generative testing disabled => Test coverage incomplete.")
                                  warning-style)))
 
                        :else nil))))))
