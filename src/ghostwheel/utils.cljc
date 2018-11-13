@@ -29,6 +29,7 @@
 
 (defn cljs-env? [env] (boolean (:ns env)))
 
+
 (defn get-ghostwheel-compiler-config [env]
   (if (cljs-env? env)
     (when cljs.env/*compiler*
@@ -43,6 +44,7 @@
     ;; because we aren't doing any tracing, just s/fdef and it's
     ;; perfectly fine for that to end up in the production code
     {}))
+
 
 (defn get-ns-meta [env]
   (if (cljs-env? env)

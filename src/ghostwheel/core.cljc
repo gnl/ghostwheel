@@ -118,60 +118,64 @@
 (s/def ::outstrument boolean?)
 (s/def ::extrument (s/nilable (s/coll-of qualified-symbol? :kind vector?)))
 
-;; TODO: Integrate bhaumann/spell-spec
+;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
   (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
                        ::num-tests-quick ::num-tests-ext ::extensive-tests
                        ::instrument ::outstrument ::extrument])))
 
-(def ghostwheel-default-config
-  (s/assert ::ghostwheel-config
-            ;; TODO: Add check to make sure instrument and outstrument aren't both on
-            {;; Evaluation trace verbosity level. 0 disables all tracing code generation.
-             ::trace           0
 
-             ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
-             ::trace-color     :violet
+(defn- get-base-config [env]
+  (let [ghostwheel-default-config
+        (s/assert ::ghostwheel-config
+                  ;; TODO: Add check to make sure instrument and outstrument aren't both on
+                  {;; Evaluation trace verbosity level. 0 disables all tracing code generation.
+                   ::trace           0
 
-             ;; When disabled no checks of any kind are
-             ;; performed and no test code is generated.
-             ::check           false
+                   ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
+                   ::trace-color     :violet
 
-             ;; Determines whether Ghostwheel should warn on missing fspecs
-             ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
-             ;; namespace or higher level, you can exclude individual `defn`s or
-             ;; `declare`s by setting it to false in their respective metadata
-             ::check-coverage  false
+                   ;; When disabled no checks of any kind are
+                   ;; performed and no test code is generated.
+                   ::check           false
 
-             ;; Disable side effect detection
-             ::ignore-fx       false
+                   ;; Determines whether Ghostwheel should warn on missing fspecs
+                   ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
+                   ;; namespace or higher level, you can exclude individual `defn`s or
+                   ;; `declare`s by setting it to false in their respective metadata
+                   ::check-coverage  false
 
-             ;; Number of generative tests performed when quick-checking (on hot-reload)
-             ::num-tests-quick 0
+                   ;; Disable side effect detection
+                   ::ignore-fx       false
 
-             ;; Number of generative tests performed when checking extensively (test suite)
-             ::num-tests-ext   100
+                   ;; Number of generative tests performed when quick-checking (on hot-reload)
+                   ::num-tests-quick 0
 
-             ;; Determines which of the above two options should take
-             ;; precedence. Set to true in your test build configuration.
-             ::extensive-tests false
+                   ;; Number of generative tests performed when checking extensively (test suite)
+                   ::num-tests-ext   100
 
-             ;; Spec-instrument functions on namespace reload.
-             ::instrument      false
+                   ;; Determines which of the above two options should take
+                   ;; precedence. Set to true in your test build configuration.
+                   ::extensive-tests false
 
-             ;; Spec-instrument functions on namespace reload using
-             ;; orchestra, which spec-checks the output in addition to
-             ;; the input. Use either this or `::instrument`, not both.
-             ::outstrument     false
+                   ;; Spec-instrument functions on namespace reload.
+                   ::instrument      false
 
-             ;; Nilable vector of qualified external namespaces or functions
-             ;; (unquoted) to spec-instrument before and unstrument after
-             ;; testing to catch incorrect function calls at test time without
-             ;; the runtime performance impact. Fspecs must be defined for
-             ;; the relevant functions in a `require`d namespace using either
-             ;; `s/fdef` or Ghostwheel's `>fdef`. Only works down to the
-             ;; namespace level, cannot be set for an individual function.
-             ::extrument       nil}))
+                   ;; Spec-instrument functions on namespace reload using
+                   ;; orchestra, which spec-checks the output in addition to
+                   ;; the input. Use either this or `::instrument`, not both.
+                   ::outstrument     false
+
+                   ;; Nilable vector of qualified external namespaces or functions
+                   ;; (unquoted) to spec-instrument before and unstrument after
+                   ;; testing to catch incorrect function calls at test time without
+                   ;; the runtime performance impact. Fspecs must be defined for
+                   ;; the relevant functions in a `require`d namespace using either
+                   ;; `s/fdef` or Ghostwheel's `>fdef`. Only works down to the
+                   ;; namespace level, cannot be set for an individual function.
+                   ::extrument       nil})]
+    (merge ghostwheel-default-config (u/get-ghostwheel-compiler-config env))))
+
 
 ;; These are lifted straight from clojure.core.specs.alpha, because it
 ;; didn't seem possible to access them directly in the original namespace.
@@ -931,7 +935,7 @@
                                   orig-body-forms))]
           (remove nil? `(~arg-list ~prepost ~@body-forms))))]
   (defn- generate-defn
-    [forms private env compiler-config]
+    [forms private env]
     (let [conformed-gdefn   (s/conform ::>defn-args forms)
           fn-deftype        (if private 'defn- 'defn)
           fn-bodies         (:bs conformed-gdefn)
@@ -953,8 +957,7 @@
                                    {::ghostwheel true})
           ;;; Assemble the config
           config            (s/assert ::ghostwheel-config
-                                      (->> (merge ghostwheel-default-config
-                                                  compiler-config
+                                      (->> (merge (get-base-config env)
                                                   (get-ns-meta env)
                                                   (meta fn-name)
                                                   meta-map)
@@ -1036,41 +1039,57 @@
 
 
 (defn- generate-coverage-check [env nspace]
-  (let [{:keys [::check-coverage]}
-        (merge (get-ghostwheel-compiler-config env)
-               (:meta (ana-api/find-ns nspace)))
-
-        plain-defns (when check-coverage
-                      ;; TODO: Make this work on clj in addition to cljs
-                      (some->> (ana-api/ns-interns nspace)
-                               (filter #(-> % val :fn-var))
-                               (remove #(-> % key meta ::ghostwheel))
-                               (remove #(false? (-> % key meta ::check-coverage)))
-                               (remove #(-> % key str (cs/ends-with? test-suffix)))
-                               (map (comp str key))
-                               vec))
-        test-name   (let [escaped-nspace (cs/replace (str nspace) "." "_")]
-                      (symbol (str "coverage__" escaped-nspace test-suffix)))]
-    (when (not-empty plain-defns)
-      `(do
-         (t/deftest ~test-name
-           (t/is true
-                 {::r/nspace         ~(str nspace)
-                  ::r/plain-defns    ~plain-defns
-                  ::r/check-coverage ~check-coverage}))
-         (binding [cljs.test/*current-env* (t/empty-env ::r/default)]
-           (~test-name))
-         (ns-unmap (quote ~(get-ns-name env))
-                   (quote ~test-name))
-         nil))))
+  (let [{:keys [::check-coverage ::check]} (merge (get-base-config env)
+                                                  (:meta (ana-api/find-ns nspace)))
+        all-checked-fns (when check-coverage
+                          ;; TODO: Make this work on clj in addition to cljs
+                          (some->> (ana-api/ns-interns nspace)
+                                   (filter #(-> % val :fn-var))
+                                   (remove #(-> % key str (cs/ends-with? test-suffix)))
+                                   (remove #(false? (-> % key meta ::check-coverage)))))
+        plain-defns     (when check-coverage
+                          ;; TODO: Make this work on clj in addition to cljs
+                          (some->> all-checked-fns
+                                   (remove #(-> % key meta ::ghostwheel))
+                                   (map (comp str key))
+                                   vec))
+        unchecked-defns (when check-coverage
+                          ;; TODO: Make this work on clj in addition to cljs
+                          (some->> all-checked-fns
+                                   (filter #(-> % key meta ::ghostwheel))
+                                   (filter #(false? (-> % key meta ::check)))
+                                   (map (comp str key))
+                                   vec))
+        ;; TODO check for unchecked >defn
+        base-data       {::r/ns-name        (str nspace)
+                         ::r/check-coverage check-coverage}
+        test-name       (let [escaped-nspace (cs/replace (str nspace) "." "_")]
+                          (symbol (str "coverage__" escaped-nspace test-suffix)))
+        run-coverage-test
+                        (fn [data]
+                          `(do
+                             (t/deftest ~test-name
+                               (t/is true ~(merge base-data data)))
+                             (binding [cljs.test/*current-env* (t/empty-env ::r/default)]
+                               (~test-name))
+                             (ns-unmap (quote ~(get-ns-name env))
+                                       (quote ~test-name))
+                             nil))]
+    `(do
+       ~(when (not check)
+          (run-coverage-test {::r/unchecked-ns true}))
+       ~(when (not-empty plain-defns)
+          (run-coverage-test {::r/plain-defns plain-defns}))
+       ~(when (not-empty unchecked-defns)
+          (run-coverage-test {::r/unchecked-defns unchecked-defns})))))
 
 
 (defn- generate-check [env targets]
-  (let [compiler-config
-        (get-ghostwheel-compiler-config env)
+  (let [base-config
+        (get-base-config env)
 
         {:keys [::extrument]}
-        compiler-config
+        base-config
 
         conformed-targets
         (let [conformed-targets (s/conform ::check-targets targets)]
@@ -1091,7 +1110,11 @@
         (->> (for [target processed-targets
                    :let [[type sym] target]]
                (case type
-                 :fn (let [analysis-map (ana-api/resolve env sym)]
+                 :fn (let [analysis-map (ana-api/resolve env sym)
+                           {:keys [::check-coverage ::check]}
+                           (merge (get-base-config env)
+                                  (meta (:ns analysis-map))
+                                  (:meta analysis-map))]
                        (cond (not analysis-map)
                              (str "Cannot resolve `" (str sym) "`")
 
@@ -1101,10 +1124,18 @@
                              (not (get-in analysis-map [:meta ::ghostwheel]))
                              (str "`" sym "` is not a Ghostwheel function => Use `>defn` to define it.")
 
+                             (not check)
+                             (str "Checking disabled for `" sym "` => Set `{:ghostwheel.core/check true}` to enable.")
+
                              :else
                              nil))
-                 :ns (when (not (ana-api/find-ns sym))
-                       (str "Cannot resolve `" (str sym) "`"))))
+                 :ns (let [analysis-map (ana-api/find-ns sym)
+                           {:keys [::check]} (merge base-config (:meta analysis-map))]
+                       (cond (not analysis-map)
+                             (str "Cannot resolve `" (str sym) "`")
+
+                             :else
+                             nil))))
              (remove nil?))]
     ;; TODO implement for clj
     ;(when (and check (cljs-env? env)))
@@ -1132,7 +1163,7 @@
 
 (defn- generate-after-check [env callbacks]
   (let [{:keys [::check]}
-        (merge (get-ghostwheel-compiler-config env)
+        (merge (get-base-config env)
                (get-ns-meta env))]
     ;; TODO implement for clj
     (when (and check (seq callbacks))
@@ -1178,8 +1209,8 @@
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
                [name doc-string? attr-map? ([params*] gspec prepost-map? body?) + attr-map?])}
   [& forms]
-  (if-let [compiler-config (get-ghostwheel-compiler-config &env)]
-    (cond-> (remove nil? (generate-defn forms false &env compiler-config))
+  (if (get-ghostwheel-compiler-config &env)
+    (cond-> (remove nil? (generate-defn forms false &env))
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn forms)))
 
@@ -1196,8 +1227,8 @@
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
                [name doc-string? attr-map? ([params*] gspec prepost-map? body?) + attr-map?])}
   [& forms]
-  (if-let [compiler-config (get-ghostwheel-compiler-config &env)]
-    (cond-> (remove nil? (generate-defn forms true &env compiler-config))
+  (if (get-ghostwheel-compiler-config &env)
+    (cond-> (remove nil? (generate-defn forms true &env))
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn- forms)))
 
@@ -1273,6 +1304,9 @@
 
 ;;;; DEBUG
 
+#_(defmacro dbg-meta [sym]
+    #_`(clog (quote ~(ana-api/find-ns sym)))
+    `(clog (quote ~(ana-api/resolve &env sym))))
 
 #_(defmacro print-env []
     `(clog (quote ~&env)))

@@ -64,21 +64,65 @@
 
 
 (defmethod t/report [::default :pass] [m]
-  #?(:cljs (let [{:keys [::fn-name ::fspec ::spec-checks ::check-coverage ::marked-unsafe ::plain-defns ::nspace]}
-                 (:message m)
-                 warning-style {::tr/background (:orange0 ghostwheel-colors)}]
+  #?(:cljs (let [{:keys [::ns-name ::fn-name ::fspec ::spec-checks ::check-coverage
+                         ::marked-unsafe ::plain-defns ::unchecked-defns
+                         ::unchecked-ns]} (:message m)
+
+                 warning-style       {::tr/background (:orange0 ghostwheel-colors)}
+                 incomplete-coverage " => Test coverage incomplete."
+                 no-gen-testing      " => No generative testing performed"]
              (do
                (t/inc-report-counter! :pass)
                ;; REVIEW : We don't expect
                (when check-coverage
-                 (cond marked-unsafe
+                 (cond plain-defns
+                       (do
+                         (t/inc-report-counter! :warn)
+                         (apply js/console.group
+                                (get-styled-label
+                                 (str "WARNING: "
+                                      "Plain `defn` functions detected in "
+                                      ns-name
+                                      incomplete-coverage)
+                                 warning-style))
+                         (js/console.log plain-defns)
+                         (log-bold "=> Use `>defn` instead.")
+                         (js/console.groupEnd))
+
+                       unchecked-defns
+                       (do
+                         (t/inc-report-counter! :warn)
+                         (apply js/console.group
+                                (get-styled-label
+                                 (str "WARNING: "
+                                      "`::g/check` disabled for some functions in "
+                                      ns-name
+                                      incomplete-coverage)
+                                 warning-style))
+                         (js/console.log unchecked-defns)
+                         (js/console.groupEnd))
+
+                       unchecked-ns
+                       (do
+                         (t/inc-report-counter! :warn)
+                         (apply js/console.log
+                                (get-styled-label
+                                 (str "WARNING: "
+                                      "`::g/check` disabled for "
+                                      ns-name
+                                      incomplete-coverage)
+                                 warning-style)))
+
+                       marked-unsafe
                        (do
                          (t/inc-report-counter! :warn)
                          (apply js/console.log
                                 (get-styled-label
                                  (str "WARNING: "
                                       fn-name
-                                      " - Function marked as unsafe => Generative testing disabled.")
+                                      " – Function marked as unsafe."
+                                      no-gen-testing
+                                      incomplete-coverage)
                                  warning-style)))
 
                        (not fspec)
@@ -88,7 +132,9 @@
                                 (get-styled-label
                                  (str "WARNING: "
                                       fn-name
-                                      " - Missing fspec(s) => Test coverage incomplete.")
+                                      " – Missing fspec(s)"
+                                      no-gen-testing
+                                      incomplete-coverage)
                                  warning-style)))
 
                        (not spec-checks)
@@ -98,7 +144,9 @@
                                 (get-styled-label
                                  (str "WARNING: "
                                       fn-name
-                                      " - Number of tests set to 0 => Generative testing disabled => Test coverage incomplete.")
+                                      " – Number of tests set to 0"
+                                      no-gen-testing
+                                      incomplete-coverage)
                                  warning-style)))
 
                        :else nil))))))
