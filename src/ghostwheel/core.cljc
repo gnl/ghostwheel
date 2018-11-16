@@ -309,16 +309,6 @@
            (-> spec-args :args count (= argcount))
            (= argcount 0)))))))
 
-(s/def ::fdef
-  (s/and seq?
-         (s/cat :op #{'cljs.spec.alpha/fdef 'clojure.spec.alpha/fdef}
-                :name symbol?
-                :args-op #{:args}
-                :args seq?                            ; REVIEW - refine?
-                :ret (s/? (s/cat :ret-op #{:ret}
-                                 :ret ::spec-elem))
-                :fun (s/? (s/cat :fn-op #{:fn}
-                                 :pred seq?)))))      ; REVIEW - refine?
 
 (s/def ::defn
   (s/and seq?
@@ -337,13 +327,6 @@
                 :name symbol?
                 :body any?)))
 
-;; FIXME: Update the spec - doesn't match current `desugar-defn` output
-(s/def ::desugared->defn
-  (s/and seq?
-         (s/cat :do #{'do}
-                :defn ::defn
-                :fdef (s/nilable ::fdef)
-                :deftest (s/nilable ::deftest))))
 
 ;;; Side effect detection specs
 
@@ -1197,9 +1180,9 @@
                            ;; TODO: add tail-attr-map support after this
                            :arity-n (s/+ (s/and seq? ::args+gspec+body))))))
 
-(s/fdef >defn
-  :args ::>defn-args
-  :ret ::desugared->defn)
+
+(s/fdef >defn :args ::>defn-args)
+
 
 (defmacro >defn
   "Like defn, but requires a (nilable) gspec definition and generates
@@ -1214,9 +1197,9 @@
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn forms)))
 
-(s/fdef >defn-
-  :args ::>defn-args
-  :ret ::desugared->defn)
+
+(s/fdef >defn- :args ::>defn-args)
+
 
 ;; NOTE: lots of duplication - refactor this to set/pass ^:private differently and call >defn
 (defmacro >defn-
@@ -1285,9 +1268,9 @@
                 :bs (s/alt :arity-1 ::args+gspec+body
                            :arity-n (s/+ (s/and seq? ::args+gspec+body))))))
 
-(s/fdef >fdef
-  :args ::>fdef-args
-  :ret ::fdef)
+
+(s/fdef >fdef :args ::>fdef-args)
+
 
 (defmacro >fdef
   "Defines an fspec, supports gspec syntax. `name` can be a symbol
