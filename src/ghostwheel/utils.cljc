@@ -13,6 +13,7 @@
             [cuerdas.core :as cs]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]
+                       [clojure.edn :as edn]
                        [com.rpl.specter
                         :refer [setval transform select select-any
                                 filterer nthpath ALL MAP-VALS MAP-KEYS NAMESPACE]]]
@@ -27,23 +28,21 @@
      :cljs (js/console.log data))
   data)
 
+
 (defn cljs-env? [env] (boolean (:ns env)))
 
 
 (defn get-ghostwheel-compiler-config [env]
-  (if (cljs-env? env)
-    (when cljs.env/*compiler*
-      (let [compiler-config (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
-                                (get-in @cljs.env/*compiler* [:options :ghostwheel]))]
-        (cond
-          (map? compiler-config) (setval [MAP-KEYS NAMESPACE] (str `ghostwheel.core) compiler-config)
-          (true? compiler-config) {}
-          :else nil)))
-    ;; TODO: Implement this properly for Clojure. At the moment
-    ;; Ghostwheel is never off on Clojure - which is ok for now,
-    ;; because we aren't doing any tracing, just s/fdef and it's
-    ;; perfectly fine for that to end up in the production code
-    {}))
+  (let [compiler-config
+        (if (cljs-env? env)
+          (when cljs.env/*compiler*
+            (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
+                (get-in @cljs.env/*compiler* [:options :ghostwheel])))
+          #?(:clj (edn/read-string (slurp "ghostwheel.edn"))))]
+    (cond
+      (map? compiler-config) (setval [MAP-KEYS NAMESPACE] (str `ghostwheel.core) compiler-config)
+      (true? compiler-config) {}
+      :else nil)))
 
 
 (defn get-ns-meta [env]
