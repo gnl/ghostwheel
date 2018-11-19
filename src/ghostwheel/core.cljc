@@ -117,20 +117,20 @@
 (s/def ::instrument boolean?)
 (s/def ::outstrument boolean?)
 (s/def ::extrument (s/nilable (s/coll-of qualified-symbol? :kind vector?)))
+(s/def ::report-output (s/coll-of #{:repl :js-console} :kind set? :distinct true :min-count 1))
 
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
   (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
                        ::num-tests-quick ::num-tests-ext ::extensive-tests
-                       ::instrument ::outstrument ::extrument])))
+                       ::instrument ::outstrument ::extrument ::report-output])))
 
 
-(defn- get-base-config [env]
-  (let [ghostwheel-default-config
-        (s/assert ::ghostwheel-config
-                  ;; TODO: Add check to make sure instrument and outstrument aren't both on
-                  {;; Evaluation trace verbosity level. 0 disables all tracing code generation.
-                   ::trace           0
+(def ^:private ghostwheel-default-config
+  (s/assert ::ghostwheel-config
+            ;; TODO: Add check to make sure instrument and outstrument aren't both on
+            {;; Evaluation trace verbosity level. 0 disables all tracing code generation.
+             ::trace           0
 
                    ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
                    ::trace-color     :violet
@@ -166,15 +166,24 @@
                    ;; the input. Use either this or `::instrument`, not both.
                    ::outstrument     false
 
-                   ;; Nilable vector of qualified external namespaces or functions
-                   ;; (unquoted) to spec-instrument before and unstrument after
-                   ;; testing to catch incorrect function calls at test time without
-                   ;; the runtime performance impact. Fspecs must be defined for
-                   ;; the relevant functions in a `require`d namespace using either
-                   ;; `s/fdef` or Ghostwheel's `>fdef`. Only works down to the
-                   ;; namespace level, cannot be set for an individual function.
-                   ::extrument       nil})]
-    (merge ghostwheel-default-config (u/get-ghostwheel-compiler-config env))))
+             ;; Nilable vector of qualified external namespaces or functions
+             ;; (unquoted) to spec-instrument before and unstrument after
+             ;; testing to catch incorrect function calls at test time without
+             ;; the runtime performance impact. Fspecs must be defined for
+             ;; the relevant functions in a `require`d namespace using either
+             ;; `s/fdef` or Ghostwheel's `>fdef`. Only works down to the
+             ;; namespace level, cannot be set for an individual function.
+             ::extrument       nil
+
+             ;; Collection of unqualified keywords designating possible
+             ;; output channels for tracing and check reports. Only
+             ;; `:repl` and `:js-console` are supported at the moment,
+             ;; with the latter being silently ignored on Clojure.
+             ::report-output   #{:repl :js-console}}))
+
+
+(defn- get-base-config [env]
+  (merge ghostwheel-default-config (u/get-ghostwheel-compiler-config env)))
 
 
 ;; These are lifted straight from clojure.core.specs.alpha, because it
@@ -500,7 +509,7 @@
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config]
     (let [{:keys [::check ::num-tests-quick ::num-tests-ext ::extensive-tests
-                  ::check-coverage ::ignore-fx]}
+                  ::check-coverage ::ignore-fx ::report-output]}
           config
 
           num-tests         (if extensive-tests num-tests-ext num-tests-quick)
@@ -547,7 +556,8 @@
                                              unexpected-safety ::r/unexpected-safety
                                              :else ::r/spec-failure)
                    ::r/found-fx       (quote ~found-fx)
-                   ::r/marked-unsafe  ~marked-unsafe})))])))
+                   ::r/marked-unsafe  ~marked-unsafe
+                   ::r/report-output  ~report-output})))])))
 
 (defn- unscrew-vec-unform
   "Half-arsed workaround for spec bugs CLJ-2003 and CLJ-2021."
@@ -1022,8 +1032,10 @@
 
 
 (defn- generate-coverage-check [env nspace]
-  (let [{:keys [::check-coverage ::check]} (merge (get-base-config env)
-                                                  (:meta (ana-api/find-ns nspace)))
+  (let [{:keys [::check-coverage ::check ::report-output]}
+        (merge (get-base-config env)
+               (:meta (ana-api/find-ns nspace)))
+
         all-checked-fns (when check-coverage
                           ;; TODO: Make this work on clj in addition to cljs
                           (some->> (ana-api/ns-interns nspace)
@@ -1045,7 +1057,8 @@
                                    vec))
         ;; TODO check for unchecked >defn
         base-data       {::r/ns-name        (str nspace)
-                         ::r/check-coverage check-coverage}
+                         ::r/check-coverage check-coverage
+                         ::r/report-output  report-output}
         test-name       (let [escaped-nspace (cs/replace (str nspace) "." "_")]
                           (symbol (str "coverage__" escaped-nspace test-suffix)))
         run-coverage-test
