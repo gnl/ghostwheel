@@ -12,7 +12,7 @@
                  [org.clojure/test.check "0.10.0-alpha3"]
                  [com.rpl/specter "1.1.2"]
                  [orchestra "2018.11.07-1"]
-                 [expound "0.7.2-SNAPSHOT"]
+                 [expound "0.7.1"]
                  [gnl/re-frame-tracer "0.1.7"]
                  [org.clojars.stumitchell/clairvoyant "0.2.1"]
                  [funcool/cuerdas "2.0.5"]
