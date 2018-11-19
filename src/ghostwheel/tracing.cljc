@@ -8,83 +8,8 @@
 
 (ns ghostwheel.tracing
   (:require [cuerdas.core :as cs]
+            [ghostwheel.logging :as l :refer [ghostwheel-colors pr-clog]]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config get-ns-meta clj->cljs]]))
-
-(def ghostwheel-colors
-  {:purple0 "#967a93"
-   :purple1 "#b87a93"
-   :purple2 "#7d9cf8"
-   :orange0 "#fe8709"
-   :orange1 "#f17d3e"
-   :green0  "#82da38"
-   :green1  "#54a627"
-   ;; Solarized colours
-   :base03  "#002b36"
-   :black   "#002b36"
-   :base02  "#073642"
-   :base01  "#586e75"
-   :base00  "#657b83"
-   :base0   "#839496"
-   :base1   "#93a1a1"
-   :base2   "#eee8d5"
-   :base3   "#fdf6e3"
-   :yellow  "#b58900"
-   :orange  "#cb4b16"
-   :red     "#dc322f"
-   :magenta "#d33682"
-   :violet  "#6c71c4"
-   :blue    "#268bd2"
-   :cyan    "#2aa198"
-   :green   "#859900"})
-
-(defn truncate-string
-  [long-string limit]
-  (str (cs/slice long-string 0 limit)
-       (when (>= (count long-string) limit) "...")))
-
-(defn get-styled-label [label {:keys [::foreground ::background ::weight]} & [length]]
-  (let [label (str "%c"
-                   #_(when background " ")
-                   (if length
-                     (truncate-string label length)
-                     label))
-        #_(when background " ")
-        style (str "color: " (cond foreground foreground
-                                   background "white"
-                                   :else (:black ghostwheel-colors)) ";"
-                   "background: " (if background background "white") ";"
-                   "font-weight: " (if weight weight "500") ";"
-                   (when background "text-shadow: 0.5px 0.5px black;")
-                   (when background "padding: 2px 6px; border-radius: 2px;"))]
-    [label style]))
-
-(defn log [& msgs]
-  #?(:cljs (apply js/console.log (or msgs [""]))
-     :clj  (apply println msgs)))
-
-(defn log-bold [msg]
-  #?(:cljs (apply js/console.log (get-styled-label msg {::weight "bold"}))
-     :clj  (println msg)))
-
-(defn clog [data]
-  (do
-    (log data)
-    data))
-
-;; TODO: implement basic pr-clog version for Clojure using
-;; https://github.com/clojure/tools.logging or something.
-(defn pr-clog
-  "Pretty console log"
-  [label data & [style]]
-  (do
-    #?(:cljs (let [[label style] (get-styled-label label style)]
-               (if data
-                 (do
-                   (js/console.group label style)
-                   (js/console.log data)
-                   (js/console.groupEnd))
-                 (js/console.log label style))))
-    data))
 
 
 ;;;; Traced threading macros
@@ -95,8 +20,8 @@
 (defn log-threading-header
   [threading-type expr & [name]]
   #?(:cljs
-     (apply js/console.group (get-styled-label (str threading-type " " expr (when name " ") name)
-                                               {::background (:black ghostwheel-colors)}))))
+     (apply js/console.group (l/get-styled-label (str threading-type " " expr (when name " ") name)
+                                                 {::l/background (:black ghostwheel-colors)}))))
 
 (defmacro *->
   "Traced version of ->"
@@ -197,8 +122,8 @@
           ~(let [g     (gensym)
                  pstep (fn [[test step]]
                          `(if ~test
-                            ~(log-cond-step test step `(-> ~g ~step) {::weight :bold})
-                            ~(log-cond-step test step g {::foreground (:base0 ghostwheel-colors)})))]
+                            ~(log-cond-step test step `(-> ~g ~step) {::l/weight :bold})
+                            ~(log-cond-step test step g {::l/foreground (:base0 ghostwheel-colors)})))]
              `(do
                 (log-threading-header "cond->" ~(str expr))
                 (pr-clog ~(str expr) ~expr)
@@ -222,8 +147,8 @@
           ~(let [g     (gensym)
                  pstep (fn [[test step]]
                          `(if ~test
-                            ~(log-cond-step test step `(->> ~g ~step) {::weight :bold})
-                            ~(log-cond-step test step g {::foreground (:base0 ghostwheel-colors)})))]
+                            ~(log-cond-step test step `(->> ~g ~step) {::l/weight :bold})
+                            ~(log-cond-step test step g {::l/foreground (:base0 ghostwheel-colors)})))]
              `(do
                 (log-threading-header "cond->>" ~(str expr))
                 (pr-clog ~(str expr) ~expr)

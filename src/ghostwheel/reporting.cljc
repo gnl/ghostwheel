@@ -13,7 +13,7 @@
             [expound.alpha :as expound]
             [cuerdas.core :as cs]
             [ghostwheel.utils :as u :refer [DBG]]
-            [ghostwheel.tracing :as tr :refer [ghostwheel-colors get-styled-label pr-clog log-bold log]]))
+            [ghostwheel.logging :as l :refer [ghostwheel-colors get-styled-label pr-clog log-bold log]]))
 
 ;; TODO: Chance all `js/console.log` calls to `log`
 
@@ -21,14 +21,13 @@
 
 (def wrap (partial u/wrap-line 80))
 
-
 (defmethod t/report [::default :begin-test-ns] [m]
   #?(:cljs (do
              #_(dorun (repeatedly 5 js/console.groupEnd))
              ;(js/console.groupEnd)
              (apply js/console.group
                     (get-styled-label (str "Checking " (:ns m) " ...")
-                                      {::tr/background (:base01 ghostwheel-colors)})))))
+                                      {::l/background (:base01 ghostwheel-colors)})))))
 
 
 (defmethod t/report [::default :end-test-ns] [m]
@@ -53,11 +52,11 @@
                (js/console.groupEnd)
                (when (or (not passed?) warnings?)
                  (js/console.log ""))
-               (apply js/console.log (get-styled-label label {::tr/background color}))
+               (apply js/console.log (get-styled-label label {::l/background color}))
                (when warnings?
                  (apply js/console.log
                         (get-styled-label (str warn " warning(s)")
-                                          {::tr/background (:orange0 ghostwheel-colors)})))
+                                          {::l/background (:orange0 ghostwheel-colors)})))
                ;; Might be overkill, but we want to make sure we reset the group nesting
                ;; in DevTools if anything should blow up above
                (dorun (repeatedly 5 js/console.groupEnd))))))
@@ -66,9 +65,9 @@
 (defmethod t/report [::default :pass] [m]
   #?(:cljs (let [{:keys [::ns-name ::fn-name ::fspec ::spec-checks ::check-coverage
                          ::marked-unsafe ::plain-defns ::unchecked-defns
-                         ::unchecked-ns]} (:message m)
+                         ::unchecked-ns ::report-output]} (:message m)
 
-                 warning-style       {::tr/background (:orange0 ghostwheel-colors)}
+                 warning-style       {::l/background (:orange0 ghostwheel-colors)}
                  incomplete-coverage " => Test coverage incomplete."
                  no-gen-testing      " => No generative testing performed"]
              (do
@@ -85,7 +84,7 @@
                                       ns-name
                                       incomplete-coverage)
                                  warning-style))
-                         (js/console.log plain-defns)
+                         (log plain-defns)
                          (log-bold "=> Use `>defn` instead.")
                          (js/console.groupEnd))
 
@@ -225,7 +224,7 @@
                    (js/console.log (-> msg cs/lines first (str "\n"))))
                  (-> (expound/printer-str nil data) (str "\n") js/console.log)
                  (->> (get-styled-label "Raw error data:"
-                                        {::tr/background (:base0 ghostwheel-colors)})
+                                        {::l/background (:base0 ghostwheel-colors)})
                       (apply js/console.groupCollapsed))
                  (js/console.log msg)
                  (js/console.log data)
@@ -243,7 +242,7 @@
                  start-group js/console.group]
              (t/inc-report-counter! :fail)
              (apply start-group (get-styled-label (str "FAILED: " fn-name " - " summary)
-                                                  {::tr/background (:red ghostwheel-colors)}))
+                                                  {::l/background (:red ghostwheel-colors)}))
              (case failure
                ::unexpected-fx (report-unexpected-side-effects message)
                ::unexpected-safety (report-unexpected-safety message)
@@ -261,7 +260,7 @@
                (t/inc-report-counter! :error)
                (apply js/console.group
                       (get-styled-label (str "ERROR when testing " fn-name)
-                                        {::tr/background (:red ghostwheel-colors)}))
+                                        {::l/background (:red ghostwheel-colors)}))
                (t/inc-report-counter! :error)
                (println "\nERROR in" (t/testing-vars-str m))
                (when (seq (:testing-contexts (t/get-current-env)))

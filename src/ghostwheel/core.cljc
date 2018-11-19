@@ -21,7 +21,7 @@
             [ghostwheel.reporting :as r]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config
                                             get-ns-meta get-ns-name clj->cljs DBG]]
-            [ghostwheel.tracing :as tr :refer [pr-clog get-styled-label clog]]
+            [ghostwheel.logging :as l :refer [pr-clog get-styled-label clog]]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]
                        #_[com.rpl.specter
@@ -44,7 +44,7 @@
 ;;;; Global vars and state
 
 
-(def ghostwheel-colors tr/ghostwheel-colors)
+(def ghostwheel-colors l/ghostwheel-colors)
 (def ^:private test-suffix (str (gensym "__") "__ghostwheel-test"))
 (def ^:private *after-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
@@ -132,39 +132,39 @@
             {;; Evaluation trace verbosity level. 0 disables all tracing code generation.
              ::trace           0
 
-                   ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
-                   ::trace-color     :violet
+             ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
+             ::trace-color     :violet
 
-                   ;; When disabled no checks of any kind are
-                   ;; performed and no test code is generated.
-                   ::check           false
+             ;; When disabled no checks of any kind are
+             ;; performed and no test code is generated.
+             ::check           false
 
-                   ;; Determines whether Ghostwheel should warn on missing fspecs
-                   ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
-                   ;; namespace or higher level, you can exclude individual `defn`s or
-                   ;; `declare`s by setting it to false in their respective metadata
-                   ::check-coverage  false
+             ;; Determines whether Ghostwheel should warn on missing fspecs
+             ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
+             ;; namespace or higher level, you can exclude individual `defn`s or
+             ;; `declare`s by setting it to false in their respective metadata
+             ::check-coverage  false
 
-                   ;; Disable side effect detection
-                   ::ignore-fx       false
+             ;; Disable side effect detection
+             ::ignore-fx       false
 
-                   ;; Number of generative tests performed when quick-checking (on hot-reload)
-                   ::num-tests-quick 0
+             ;; Number of generative tests performed when quick-checking (on hot-reload)
+             ::num-tests-quick 0
 
-                   ;; Number of generative tests performed when checking extensively (test suite)
-                   ::num-tests-ext   100
+             ;; Number of generative tests performed when checking extensively (test suite)
+             ::num-tests-ext   100
 
-                   ;; Determines which of the above two options should take
-                   ;; precedence. Set to true in your test build configuration.
-                   ::extensive-tests false
+             ;; Determines which of the above two options should take
+             ;; precedence. Set to true in your test build configuration.
+             ::extensive-tests false
 
-                   ;; Spec-instrument functions on namespace reload.
-                   ::instrument      false
+             ;; Spec-instrument functions on namespace reload.
+             ::instrument      false
 
-                   ;; Spec-instrument functions on namespace reload using
-                   ;; orchestra, which spec-checks the output in addition to
-                   ;; the input. Use either this or `::instrument`, not both.
-                   ::outstrument     false
+             ;; Spec-instrument functions on namespace reload using
+             ;; orchestra, which spec-checks the output in addition to
+             ;; the input. Use either this or `::instrument`, not both.
+             ::outstrument     false
 
              ;; Nilable vector of qualified external namespaces or functions
              ;; (unquoted) to spec-instrument before and unstrument after
