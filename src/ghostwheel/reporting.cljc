@@ -7,13 +7,12 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ghostwheel.reporting
-  #?(:cljs (:require-macros [ghostwheel.utils :refer [get-env-config]]))
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
             [clojure.test :as t]
             [expound.alpha :as expound]
             [cuerdas.core :as cs]
-            [ghostwheel.utils :as u :refer [DBG]]
+            [ghostwheel.utils :as u]
             [ghostwheel.logging :as l :refer [ghostwheel-colors get-styled-label pr-clog log-bold log]]))
 
 
@@ -21,40 +20,43 @@
 
 (def wrap (partial u/wrap-line 80))
 
+(def inc-report-counter! #?(:clj t/inc-report-counter
+                            :cljs t/inc-report-counter!))
+
 (defmethod t/report [::default :begin-test-ns] [m]
-  #?(:cljs (l/group (str "Checking " (:ns m) " ...")
-                    {::l/background (:base01 ghostwheel-colors)})))
+  (l/group (str "Checking " (:ns m) " ...")
+           {::l/background (:base01 ghostwheel-colors)}))
 
 
 (defmethod t/report [::default :end-test-ns] [m]
-  #?(:cljs (l/group-end)))
+  (l/group-end))
 
 
 (defmethod t/report [::default :summary] [m]
-  #?(:cljs (let [{:keys [fail error pass test warn]} m
-                 passed?   (= pass test)
-                 warnings? (> warn 0)
-                 color     (cond
-                             (= test 0) (:black ghostwheel-colors)
-                             passed? (:green ghostwheel-colors)
-                             :else (:red ghostwheel-colors))
-                 label     (cond
-                             (= test 0) "No active tests found"
-                             passed? (str "Passed all " test " checks")
-                             :else (str "Failed " fail " of " test " checks"
-                                        (when (> error 0)
-                                          (str "; " error " test error(s)"))))]
-             (do
-               (l/group-end)
-               (when (or (not passed?) warnings?)
-                 (log))
-               (log label {::l/background color})
-               (when warnings?
-                 (log (str warn " warning(s)")
-                      {::l/background (:orange0 ghostwheel-colors)}))
-               ;; Might be overkill, but we want to make sure we reset the group nesting
-               ;; in DevTools if anything should blow up above
-               (dorun (repeatedly 5 l/group-end))))))
+  (let [{:keys [fail error pass test warn]} m
+        passed?   (= pass test)
+        warnings? (> warn 0)
+        color     (cond
+                    (= test 0) (:black ghostwheel-colors)
+                    passed? (:green ghostwheel-colors)
+                    :else (:red ghostwheel-colors))
+        label     (cond
+                    (= test 0) "No active tests found"
+                    passed? (str "Passed all " test " checks")
+                    :else (str "Failed " fail " of " test " checks"
+                               (when (> error 0)
+                                 (str "; " error " test error(s)"))))]
+    (do
+      (l/group-end)
+      (when (or (not passed?) warnings?)
+        (log))
+      (log label {::l/background color})
+      (when warnings?
+        (log (str warn " warning(s)")
+             {::l/background (:orange0 ghostwheel-colors)}))
+      ;; Might be overkill, but we want to make sure we reset the group nesting
+      ;; in DevTools if anything should blow up above
+      (dorun (repeatedly 5 l/group-end)))))
 
 
 (defmethod t/report [::default :pass] [m]

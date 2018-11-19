@@ -144,7 +144,7 @@
   (swap! *nesting #(subs % 0 (- (count %) 2))))
 
 (defn group-end []
-  #?(:clj (plain-group-end)
+  #?(:clj  (plain-group-end)
      :cljs (case *report-output*
              :repl (plain-group-end)
              :js-console (js/console.groupEnd))))
