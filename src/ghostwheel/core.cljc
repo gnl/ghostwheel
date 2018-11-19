@@ -900,7 +900,7 @@
                               color
                               (:black ghostwheel-colors))
           {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
-          defn-sym          (cond defn-macro (symbol defn-macro)
+          defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
                                   private 'defn-
                                   :else 'defn)
           trace             (if (cljs-env? env)
