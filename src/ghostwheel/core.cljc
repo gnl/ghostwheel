@@ -113,6 +113,7 @@
 (s/def ::num-tests-quick nat-int?)
 (s/def ::num-tests-ext nat-int?)
 (s/def ::extensive-tests boolean?)
+(s/def ::defn-macro (s/nilable string?))
 (s/def ::instrument boolean?)
 (s/def ::outstrument boolean?)
 (s/def ::extrument (s/nilable (s/coll-of qualified-symbol? :kind vector?)))
@@ -121,7 +122,7 @@
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
   (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
-                       ::num-tests-quick ::num-tests-ext ::extensive-tests
+                       ::num-tests-quick ::num-tests-ext ::extensive-tests ::defn-macro
                        ::instrument ::outstrument ::extrument ::report-output])))
 
 (s/assert ::ghostwheel-config u/ghostwheel-default-config)
@@ -870,7 +871,6 @@
   (defn- generate-defn
     [forms private env]
     (let [conformed-gdefn   (s/conform ::>defn-args forms)
-          fn-deftype        (if private 'defn- 'defn)
           fn-bodies         (:bs conformed-gdefn)
           empty-bodies      (every? empty?
                                     (case (key fn-bodies)
@@ -899,7 +899,10 @@
           color             (if-let [color (get ghostwheel-colors (::trace-color config))]
                               color
                               (:black ghostwheel-colors))
-          {:keys [::instrument ::outstrument ::trace ::check]} config
+          {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
+          defn-sym          (cond defn-macro (symbol defn-macro)
+                                  private 'defn-
+                                  :else 'defn)
           trace             (if (cljs-env? env)
                               (cond empty-bodies 0
                                     (true? trace) 4
@@ -945,13 +948,13 @@
                                                       '#{'defn 'defn-}))
                                  :exclude ~exclude}
                                 ~forms))
-          main-defn         (remove nil? `(~fn-deftype
+          main-defn         (remove nil? `(~defn-sym
                                            ~fn-name
                                            ~docstring
                                            ~meta-map
                                            ~@(process-fn-bodies (if (> trace 0) :dispatch 0))))
           traced-defn       (when (> trace 0)
-                              (let [traced-defn (remove nil? `(~fn-deftype
+                              (let [traced-defn (remove nil? `(~defn-sym
                                                                ~traced-fn-name
                                                                ~@(process-fn-bodies trace)))]
                                 (case trace

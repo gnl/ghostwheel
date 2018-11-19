@@ -55,6 +55,12 @@
                     ;; precedence. Set to true in your test build configuration.
                     :extensive-tests false
 
+                    ;; Ghostwheel generates standard `defn` function definitions
+                    ;; by default. If you require composability with other
+                    ;; `defn`-like macros, you can have Ghostwheel desugar to
+                    ;; them instead by setting the macro name as a string here.
+                    :defn-macro      nil
+
                     ;; Spec-instrument functions on namespace reload.
                     :instrument      false
 
