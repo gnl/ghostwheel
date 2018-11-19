@@ -11,7 +11,6 @@
   (:require [cuerdas.core :as cs]
             [clojure.set :refer [union difference map-invert]]
             [clojure.walk :as walk]
-            [clojure.pprint :refer [pprint]]
             [clojure.test :as t]
             [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
@@ -125,66 +124,8 @@
                        ::num-tests-quick ::num-tests-ext ::extensive-tests
                        ::instrument ::outstrument ::extrument ::report-output])))
 
-
-(def ^:private ghostwheel-default-config
-  (s/assert ::ghostwheel-config
-            ;; TODO: Add check to make sure instrument and outstrument aren't both on
-            {;; Evaluation trace verbosity level. 0 disables all tracing code generation.
-             ::trace           0
-
-             ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
-             ::trace-color     :violet
-
-             ;; When disabled no checks of any kind are
-             ;; performed and no test code is generated.
-             ::check           false
-
-             ;; Determines whether Ghostwheel should warn on missing fspecs
-             ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
-             ;; namespace or higher level, you can exclude individual `defn`s or
-             ;; `declare`s by setting it to false in their respective metadata
-             ::check-coverage  false
-
-             ;; Disable side effect detection
-             ::ignore-fx       false
-
-             ;; Number of generative tests performed when quick-checking (on hot-reload)
-             ::num-tests-quick 0
-
-             ;; Number of generative tests performed when checking extensively (test suite)
-             ::num-tests-ext   100
-
-             ;; Determines which of the above two options should take
-             ;; precedence. Set to true in your test build configuration.
-             ::extensive-tests false
-
-             ;; Spec-instrument functions on namespace reload.
-             ::instrument      false
-
-             ;; Spec-instrument functions on namespace reload using
-             ;; orchestra, which spec-checks the output in addition to
-             ;; the input. Use either this or `::instrument`, not both.
-             ::outstrument     false
-
-             ;; Nilable vector of qualified external namespaces or functions
-             ;; (unquoted) to spec-instrument before and unstrument after
-             ;; testing to catch incorrect function calls at test time without
-             ;; the runtime performance impact. Fspecs must be defined for
-             ;; the relevant functions in a `require`d namespace using either
-             ;; `s/fdef` or Ghostwheel's `>fdef`. Only works down to the
-             ;; namespace level, cannot be set for an individual function.
-             ::extrument       nil
-
-             ;; Collection of unqualified keywords designating possible
-             ;; output channels for tracing and check reports. Only
-             ;; `:repl` and `:js-console` are supported at the moment,
-             ;; with the latter being silently ignored on Clojure.
-             ::report-output   #{:repl :js-console}}))
-
-
-(defn- get-base-config [env]
-  (merge ghostwheel-default-config (u/get-ghostwheel-compiler-config env)))
-
+(s/assert ::ghostwheel-config u/ghostwheel-default-config)
+;; TODO: Add check to make sure instrument and outstrument aren't both on
 
 ;; These are lifted straight from clojure.core.specs.alpha, because it
 ;; didn't seem possible to access them directly in the original namespace.
@@ -509,7 +450,7 @@
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config]
     (let [{:keys [::check ::num-tests-quick ::num-tests-ext ::extensive-tests
-                  ::check-coverage ::ignore-fx ::report-output]}
+                  ::check-coverage ::ignore-fx]}
           config
 
           num-tests         (if extensive-tests num-tests-ext num-tests-quick)
@@ -556,8 +497,7 @@
                                              unexpected-safety ::r/unexpected-safety
                                              :else ::r/spec-failure)
                    ::r/found-fx       (quote ~found-fx)
-                   ::r/marked-unsafe  ~marked-unsafe
-                   ::r/report-output  ~report-output})))])))
+                   ::r/marked-unsafe  ~marked-unsafe})))])))
 
 (defn- unscrew-vec-unform
   "Half-arsed workaround for spec bugs CLJ-2003 and CLJ-2021."
@@ -950,7 +890,7 @@
                                    {::ghostwheel true})
           ;;; Assemble the config
           config            (s/assert ::ghostwheel-config
-                                      (->> (merge (get-base-config env)
+                                      (->> (merge (u/get-base-config env)
                                                   (get-ns-meta env)
                                                   (meta fn-name)
                                                   meta-map)
@@ -1032,8 +972,8 @@
 
 
 (defn- generate-coverage-check [env nspace]
-  (let [{:keys [::check-coverage ::check ::report-output]}
-        (merge (get-base-config env)
+  (let [{:keys [::check-coverage ::check]}
+        (merge (u/get-base-config env)
                (:meta (ana-api/find-ns nspace)))
 
         all-checked-fns (when check-coverage
@@ -1057,8 +997,7 @@
                                    vec))
         ;; TODO check for unchecked >defn
         base-data       {::r/ns-name        (str nspace)
-                         ::r/check-coverage check-coverage
-                         ::r/report-output  report-output}
+                         ::r/check-coverage check-coverage}
         test-name       (let [escaped-nspace (cs/replace (str nspace) "." "_")]
                           (symbol (str "coverage__" escaped-nspace test-suffix)))
         run-coverage-test
@@ -1082,7 +1021,7 @@
 
 (defn- generate-check [env targets]
   (let [base-config
-        (get-base-config env)
+        (u/get-base-config env)
 
         {:keys [::extrument]}
         base-config
@@ -1108,7 +1047,7 @@
                (case type
                  :fn (let [analysis-map (ana-api/resolve env sym)
                            {:keys [::check-coverage ::check]}
-                           (merge (get-base-config env)
+                           (merge (u/get-base-config env)
                                   (meta (:ns analysis-map))
                                   (:meta analysis-map))]
                        (cond (not analysis-map)
@@ -1159,7 +1098,7 @@
 
 (defn- generate-after-check [env callbacks]
   (let [{:keys [::check]}
-        (merge (get-base-config env)
+        (merge (u/get-base-config env)
                (get-ns-meta env))]
     ;; TODO implement for clj
     (when (and check (seq callbacks))

@@ -8,9 +8,12 @@
 
 (ns ghostwheel.logging
   (:require [cuerdas.core :as cs]
-            [ghostwheel.utils :as u :refer [DBG]]))
+            [clojure.pprint :refer [pprint]]
+            [ghostwheel.utils :as u :refer [DBG] :include-macros true]))
 
 (def *nesting (atom ""))
+
+(def ^:dynamic *report-output* (:ghostwheel.core/report-output (u/get-env-config)))
 
 (def ghostwheel-colors
   {:purple0 "#967a93"
@@ -40,8 +43,8 @@
    :green   "#859900"})
 
 
-(def wrap (partial u/wrap-line 80))
-
+(defn wrap [line]
+  (u/wrap-line 80 line))
 
 (defn truncate-string
   [long-string limit]
@@ -64,22 +67,90 @@
                    (when background "padding: 2px 6px; border-radius: 2px;"))]
     [label style]))
 
-(defn log [& msgs]
-  #?(:cljs (apply js/console.log (or msgs [""]))
-     :clj  (apply println msgs)))
+(defn get-styled-label-2 [label {:keys [::foreground ::background ::weight] :as style} output & [length]]
+  (if-not style
+    [label]
+    (let [label (cond->> (if length
+                           (truncate-string label length)
+                           label)
+                         (and (= output :repl) weight) (#(str "*" % "*"))
+                         (= output :js-console) (str "%c"))
+          style (when (= output :js-console)
+                  (str "color: " (cond foreground foreground
+                                       background "white"
+                                       :else (:black ghostwheel-colors)) ";"
+                       "background: " (if background background "white") ";"
+                       "font-weight: " (if weight weight "500") ";"
+                       (when background "text-shadow: 0.5px 0.5px black;")
+                       (when background "padding: 2px 6px; border-radius: 2px;")))]
+      (vec (remove nil? [label style])))))
 
-(comment
- (defn- log [destinations & msgs]
-   (let [plain-log #(println (apply str @*nesting %))]
-     #?(:clj  (plain-log msgs)
-        :cljs (do (when (contains? destinations :js-console)
-                    (apply js/console.log (or msgs [""])))
-                  (when (contains? destinations :repl)
-                    (plain-log msgs)))))))
+
+
+(defn- plain-log [msg]
+  (if-not msg
+    (println @*nesting)
+    (println (->> (if (string? msg) msg (with-out-str (pprint msg)))
+                  (cs/lines)
+                  (map #(str @*nesting %))
+                  (cs/join "\n")))))
+
+(defn log
+  ([]
+   (log nil nil))
+  ([msg]
+   (log msg nil))
+  ([msg style]
+   (let [styled-msg (get-styled-label-2 (or msg "") style *report-output*)]
+     (do
+       #?(:clj  (apply plain-log styled-msg)
+          :cljs (case *report-output*
+                  :repl (apply plain-log styled-msg)
+                  :js-console (apply js/console.log styled-msg)))
+       msg))))
+
+(defn- plain-group [label]
+  (do
+    (log)
+    (log (str "|> " label))
+    (swap! *nesting #(str % "| "))))
+
+(defn- group*
+  ([open? label]
+   (group* open? label nil))
+  ([open? label style]
+   (let [styled-label (get-styled-label-2 label style *report-output*)]
+     #?(:clj  (apply plain-group styled-label)
+        :cljs (case *report-output*
+                :repl (apply plain-group styled-label)
+                :js-console (apply (if open?
+                                     js/console.group
+                                     js/console.groupCollapsed)
+                                   styled-label))))))
+
+(defn group
+  ([label]
+   (group label nil))
+  ([label style]
+   (group* true label style)))
+
+(defn group-collapsed
+  ([label]
+   (group label nil))
+  ([label style]
+   (group* false label style)))
+
+(defn- plain-group-end []
+  (swap! *nesting #(subs % 0 (- (count %) 2))))
+
+(defn group-end []
+  #?(:clj (plain-group-end)
+     :cljs (case *report-output*
+             :repl (plain-group-end)
+             :js-console (js/console.groupEnd))))
 
 (defn log-bold [msg]
-  #?(:cljs (apply js/console.log (get-styled-label msg {::weight "bold"}))
-     :clj  (println msg)))
+  (log msg {::weight "bold"}))
 
 (defn clog [data]
   (do
@@ -101,8 +172,5 @@
                  (js/console.log label style))))
     data))
 
-(defn- group [msg])
-(defn- group-collapsed [msg])
-(defn- group-end [msg])
 
 

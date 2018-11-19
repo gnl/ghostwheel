@@ -7,6 +7,7 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ghostwheel.reporting
+  #?(:cljs (:require-macros [ghostwheel.utils :refer [get-env-config]]))
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
             [clojure.test :as t]
@@ -15,23 +16,18 @@
             [ghostwheel.utils :as u :refer [DBG]]
             [ghostwheel.logging :as l :refer [ghostwheel-colors get-styled-label pr-clog log-bold log]]))
 
-;; TODO: Chance all `js/console.log` calls to `log`
 
 (def *all-tests-successful (atom true))
 
 (def wrap (partial u/wrap-line 80))
 
 (defmethod t/report [::default :begin-test-ns] [m]
-  #?(:cljs (do
-             #_(dorun (repeatedly 5 js/console.groupEnd))
-             ;(js/console.groupEnd)
-             (apply js/console.group
-                    (get-styled-label (str "Checking " (:ns m) " ...")
-                                      {::l/background (:base01 ghostwheel-colors)})))))
+  #?(:cljs (l/group (str "Checking " (:ns m) " ...")
+                    {::l/background (:base01 ghostwheel-colors)})))
 
 
 (defmethod t/report [::default :end-test-ns] [m]
-  #?(:cljs (js/console.groupEnd)))
+  #?(:cljs (l/group-end)))
 
 
 (defmethod t/report [::default :summary] [m]
@@ -49,17 +45,16 @@
                                         (when (> error 0)
                                           (str "; " error " test error(s)"))))]
              (do
-               (js/console.groupEnd)
+               (l/group-end)
                (when (or (not passed?) warnings?)
-                 (js/console.log ""))
-               (apply js/console.log (get-styled-label label {::l/background color}))
+                 (log))
+               (log label {::l/background color})
                (when warnings?
-                 (apply js/console.log
-                        (get-styled-label (str warn " warning(s)")
-                                          {::l/background (:orange0 ghostwheel-colors)})))
+                 (log (str warn " warning(s)")
+                      {::l/background (:orange0 ghostwheel-colors)}))
                ;; Might be overkill, but we want to make sure we reset the group nesting
                ;; in DevTools if anything should blow up above
-               (dorun (repeatedly 5 js/console.groupEnd))))))
+               (dorun (repeatedly 5 l/group-end))))))
 
 
 (defmethod t/report [::default :pass] [m]
@@ -77,76 +72,69 @@
                  (cond plain-defns
                        (do
                          (t/inc-report-counter! :warn)
-                         (apply js/console.group
-                                (get-styled-label
-                                 (str "WARNING: "
-                                      "Plain `defn` functions detected in "
-                                      ns-name
-                                      incomplete-coverage)
-                                 warning-style))
-                         (log plain-defns)
+                         (l/group (str "WARNING: "
+                                       "Plain `defn` functions detected in "
+                                       ns-name
+                                       incomplete-coverage)
+                                  warning-style)
+                         (log (mapv symbol plain-defns))
                          (log-bold "=> Use `>defn` instead.")
-                         (js/console.groupEnd))
+                         (l/group-end))
 
                        unchecked-defns
                        (do
                          (t/inc-report-counter! :warn)
-                         (apply js/console.group
-                                (get-styled-label
-                                 (str "WARNING: "
-                                      "`::g/check` disabled for some functions in "
-                                      ns-name
-                                      incomplete-coverage)
-                                 warning-style))
-                         (js/console.log unchecked-defns)
-                         (js/console.groupEnd))
+                         (l/group (str "WARNING: "
+                                       "`::g/check` disabled for some functions in "
+                                       ns-name
+                                       incomplete-coverage)
+                                  warning-style)
+                         (log (mapv symbol unchecked-defns))
+                         (l/group-end))
 
                        unchecked-ns
                        (do
                          (t/inc-report-counter! :warn)
-                         (apply js/console.log
-                                (get-styled-label
-                                 (str "WARNING: "
-                                      "`::g/check` disabled for "
-                                      ns-name
-                                      incomplete-coverage)
-                                 warning-style)))
+                         (l/group (str "WARNING: "
+                                       "`::g/check` disabled for "
+                                       ns-name
+                                       incomplete-coverage)
+                                  warning-style)
+                         (l/group-end))
+
 
                        marked-unsafe
                        (do
                          (t/inc-report-counter! :warn)
-                         (apply js/console.log
-                                (get-styled-label
-                                 (str "WARNING: "
-                                      fn-name
-                                      " – Function marked as unsafe."
-                                      no-gen-testing
-                                      incomplete-coverage)
-                                 warning-style)))
+                         (l/group (str "WARNING: "
+                                       fn-name
+                                       " – Function marked as unsafe."
+                                       no-gen-testing
+                                       incomplete-coverage)
+                                  warning-style)
+                         (l/group-end))
 
                        (not fspec)
                        (do
                          (t/inc-report-counter! :warn)
-                         (apply js/console.log
-                                (get-styled-label
-                                 (str "WARNING: "
-                                      fn-name
-                                      " – Missing fspec(s)"
-                                      no-gen-testing
-                                      incomplete-coverage)
-                                 warning-style)))
+                         (l/group (str "WARNING: "
+                                       fn-name
+                                       " – Missing fspec(s)"
+                                       no-gen-testing
+                                       incomplete-coverage)
+                                  warning-style)
+                         (l/group-end))
 
                        (not spec-checks)
                        (do
                          (t/inc-report-counter! :warn)
-                         (apply js/console.log
-                                (get-styled-label
-                                 (str "WARNING: "
-                                      fn-name
-                                      " – Number of tests set to 0"
-                                      no-gen-testing
-                                      incomplete-coverage)
-                                 warning-style)))
+                         (l/group (str "WARNING: "
+                                       fn-name
+                                       " – Number of tests set to 0"
+                                       no-gen-testing
+                                       incomplete-coverage)
+                                  warning-style)
+                         (l/group-end))
 
                        :else nil))))))
 
@@ -179,7 +167,7 @@
                          (vec (concat [type]
                                       (when form ['at form])
                                       (when details ['kind details])))))
-                  (map js/console.log)
+                  (map log)
                   (doall))
              (->> (str "=> Either remove the side effects, rename the function to '"
                        (str (name fn-name) "!'")
@@ -218,17 +206,16 @@
                (log-bold msg)
                (do
                  (when-let [args (::st/args data)]
-                   (log "\nCall:" (cons fn-name args)))
+                   (log "\nCall:")
+                   (log (cons fn-name args)))
                  (log)
                  (when (= (::s/failure data) :instrument)
-                   (js/console.log (-> msg cs/lines first (str "\n"))))
-                 (-> (expound/printer-str nil data) (str "\n") js/console.log)
-                 (->> (get-styled-label "Raw error data:"
-                                        {::l/background (:base0 ghostwheel-colors)})
-                      (apply js/console.groupCollapsed))
-                 (js/console.log msg)
-                 (js/console.log data)
-                 (js/console.groupEnd))))))
+                   (log (-> msg cs/lines first (str "\n"))))
+                 (-> (expound/printer-str nil data) (str "\n") log)
+                 (l/group-collapsed "Raw error data:" {::l/background (:base0 ghostwheel-colors)})
+                 (log msg)
+                 (log data)
+                 (l/group-end))))))
 
 
 (defmethod t/report [::default :fail] [m]
@@ -239,18 +226,18 @@
                                ::unexpected-safety "Expected side effects not detected"
                                ::spec-failure "Spec check"
                                nil)
-                 start-group js/console.group]
+                 start-group l/group]
              (t/inc-report-counter! :fail)
-             (apply start-group (get-styled-label (str "FAILED: " fn-name " - " summary)
-                                                  {::l/background (:red ghostwheel-colors)}))
+             (start-group (str "FAILED: " fn-name " - " summary)
+                          {::l/background (:red ghostwheel-colors)})
              (case failure
                ::unexpected-fx (report-unexpected-side-effects message)
                ::unexpected-safety (report-unexpected-safety message)
                ::spec-failure (report-spec-check message)
                (do
                  (log-bold (str "Undefined failure reason: " failure))
-                 (js/console.log message)))
-             (js/console.groupEnd))))
+                 (log message)))
+             (l/group-end))))
 
 
 ;; NOTE - test this and clean it up
@@ -258,16 +245,15 @@
   #?(:cljs (let [[fn-name spec-check] (:message m)]
              (do
                (t/inc-report-counter! :error)
-               (apply js/console.group
-                      (get-styled-label (str "ERROR when testing " fn-name)
-                                        {::l/background (:red ghostwheel-colors)}))
+               (l/group (str "ERROR when testing " fn-name)
+                        {::l/background (:red ghostwheel-colors)})
                (t/inc-report-counter! :error)
                (println "\nERROR in" (t/testing-vars-str m))
                (when (seq (:testing-contexts (t/get-current-env)))
                  (println (t/testing-contexts-str)))
                (when-let [message (:message m)] (println message))
                (t/print-comparison m)
-               (js/console.groupEnd)))))
+               (l/group-end)))))
 
 
 (defmethod t/report [::default :end-run-tests] [m]
