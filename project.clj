@@ -26,6 +26,7 @@
                                        :asset-path    "base/resources/test/dev"
                                        :output-dir    "resources/test/dev"
                                        :output-to     "resources/test/dev.js"
+                                       :pretty-print  true
                                        :optimizations :none
                                        :ghostwheel    true}}
                        {:id           "prod-test"
@@ -34,6 +35,7 @@
                                        :asset-path    "base/resources/test/prod"
                                        :output-dir    "resources/test/prod"
                                        :output-to     "resources/test/prod.js"
+                                       :pretty-print  true
                                        :optimizations :none}}
                        {:id           "dev-test-node"
                         :source-paths ["src" "test"]
@@ -41,6 +43,7 @@
                                        :asset-path    "base/resources/test/dev_node"
                                        :output-dir    "resources/test/dev_node"
                                        :output-to     "resources/test/dev_node.js"
+                                       :pretty-print  true
                                        :optimizations :simple
                                        :target        :nodejs
                                        :ghostwheel    true}}
@@ -50,6 +53,7 @@
                                        :asset-path    "base/resources/test/prod_node"
                                        :output-dir    "resources/test/prod_node"
                                        :output-to     "resources/test/prod_node.js"
+                                       :pretty-print  true
                                        :optimizations :simple
                                        :target        :nodejs}}]})
 
