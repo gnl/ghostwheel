@@ -82,11 +82,6 @@
                     :report-output   :js-console})
 
 
-(defn DBG [data]
-  #?(:clj  (println data)
-     :cljs (js/console.log data))
-  data)
-
 
 (defn cljs-env? [env] (boolean (:ns env)))
 

@@ -58,85 +58,85 @@
 
 
 (defmethod t/report [::default :pass] [m]
-  #?(:cljs (let [{:keys [::ns-name ::fn-name ::fspec ::spec-checks ::check-coverage
-                         ::marked-unsafe ::plain-defns ::unchecked-defns
-                         ::unchecked-ns ::report-output]} (:message m)
+  (let [{:keys [::ns-name ::fn-name ::fspec ::spec-checks ::check-coverage
+                ::marked-unsafe ::plain-defns ::unchecked-defns
+                ::unchecked-ns ::report-output]} (:message m)
 
-                 warning-style       {::l/background (:orange0 ghostwheel-colors)}
-                 incomplete-coverage " => Test coverage incomplete."
-                 no-gen-testing      " => No generative testing performed"]
-             (do
-               (t/inc-report-counter! :pass)
-               ;; REVIEW : We don't expect
-               (when check-coverage
-                 (cond plain-defns
-                       (do
-                         (t/inc-report-counter! :warn)
-                         (l/group (str "WARNING: "
-                                       "Plain `defn` functions detected in "
-                                       ns-name
-                                       incomplete-coverage)
-                                  warning-style)
-                         (log (mapv symbol plain-defns))
-                         (log-bold "=> Use `>defn` instead.")
-                         (l/group-end))
+        warning-style       {::l/background (:orange0 ghostwheel-colors)}
+        incomplete-coverage " => Test coverage incomplete."
+        no-gen-testing      " => No generative testing performed"]
+    (do
+      (inc-report-counter! :pass)
+      ;; REVIEW : We don't expect
+      (when check-coverage
+        (cond plain-defns
+              (do
+                (inc-report-counter! :warn)
+                (l/group (str "WARNING: "
+                              "Plain `defn` functions detected in "
+                              ns-name
+                              incomplete-coverage)
+                         warning-style)
+                (log (mapv symbol plain-defns))
+                (log-bold "=> Use `>defn` instead.")
+                (l/group-end))
 
-                       unchecked-defns
-                       (do
-                         (t/inc-report-counter! :warn)
-                         (l/group (str "WARNING: "
-                                       "`::g/check` disabled for some functions in "
-                                       ns-name
-                                       incomplete-coverage)
-                                  warning-style)
-                         (log (mapv symbol unchecked-defns))
-                         (l/group-end))
+              unchecked-defns
+              (do
+                (inc-report-counter! :warn)
+                (l/group (str "WARNING: "
+                              "`::g/check` disabled for some functions in "
+                              ns-name
+                              incomplete-coverage)
+                         warning-style)
+                (log (mapv symbol unchecked-defns))
+                (l/group-end))
 
-                       unchecked-ns
-                       (do
-                         (t/inc-report-counter! :warn)
-                         (l/group (str "WARNING: "
-                                       "`::g/check` disabled for "
-                                       ns-name
-                                       incomplete-coverage)
-                                  warning-style)
-                         (l/group-end))
+              unchecked-ns
+              (do
+                (inc-report-counter! :warn)
+                (l/group (str "WARNING: "
+                              "`::g/check` disabled for "
+                              ns-name
+                              incomplete-coverage)
+                         warning-style)
+                (l/group-end))
 
 
-                       marked-unsafe
-                       (do
-                         (t/inc-report-counter! :warn)
-                         (l/group (str "WARNING: "
-                                       fn-name
-                                       " – Function marked as unsafe."
-                                       no-gen-testing
-                                       incomplete-coverage)
-                                  warning-style)
-                         (l/group-end))
+              marked-unsafe
+              (do
+                (inc-report-counter! :warn)
+                (l/group (str "WARNING: "
+                              fn-name
+                              " – Function marked as unsafe."
+                              no-gen-testing
+                              incomplete-coverage)
+                         warning-style)
+                (l/group-end))
 
-                       (not fspec)
-                       (do
-                         (t/inc-report-counter! :warn)
-                         (l/group (str "WARNING: "
-                                       fn-name
-                                       " – Missing fspec(s)"
-                                       no-gen-testing
-                                       incomplete-coverage)
-                                  warning-style)
-                         (l/group-end))
+              (not fspec)
+              (do
+                (inc-report-counter! :warn)
+                (l/group (str "WARNING: "
+                              fn-name
+                              " – Missing fspec(s)"
+                              no-gen-testing
+                              incomplete-coverage)
+                         warning-style)
+                (l/group-end))
 
-                       (not spec-checks)
-                       (do
-                         (t/inc-report-counter! :warn)
-                         (l/group (str "WARNING: "
-                                       fn-name
-                                       " – Number of tests set to 0"
-                                       no-gen-testing
-                                       incomplete-coverage)
-                                  warning-style)
-                         (l/group-end))
+              (not spec-checks)
+              (do
+                (inc-report-counter! :warn)
+                (l/group (str "WARNING: "
+                              fn-name
+                              " – Number of tests set to 0"
+                              no-gen-testing
+                              incomplete-coverage)
+                         warning-style)
+                (l/group-end))
 
-                       :else nil))))))
+              :else nil)))))
 
 
 ;; REVIEW: We don't seem to be needing this anymore.
@@ -159,25 +159,25 @@
 
 
 (defn- report-unexpected-side-effects [message]
-  #?(:cljs (let [{:keys [::fn-name ::found-fx]} message]
-             (log-bold "Possible side effects detected in function marked as safe:\n")
-             (->> found-fx
-                  ;(map (fn [[type form details]] {:found type :at form :kind details}))
-                  (map (fn [[type form details]]
-                         (vec (concat [type]
-                                      (when form ['at form])
-                                      (when details ['kind details])))))
-                  (map log)
-                  (doall))
-             (->> (str "=> Either remove the side effects, rename the function to '"
-                       (str (name fn-name) "!'")
-                       " to mark it as unsafe, or add ^::g/ignore-fx to its
-                       metadata to disable this warning and consider the
-                       function safe for automated generative testing.")
-                  cs/clean
-                  wrap
-                  log)
-             (log (wrap issue-msg)))))
+  (let [{:keys [::fn-name ::found-fx]} message]
+    (log-bold "Possible side effects detected in function marked as safe:\n")
+    (->> found-fx
+         ;(map (fn [[type form details]] {:found type :at form :kind details}))
+         (map (fn [[type form details]]
+                (vec (concat [type]
+                             (when form ['at form])
+                             (when details ['kind details])))))
+         (map log)
+         (doall))
+    (->> (str "=> Either remove the side effects, rename the function to '"
+              (str (name fn-name) "!'")
+              " to mark it as unsafe, or add ^::g/ignore-fx to its
+              metadata to disable this warning and consider the
+              function safe for automated generative testing.")
+         cs/clean
+         wrap
+         log)
+    (log (wrap issue-msg))))
 
 
 (defn- report-unexpected-safety [message]
@@ -196,64 +196,66 @@
 
 
 (defn- report-spec-check [{:keys [::spec-checks ::fn-name]}]
-  #?(:cljs (doseq [check spec-checks
-                   :let [test-ret (:clojure.test.check/ret check)]
-                   :when (not (:pass? test-ret))
-                   :let [spec-error (:result test-ret)
-                         data       (.-data spec-error)
-                         msg        (.-message spec-error)]]
-             (if-not data
-               (log-bold msg)
-               (do
-                 (when-let [args (::st/args data)]
-                   (log "\nCall:")
-                   (log (cons fn-name args)))
-                 (log)
-                 (when (= (::s/failure data) :instrument)
-                   (log (-> msg cs/lines first (str "\n"))))
-                 (-> (expound/printer-str nil data) (str "\n") log)
-                 (l/group-collapsed "Raw error data:" {::l/background (:base0 ghostwheel-colors)})
-                 (log msg)
-                 (log data)
-                 (l/group-end))))))
+  (doseq [check spec-checks
+          :let [test-ret (:clojure.test.check/ret check)]
+          :when (not (:pass? test-ret))
+          :let [spec-error (:result test-ret)
+                data       (.-data spec-error)
+                msg        (.-message spec-error)]]
+    (if-not data
+      (log-bold msg)
+      (do
+        (when-let [args (::st/args data)]
+          (log "\nCall:")
+          (log (cons fn-name args)))
+        (log)
+        (when (= (::s/failure data) :instrument)
+          (log (-> msg cs/lines first (str "\n"))))
+        (-> (#?(:cljs expound/printer-str :clj #'expound/printer-str) nil data)
+            (str "\n")
+            log)
+        (l/group-collapsed "Raw error data:" {::l/background (:base0 ghostwheel-colors)})
+        (log msg)
+        (log data)
+        (l/group-end)))))
 
 
 (defmethod t/report [::default :fail] [m]
-  #?(:cljs (let [message     (:message m)
-                 {:keys [::fn-name ::failure]} message
-                 summary     (case failure
-                               ::unexpected-fx "Possible side effects detected"
-                               ::unexpected-safety "Expected side effects not detected"
-                               ::spec-failure "Spec check"
-                               nil)
-                 start-group l/group]
-             (t/inc-report-counter! :fail)
-             (start-group (str "FAILED: " fn-name " - " summary)
-                          {::l/background (:red ghostwheel-colors)})
-             (case failure
-               ::unexpected-fx (report-unexpected-side-effects message)
-               ::unexpected-safety (report-unexpected-safety message)
-               ::spec-failure (report-spec-check message)
-               (do
-                 (log-bold (str "Undefined failure reason: " failure))
-                 (log message)))
-             (l/group-end))))
+  (let [message     (:message m)
+        {:keys [::fn-name ::failure]} message
+        summary     (case failure
+                      ::unexpected-fx "Possible side effects detected"
+                      ::unexpected-safety "Expected side effects not detected"
+                      ::spec-failure "Spec check"
+                      nil)
+        start-group l/group]
+    (inc-report-counter! :fail)
+    (start-group (str "FAILED: " fn-name " - " summary)
+                 {::l/background (:red ghostwheel-colors)})
+    (case failure
+      ::unexpected-fx (report-unexpected-side-effects message)
+      ::unexpected-safety (report-unexpected-safety message)
+      ::spec-failure (report-spec-check message)
+      (do
+        (log-bold (str "Undefined failure reason: " failure))
+        (log message)))
+    (l/group-end)))
 
 
-;; NOTE - test this and clean it up
+;; REVIEW - test this and clean it up
 (defmethod t/report [::default :error] [m]
-  #?(:cljs (let [[fn-name spec-check] (:message m)]
-             (do
-               (t/inc-report-counter! :error)
-               (l/group (str "ERROR when testing " fn-name)
-                        {::l/background (:red ghostwheel-colors)})
-               (t/inc-report-counter! :error)
-               (println "\nERROR in" (t/testing-vars-str m))
-               (when (seq (:testing-contexts (t/get-current-env)))
-                 (println (t/testing-contexts-str)))
-               (when-let [message (:message m)] (println message))
-               (t/print-comparison m)
-               (l/group-end)))))
+  (let [[fn-name spec-check] (:message m)]
+    (do
+      (inc-report-counter! :error)
+      (l/group (str "ERROR when testing " fn-name)
+               {::l/background (:red ghostwheel-colors)})
+      (inc-report-counter! :error)
+      (println "\nERROR in" (t/testing-vars-str m))
+      #?(:cljs (when (seq (:testing-contexts (t/get-current-env)))
+                 (println (t/testing-contexts-str))))
+      (when-let [message (:message m)] (println message))
+      #?(:cljs (t/print-comparison m))
+      (l/group-end))))
 
 
 (defmethod t/report [::default :end-run-tests] [m]

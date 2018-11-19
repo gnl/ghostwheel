@@ -9,7 +9,7 @@
 (ns ghostwheel.logging
   (:require [cuerdas.core :as cs]
             [clojure.pprint :refer [pprint]]
-            [ghostwheel.utils :as u :refer [DBG] :include-macros true]))
+            [ghostwheel.utils :as u :include-macros true]))
 
 (def *nesting (atom ""))
 
