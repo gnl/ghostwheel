@@ -16,3 +16,7 @@
 (defmacro expand
   [form]
   `(macroexpand-1 (quote ~form)))
+
+(defmacro expand-full
+  [form]
+  `(macroexpand (quote ~form)))
