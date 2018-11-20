@@ -88,7 +88,7 @@
 
 
 (defn- plain-log [msg]
-  (if-not msg
+  (if (nil? msg)
     (println @*nesting)
     (println (->> (if (string? msg) msg (with-out-str (pprint msg)))
                   (cs/lines)
@@ -101,7 +101,7 @@
   ([msg]
    (log msg nil))
   ([msg style]
-   (let [styled-msg (get-styled-label-2 (or msg "") style *report-output*)]
+   (let [styled-msg (get-styled-label-2 msg style *report-output*)]
      (do
        #?(:clj  (apply plain-log styled-msg)
           :cljs (case *report-output*

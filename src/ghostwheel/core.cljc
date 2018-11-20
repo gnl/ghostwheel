@@ -20,7 +20,7 @@
             [ghostwheel.reporting :as r]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config
                                             get-ns-meta get-ns-name clj->cljs]]
-            [ghostwheel.logging :as l :refer [pr-clog get-styled-label clog]]
+            [ghostwheel.logging :as l :refer [pr-clog get-styled-label clog log]]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]
                        #_[com.rpl.specter
@@ -975,27 +975,32 @@
 
 
 (defn- generate-coverage-check [env nspace]
-  (let [{:keys [::check-coverage ::check]}
-        (merge (u/get-base-config env)
-               (:meta (ana-api/find-ns nspace)))
+  (let [cljs?           (cljs-env? env)
 
+        {:keys [::check-coverage ::check]}
+        (merge (u/get-base-config env)
+               (if cljs?
+                 (:meta (ana-api/find-ns nspace))
+                 (meta (find-ns nspace))))
+
+        get-intern-meta #(meta (if cljs? (key %) (val %)))
         all-checked-fns (when check-coverage
                           ;; TODO: Make this work on clj in addition to cljs
-                          (some->> (ana-api/ns-interns nspace)
-                                   (filter #(-> % val :fn-var))
+                          (some->> (if cljs? (ana-api/ns-interns nspace) (ns-interns nspace))
+                                   (filter (comp (if cljs? :fn-var t/function?) val))
                                    (remove #(-> % key str (cs/ends-with? test-suffix)))
-                                   (remove #(false? (-> % key meta ::check-coverage)))))
+                                   (remove #(-> % get-intern-meta ::check-coverage false?))))
         plain-defns     (when check-coverage
                           ;; TODO: Make this work on clj in addition to cljs
                           (some->> all-checked-fns
-                                   (remove #(-> % key meta ::ghostwheel))
+                                   (remove #(-> % get-intern-meta ::ghostwheel))
                                    (map (comp str key))
                                    vec))
         unchecked-defns (when check-coverage
                           ;; TODO: Make this work on clj in addition to cljs
                           (some->> all-checked-fns
-                                   (filter #(-> % key meta ::ghostwheel))
-                                   (filter #(false? (-> % key meta ::check)))
+                                   (filter #(-> % get-intern-meta ::ghostwheel))
+                                   (filter #(-> % get-intern-meta ::check false?))
                                    (map (comp str key))
                                    vec))
         ;; TODO check for unchecked >defn
@@ -1026,6 +1031,9 @@
   (let [base-config
         (u/get-base-config env)
 
+        cljs?
+        (cljs-env? env)
+
         {:keys [::extrument]}
         base-config
 
@@ -1039,8 +1047,8 @@
         (mapcat (fn [[type target]]
                   (if (not= type :regex)
                     [[type (:sym target)]]
-                    (for [ns (ana-api/all-ns)
-                          :when (re-matches target (str ns))]
+                    (for [ns (if cljs? (ana-api/all-ns) (all-ns))
+                          :when (re-matches target (str (if cljs? ns (ns-name ns))))]
                       [:ns ns])))
                 conformed-targets)
 
@@ -1048,18 +1056,20 @@
         (->> (for [target processed-targets
                    :let [[type sym] target]]
                (case type
-                 :fn (let [analysis-map (ana-api/resolve env sym)
+                 :fn (let [fn-data  (if cljs? (ana-api/resolve env sym) (resolve sym))
+                           metadata (if cljs? (:meta fn-data) (meta fn-data))
+
                            {:keys [::check-coverage ::check]}
                            (merge (u/get-base-config env)
-                                  (meta (:ns analysis-map))
-                                  (:meta analysis-map))]
-                       (cond (not analysis-map)
+                                  (meta (:ns fn-data))
+                                  metadata)]
+                       (cond (not fn-data)
                              (str "Cannot resolve `" (str sym) "`")
 
-                             (not (:fn-var analysis-map))
+                             (not (if cljs? (:fn-var fn-data) #?(:clj (clojure.test/function? sym))))
                              (str "`" sym "` is not a function.")
 
-                             (not (get-in analysis-map [:meta ::ghostwheel]))
+                             (not (::ghostwheel metadata))
                              (str "`" sym "` is not a Ghostwheel function => Use `>defn` to define it.")
 
                              (not check)
@@ -1067,9 +1077,10 @@
 
                              :else
                              nil))
-                 :ns (let [analysis-map (ana-api/find-ns sym)
-                           {:keys [::check]} (merge base-config (:meta analysis-map))]
-                       (cond (not analysis-map)
+                 :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) (find-ns sym))
+                           metadata (if cljs? (:meta ns-data) (meta ns-data))
+                           {:keys [::check]} (merge base-config metadata)]
+                       (cond (not ns-data)
                              (str "Cannot resolve `" (str sym) "`")
 
                              :else
