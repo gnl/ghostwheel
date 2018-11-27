@@ -982,13 +982,13 @@
         (merge (u/get-base-config env)
                (if cljs?
                  (:meta (ana-api/find-ns nspace))
-                 (meta (find-ns nspace))))
+                 #?(:clj (meta (find-ns nspace)))))
 
         get-intern-meta #(meta (if cljs? (key %) (val %)))
         all-checked-fns (when check-coverage
                           ;; TODO: Make this work on clj in addition to cljs
-                          (some->> (if cljs? (ana-api/ns-interns nspace) (ns-interns nspace))
-                                   (filter (comp (if cljs? :fn-var t/function?) val))
+                          (some->> (if cljs? (ana-api/ns-interns nspace) #?(:clj (ns-interns nspace)))
+                                   (filter (comp (if cljs? :fn-var #?(:clj t/function?)) val))
                                    (remove #(-> % key str (cs/ends-with? test-suffix)))
                                    (remove #(-> % get-intern-meta ::check-coverage false?))))
         plain-defns     (when check-coverage
@@ -1048,8 +1048,8 @@
         (mapcat (fn [[type target]]
                   (if (not= type :regex)
                     [[type (:sym target)]]
-                    (for [ns (if cljs? (ana-api/all-ns) (all-ns))
-                          :when (re-matches target (str (if cljs? ns (ns-name ns))))]
+                    (for [ns (if cljs? (ana-api/all-ns) #?(:clj (all-ns)))
+                          :when (re-matches target (str (if cljs? ns #?(:clj (ns-name ns)))))]
                       [:ns ns])))
                 conformed-targets)
 
@@ -1057,8 +1057,8 @@
         (->> (for [target processed-targets
                    :let [[type sym] target]]
                (case type
-                 :fn (let [fn-data  (if cljs? (ana-api/resolve env sym) (resolve sym))
-                           metadata (if cljs? (:meta fn-data) (meta fn-data))
+                 :fn (let [fn-data  (if cljs? (ana-api/resolve env sym) #?(:clj (resolve sym)))
+                           metadata (if cljs? (:meta fn-data) #?(:clj (meta fn-data)))
 
                            {:keys [::check-coverage ::check]}
                            (merge (u/get-base-config env)
@@ -1067,7 +1067,7 @@
                        (cond (not fn-data)
                              (str "Cannot resolve `" (str sym) "`")
 
-                             (not (if cljs? (:fn-var fn-data) #?(:clj (clojure.test/function? sym))))
+                             (not (if cljs? (:fn-var fn-data) #?(:clj (t/function? sym))))
                              (str "`" sym "` is not a function.")
 
                              (not (::ghostwheel metadata))
@@ -1078,8 +1078,8 @@
 
                              :else
                              nil))
-                 :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) (find-ns sym))
-                           metadata (if cljs? (:meta ns-data) (meta ns-data))
+                 :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) #?(:clj (find-ns sym)))
+                           metadata (if cljs? (:meta ns-data) #?(:clj (meta ns-data)))
                            {:keys [::check]} (merge base-config metadata)]
                        ;; TODO Shout if namespace doesn't have ::check enabled
                        (cond (not ns-data)
