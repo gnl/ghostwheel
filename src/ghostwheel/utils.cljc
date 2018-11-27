@@ -98,7 +98,9 @@
           (when cljs.env/*compiler*
             (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
                 (get-in @cljs.env/*compiler* [:options :ghostwheel])))
-          #?(:clj (edn/read-string (slurp "ghostwheel.edn"))))]
+          ;; TODO error checking
+          #?(:clj (merge (edn/read-string (slurp "ghostwheel.edn"))
+                         {:report-output :repl})))]
     (cond
       (map? compiler-config) (setval [MAP-KEYS NAMESPACE] (str `ghostwheel.core) compiler-config)
       (true? compiler-config) {}

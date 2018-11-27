@@ -42,7 +42,7 @@
 (defmethod report :summary [m]
   (let [{:keys [fail error pass test warn]} m
         passed?   (= pass test)
-        warnings? (> warn 0)
+        warnings? (some-> warn (> 0))
         color     (cond
                     (= test 0) (:black ghostwheel-colors)
                     passed? (:green ghostwheel-colors)

@@ -152,7 +152,7 @@
    (group* false label style)))
 
 (defn- plain-group-end []
-  (swap! *nesting #(subs % 0 (- (count %) 2))))
+  (swap! *nesting #(subs % 0 (max 0 (- (count %) 2)))))
 
 (defn group-end []
   #?(:clj  (plain-group-end)
