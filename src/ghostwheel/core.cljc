@@ -339,7 +339,8 @@
                                                              :args ::arg-list
                                                              :body ::unsafe-form)
                                          :unsafe-name (s/cat :fun #{'fn 'fn*}
-                                                             :name (every-pred simple-symbol? bang-suffix?)
+                                                             :name (every-pred simple-symbol?
+                                                                               bang-suffix?)
                                                              :args ::arg-list
                                                              :body any?)))
            :unsafe-clj-call ::unsafe-clj-call
@@ -1080,6 +1081,7 @@
                  :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) (find-ns sym))
                            metadata (if cljs? (:meta ns-data) (meta ns-data))
                            {:keys [::check]} (merge base-config metadata)]
+                       ;; TODO Shout if namespace doesn't have ::check enabled
                        (cond (not ns-data)
                              (str "Cannot resolve `" (str sym) "`")
 
