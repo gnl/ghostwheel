@@ -773,19 +773,20 @@
         ret-jstype  (get-type false (:ret conformed-gspec))]
     (str "function(" args-jstype "): " ret-jstype)))
 
-(defn- generate-type-annotations [conformed-bs]
-  (case (key conformed-bs)
-    :arity-1 (when-let [gspec (-> conformed-bs val :gspec)]
-               {:jsdoc [(str "@type {" (get-gspec-type gspec) "}")]})
-    ;; REVIEW: There doesn't seem to be a way to get valid annotations for args of
-    ;; multi-arity functions and attempts to just annotate the return value(s) failed
-    ;; as well. It wasn't possible to put together an annotation which was both
-    ;; considered valid and resulted in a successful type check.
-    :arity-n nil #_(when-let [ret-types (as-> (val conformed-bs) x
-                                              (map #(get-type false (-> % :gspec :ret)) x)
-                                              (distinct x)
-                                              (when (not-any? #{"*" "?"} x) x))]
-                     {:jsdoc [(str "@return {" (cs/join "|" ret-types) "}")]})))
+(defn- generate-type-annotations [env conformed-bs]
+  (when (cljs-env? env)
+    (case (key conformed-bs)
+      :arity-1 (when-let [gspec (-> conformed-bs val :gspec)]
+                 {:jsdoc [(str "@type {" (get-gspec-type gspec) "}")]})
+      ;; REVIEW: There doesn't seem to be a way to get valid annotations for args of
+      ;; multi-arity functions and attempts to just annotate the return value(s) failed
+      ;; as well. It wasn't possible to put together an annotation which was both
+      ;; considered valid and resulted in a successful type check.
+      :arity-n nil #_(when-let [ret-types (as-> (val conformed-bs) x
+                                                (map #(get-type false (-> % :gspec :ret)) x)
+                                                (distinct x)
+                                                (when (not-any? #{"*" "?"} x) x))]
+                       {:jsdoc [(str "@return {" (cs/join "|" ret-types) "}")]}))))
 
 (defn- generate-fdef
   [forms]
@@ -887,7 +888,7 @@
           traced-fn-name    (gensym (str fn-name "__"))
           docstring         (:docstring conformed-gdefn)
           meta-map          (merge (:meta conformed-gdefn)
-                                   (generate-type-annotations fn-bodies)
+                                   (generate-type-annotations env fn-bodies)
                                    {::ghostwheel true})
           ;;; Assemble the config
           config            (s/assert ::ghostwheel-config
