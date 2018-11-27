@@ -1014,7 +1014,7 @@
                           `(do
                              (t/deftest ~test-name
                                (t/is true ~(merge base-data data)))
-                             (binding [cljs.test/*current-env* (t/empty-env ::r/default)]
+                             (binding [t/report r/report]
                                (~test-name))
                              (ns-unmap (quote ~(get-ns-name env))
                                        (quote ~test-name))
@@ -1100,9 +1100,10 @@
              ~@(for [target processed-targets
                      :let [[type sym] target]]
                  (case type
-                   :fn `(binding [cljs.test/*current-env* (t/empty-env ::r/default)]
+                   :fn `(binding [t/report r/report]
                           (~(symbol (str sym test-suffix))))
-                   :ns `(t/run-tests (t/empty-env ::r/default) (quote ~sym))))
+                   :ns `(binding [t/report r/report]
+                          (t/run-tests (quote ~sym)))))
              ~@(->> (for [target processed-targets
                           :let [[type sym] target]
                           :when (= type :ns)]

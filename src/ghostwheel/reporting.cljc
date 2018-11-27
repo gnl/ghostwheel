@@ -18,21 +18,27 @@
 
 (def *all-tests-successful (atom true))
 
+
 (def wrap (partial u/wrap-line 80))
+
 
 (def inc-report-counter! #?(:clj t/inc-report-counter
                             :cljs t/inc-report-counter!))
 
-(defmethod t/report [::default :begin-test-ns] [m]
+
+(defmulti ^:dynamic report :type)
+
+
+(defmethod report :begin-test-ns [m]
   (l/group (str "Checking " (:ns m) " ...")
            {::l/background (:base01 ghostwheel-colors)}))
 
 
-(defmethod t/report [::default :end-test-ns] [m]
+(defmethod report :end-test-ns [m]
   (l/group-end))
 
 
-(defmethod t/report [::default :summary] [m]
+(defmethod report :summary [m]
   (let [{:keys [fail error pass test warn]} m
         passed?   (= pass test)
         warnings? (> warn 0)
@@ -59,7 +65,7 @@
       (dorun (repeatedly 5 l/group-end)))))
 
 
-(defmethod t/report [::default :pass] [m]
+(defmethod report :pass [m]
   (let [{:keys [::ns-name ::fn-name ::fspec ::spec-checks ::check-coverage
                 ::marked-unsafe ::plain-defns ::unchecked-defns
                 ::unchecked-ns ::report-output]} (:message m)
@@ -222,7 +228,7 @@
         (l/group-end)))))
 
 
-(defmethod t/report [::default :fail] [m]
+(defmethod report :fail [m]
   (let [message     (:message m)
         {:keys [::fn-name ::failure]} message
         summary     (case failure
@@ -245,7 +251,7 @@
 
 
 ;; REVIEW - test this and clean it up
-(defmethod t/report [::default :error] [m]
+(defmethod report :error [m]
   (let [[fn-name spec-check] (:message m)]
     (do
       (inc-report-counter! :error)
@@ -260,5 +266,9 @@
       (l/group-end))))
 
 
-(defmethod t/report [::default :end-run-tests] [m]
+(defmethod report :end-run-tests [m]
   (swap! *all-tests-successful #(and %1 %2) (t/successful? m)))
+
+
+(defmethod report :default [_])
+
