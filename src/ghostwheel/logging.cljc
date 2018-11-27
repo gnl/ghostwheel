@@ -104,10 +104,9 @@
    (log msg nil))
   ([msg style]
    (let [styled-msg (get-styled-label-2 msg style *report-output*)]
-     #?(:clj  (apply plain-log styled-msg)
-        :cljs (case *report-output*
-                :repl (apply plain-log styled-msg)
-                :js-console (apply js/console.log styled-msg))))))
+     (case *report-output*
+       :repl (apply plain-log styled-msg)
+       :js-console #?(:cljs (apply js/console.log styled-msg))))))
 
 
 (defn DBG
@@ -131,10 +130,9 @@
    (group* open? label nil))
   ([open? label style]
    (let [styled-label (get-styled-label-2 label style *report-output*)]
-     #?(:clj  (apply plain-group styled-label)
-        :cljs (case *report-output*
-                :repl (apply plain-group styled-label)
-                :js-console (apply (if open?
+     (case *report-output*
+       :repl (apply plain-group styled-label)
+       :js-console #?(:cljs (apply (if open?
                                      js/console.group
                                      js/console.groupCollapsed)
                                    styled-label))))))
@@ -155,10 +153,9 @@
   (swap! *nesting #(subs % 0 (max 0 (- (count %) 2)))))
 
 (defn group-end []
-  #?(:clj  (plain-group-end)
-     :cljs (case *report-output*
-             :repl (plain-group-end)
-             :js-console (js/console.groupEnd))))
+  (case *report-output*
+    :repl (plain-group-end)
+    :js-console #?(:cljs (js/console.groupEnd))))
 
 (defn log-bold [msg]
   (log msg {::weight "bold"}))
