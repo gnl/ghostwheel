@@ -95,19 +95,27 @@
                   (map #(str @*nesting %))
                   (cs/join "\n")))))
 
+;; TODO make (log nil) print a newline
 (defn log
   ([]
-   (log nil nil))
+   (log "\n" nil))
   ([msg]
    (log msg nil))
   ([msg style]
    (let [styled-msg (get-styled-label-2 msg style *report-output*)]
-     (do
-       #?(:clj  (apply plain-log styled-msg)
-          :cljs (case *report-output*
-                  :repl (apply plain-log styled-msg)
-                  :js-console (apply js/console.log styled-msg)))
-       msg))))
+     #?(:clj  (apply plain-log styled-msg)
+        :cljs (case *report-output*
+                :repl (apply plain-log styled-msg)
+                :js-console (apply js/console.log styled-msg))))))
+
+
+(defn DBG
+  [& msgs]
+  (do
+    (doseq [msg msgs]
+     (log msg))
+    (last msgs)))
+
 
 (defn- plain-group [label]
   (do
