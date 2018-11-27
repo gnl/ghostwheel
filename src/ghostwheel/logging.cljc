@@ -67,7 +67,8 @@
                    (when background "padding: 2px 6px; border-radius: 2px;"))]
     [label style]))
 
-(defn get-styled-label-2 [label {:keys [::foreground ::background ::weight] :as style} output & [length]]
+(defn get-styled-label-2
+  [label {:keys [::foreground ::background ::weight] :as style} output & [length]]
   (if-not style
     [label]
     (let [label (cond->> (if length
@@ -95,7 +96,7 @@
                   (map #(str @*nesting %))
                   (cs/join "\n")))))
 
-;; TODO make (log nil) print a newline
+
 (defn log
   ([]
    (log "\n" nil))

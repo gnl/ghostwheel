@@ -976,49 +976,46 @@
 
 
 (defn- generate-coverage-check [env nspace]
-  (let [cljs?           (cljs-env? env)
+  (let [cljs?             (cljs-env? env)
+        {:keys [::check-coverage ::check]} (merge (u/get-base-config env)
+                                                  (if cljs?
+                                                    (:meta (ana-api/find-ns nspace))
+                                                    #?(:clj (meta (find-ns nspace)))))
 
-        {:keys [::check-coverage ::check]}
-        (merge (u/get-base-config env)
-               (if cljs?
-                 (:meta (ana-api/find-ns nspace))
-                 #?(:clj (meta (find-ns nspace)))))
-
-        get-intern-meta #(meta (if cljs? (key %) (val %)))
-        all-checked-fns (when check-coverage
-                          ;; TODO: Make this work on clj in addition to cljs
-                          (some->> (if cljs? (ana-api/ns-interns nspace) #?(:clj (ns-interns nspace)))
-                                   (filter (comp (if cljs? :fn-var #?(:clj t/function?)) val))
-                                   (remove #(-> % key str (cs/ends-with? test-suffix)))
-                                   (remove #(-> % get-intern-meta ::check-coverage false?))))
-        plain-defns     (when check-coverage
-                          ;; TODO: Make this work on clj in addition to cljs
-                          (some->> all-checked-fns
-                                   (remove #(-> % get-intern-meta ::ghostwheel))
-                                   (map (comp str key))
-                                   vec))
-        unchecked-defns (when check-coverage
-                          ;; TODO: Make this work on clj in addition to cljs
-                          (some->> all-checked-fns
-                                   (filter #(-> % get-intern-meta ::ghostwheel))
-                                   (filter #(-> % get-intern-meta ::check false?))
-                                   (map (comp str key))
-                                   vec))
+        get-intern-meta   #(meta (if cljs? (key %) (val %)))
+        all-checked-fns   (when check-coverage
+                            ;; TODO: Make this work on clj in addition to cljs
+                            (some->> (if cljs? (ana-api/ns-interns nspace) #?(:clj (ns-interns nspace)))
+                                     (filter (comp (if cljs? :fn-var #?(:clj t/function?)) val))
+                                     (remove #(-> % key str (cs/ends-with? test-suffix)))
+                                     (remove #(-> % get-intern-meta ::check-coverage false?))))
+        plain-defns       (when check-coverage
+                            ;; TODO: Make this work on clj in addition to cljs
+                            (some->> all-checked-fns
+                                     (remove #(-> % get-intern-meta ::ghostwheel))
+                                     (map (comp str key))
+                                     vec))
+        unchecked-defns   (when check-coverage
+                            ;; TODO: Make this work on clj in addition to cljs
+                            (some->> all-checked-fns
+                                     (filter #(-> % get-intern-meta ::ghostwheel))
+                                     (filter #(-> % get-intern-meta ::check false?))
+                                     (map (comp str key))
+                                     vec))
         ;; TODO check for unchecked >defn
-        base-data       {::r/ns-name        (str nspace)
-                         ::r/check-coverage check-coverage}
-        test-name       (let [escaped-nspace (cs/replace (str nspace) "." "_")]
-                          (symbol (str "coverage__" escaped-nspace test-suffix)))
-        run-coverage-test
-                        (fn [data]
-                          `(do
-                             (t/deftest ~test-name
-                               (t/is true ~(merge base-data data)))
-                             (binding [t/report r/report]
-                               (~test-name))
-                             (ns-unmap (quote ~(get-ns-name env))
-                                       (quote ~test-name))
-                             nil))]
+        base-data         {::r/ns-name        (str nspace)
+                           ::r/check-coverage check-coverage}
+        test-name         (let [escaped-nspace (cs/replace (str nspace) "." "_")]
+                            (symbol (str "coverage__" escaped-nspace test-suffix)))
+        run-coverage-test (fn [data]
+                            `(do
+                               (t/deftest ~test-name
+                                 (t/is true ~(merge base-data data)))
+                               (binding [t/report r/report]
+                                 (~test-name))
+                               (ns-unmap (quote ~(get-ns-name env))
+                                         (quote ~test-name))
+                               nil))]
     `(do
        ~(when (not check)
           (run-coverage-test {::r/unchecked-ns true}))
@@ -1088,8 +1085,6 @@
                              :else
                              nil))))
              (remove nil?))]
-    ;; TODO implement for clj
-    ;(when (and check (cljs-env? env)))
     (if (not-empty errors)
       (u/gen-exception env (str "\n" (cs/join "\n" errors)))
       `(when *global-check-allowed?*
