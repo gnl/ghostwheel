@@ -123,7 +123,7 @@
 (defn- plain-group [label]
   (do
     (log)
-    (log (str "|> " label))
+    (log (str @*nesting "|> " label))
     (swap! *nesting #(str % "| "))))
 
 (defn- group*
