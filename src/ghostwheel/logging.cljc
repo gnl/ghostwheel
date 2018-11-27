@@ -111,11 +111,13 @@
 
 
 (defn DBG
-  [& msgs]
-  (do
-    (doseq [msg msgs]
-     (log msg))
-    (last msgs)))
+  ([]
+   (log "#> MARK"))
+  ([& msgs]
+   (do
+     (doseq [msg msgs]
+       (if-not msg (log "nil") (log msg)))
+     (last msgs))))
 
 
 (defn- plain-group [label]
