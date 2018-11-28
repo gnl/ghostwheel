@@ -88,23 +88,33 @@
                     :report-output   :js-console})
 
 
-
 (defn cljs-env? [env] (boolean (:ns env)))
 
 
 (defn get-ghostwheel-compiler-config [env]
-  (let [compiler-config
-        (if (cljs-env? env)
-          (when cljs.env/*compiler*
-            (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
-                (get-in @cljs.env/*compiler* [:options :ghostwheel])))
-          ;; TODO error checking
-          #?(:clj (merge (edn/read-string (slurp "ghostwheel.edn"))
-                         {:report-output :repl})))]
-    (cond
-      (map? compiler-config) (setval [MAP-KEYS NAMESPACE] (str `ghostwheel.core) compiler-config)
-      (true? compiler-config) {}
-      :else nil)))
+  (let [cljs?
+        (cljs-env? env)
+
+        cljs-compiler-config
+        (when (and cljs? cljs.env/*compiler*)
+          (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
+              (get-in @cljs.env/*compiler* [:options :ghostwheel])))
+
+        clj-overrides
+        (when-not cljs? {:report-output :repl})]
+    ;; TODO validation
+    (cond (and cljs? (not cljs-compiler-config))
+          nil
+
+          (and (not cljs?) #?(:clj (not= (System/getProperty "ghostwheel.enabled") "true")))
+          nil
+
+          :else
+          (setval [MAP-KEYS NAMESPACE]
+                  (str `ghostwheel.core)
+                  (merge #?(:clj (edn/read-string (slurp "ghostwheel.edn")))
+                         cljs-compiler-config
+                         clj-overrides)))))
 
 
 (defn get-base-config [env]
