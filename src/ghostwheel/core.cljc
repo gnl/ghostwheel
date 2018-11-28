@@ -44,7 +44,7 @@
 
 
 (def ghostwheel-colors l/ghostwheel-colors)
-(def ^:private test-suffix (str (gensym "__") "__ghostwheel-test"))
+(def ^:private test-suffix "__ghostwheel-test")
 (def ^:private *after-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
 
