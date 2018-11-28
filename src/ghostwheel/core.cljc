@@ -450,7 +450,7 @@
                                         %))
                       vec)])
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
-  (defn- generate-test [fn-name fspecs body-forms config]
+  (defn- generate-test [fn-name fspecs body-forms config cljs?]
     (let [{:keys [::check ::num-tests-quick ::num-tests-ext ::extensive-tests
                   ::check-coverage ::ignore-fx]}
           config
@@ -472,6 +472,7 @@
           unexpected-safety (boolean (and (not ignore-fx)
                                           marked-unsafe
                                           (empty? found-fx)))
+          spec-keyword-ns   (if cljs? 'clojure.test.check 'clojure.spec.test.check)
           spec-checks       (let [defined-fspecs (->> fspecs (remove nil?) vec)]
                               (when (and (seq defined-fspecs)
                                          (not marked-unsafe)
@@ -481,14 +482,17 @@
                                    (st/check-fn
                                     ~fn-name
                                     spec#
-                                    {~(keyword (str `clojure.test.check) "opts")
+                                    {~(keyword (str spec-keyword-ns) "opts")
                                      {:num-tests ~num-tests}}))))]
       [unexpected-fx
        `(t/deftest ~(symbol (str fn-name test-suffix))
           (let [spec-checks# ~spec-checks]
             ;; TODO The `spec-checks#` thing trips up clairvoyant
             ;; and prevents tracing during ghostwheel development
-            (t/is (and (every? #(-> % :clojure.test.check/ret :pass?) spec-checks#)
+            (t/is (and (every? #(-> %
+                                    ~(keyword (str spec-keyword-ns) "ret")
+                                    :pass?)
+                               spec-checks#)
                        ~(not unexpected-fx)
                        ~(not unexpected-safety))
                   {::r/fn-name        (quote ~fn-name)
@@ -872,7 +876,8 @@
           (remove nil? `(~arg-list ~prepost ~@body-forms))))]
   (defn- generate-defn
     [forms private env]
-    (let [conformed-gdefn   (s/conform ::>defn-args forms)
+    (let [cljs?             (cljs-env? env)
+          conformed-gdefn   (s/conform ::>defn-args forms)
           fn-bodies         (:bs conformed-gdefn)
           empty-bodies      (every? empty?
                                     (case (key fn-bodies)
@@ -926,7 +931,7 @@
                                            (let [fspecs (case arity
                                                           :arity-1 [(when fdef-body `(s/fspec ~@fdef-body))]
                                                           :arity-n individual-arity-fspecs)]
-                                             (generate-test fn-name fspecs fn-bodies config)))
+                                             (generate-test fn-name fspecs fn-bodies config cljs?)))
           process-fn-bodies (fn [trace]
                               (let [process-cfg {:env            env
                                                  :fn-name        fn-name
