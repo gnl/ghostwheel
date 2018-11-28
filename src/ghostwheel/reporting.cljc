@@ -84,7 +84,8 @@
                 (l/group (str "WARNING: "
                               "Plain `defn` functions detected in "
                               ns-name
-                              incomplete-coverage)
+                              incomplete-coverage
+                              ":")
                          warning-style)
                 (log (mapv symbol plain-defns))
                 (log-bold "=> Use `>defn` instead.")
@@ -96,7 +97,8 @@
                 (l/group (str "WARNING: "
                               "`::g/check` disabled for some functions in "
                               ns-name
-                              incomplete-coverage)
+                              incomplete-coverage
+                              ":")
                          warning-style)
                 (log (mapv symbol unchecked-defns))
                 (l/group-end))
@@ -244,7 +246,7 @@
                       nil)
         start-group l/group]
     (inc-report-counter! :fail)
-    (start-group (str "FAILED: " fn-name " - " summary)
+    (start-group (str "FAILED: " fn-name " – " summary)
                  {::l/background (:red ghostwheel-colors)})
     (case failure
       ::unexpected-fx (report-unexpected-side-effects message)
