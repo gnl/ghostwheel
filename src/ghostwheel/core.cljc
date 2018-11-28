@@ -1228,9 +1228,13 @@
   ([]
    `(check (quote ~(get-ns-name &env))))
   ([things]
-   (when (get-ghostwheel-compiler-config &env)
+   (if (get-ghostwheel-compiler-config &env)
      (cond-> (generate-check &env things)
-             (cljs-env? &env) (clj->cljs false)))))
+             (cljs-env? &env) (clj->cljs false))
+     (str "Ghostwheel disabled => "
+          (if (cljs-env? &env)
+            "Add `:external-config {:ghostwheel {}}` to your compiler options to enable."
+            "Start the REPL with the `-Dghostwheel.enabled=true` JVM system property to enable.")))))
 
 
 (s/def ::>fdef-args
