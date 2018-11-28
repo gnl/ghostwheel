@@ -23,7 +23,7 @@
 (def wrap (partial u/wrap-line 80))
 
 
-(def inc-report-counter! #?(:clj t/inc-report-counter
+(def inc-report-counter! #?(:clj  t/inc-report-counter
                             :cljs t/inc-report-counter!))
 
 
@@ -206,11 +206,13 @@
 
 (defn- report-spec-check [{:keys [::spec-checks ::fn-name]}]
   (doseq [check spec-checks
-          :let [test-ret (:clojure.test.check/ret check)]
+          :let [test-ret (get check #?(:clj  :clojure.spec.test.check/ret
+                                       :cljs :clojure.test.check/ret))]
           :when (not (:pass? test-ret))
           :let [spec-error (:result test-ret)
                 data       (.-data spec-error)
-                msg        (.-message spec-error)]]
+                msg        (try (.-message spec-error)
+                                (catch #?(:cljs js/Object :clj Exception) e nil))]]
     (if-not data
       (log-bold msg)
       (do
@@ -223,10 +225,13 @@
         (-> (#?(:cljs expound/printer-str :clj #'expound/printer-str) nil data)
             (str "\n")
             log)
-        (l/group-collapsed "Raw error data:" {::l/background (:base0 ghostwheel-colors)})
-        (log msg)
-        (log data)
-        (l/group-end)))))
+        ;; REVIEW: Too noisy in the REPL, but
+        ;; maybe add an option to enable it later
+        (when (= l/*report-output* :js-console)
+          (l/group-collapsed "Raw error data:" {::l/background (:base0 ghostwheel-colors)})
+          (log msg)
+          (log data)
+          (l/group-end))))))
 
 
 (defmethod report :fail [m]
@@ -253,18 +258,19 @@
 
 ;; REVIEW - test this and clean it up
 (defmethod report :error [m]
-  (let [[fn-name spec-check] (:message m)]
-    (do
-      (inc-report-counter! :error)
-      (l/group (str "ERROR when testing " fn-name)
-               {::l/background (:red ghostwheel-colors)})
-      (inc-report-counter! :error)
-      (println "\nERROR in" (t/testing-vars-str m))
-      #?(:cljs (when (seq (:testing-contexts (t/get-current-env)))
-                 (println (t/testing-contexts-str))))
-      (when-let [message (:message m)] (println message))
-      #?(:cljs (t/print-comparison m))
-      (l/group-end))))
+  (DBG m)
+  #_(let [[fn-name spec-check] (:message m)]
+      (do
+        (inc-report-counter! :error)
+        (l/group (str "ERROR when testing " fn-name)
+                 {::l/background (:red ghostwheel-colors)})
+        (inc-report-counter! :error)
+        (println "\nERROR in" (t/testing-vars-str m))
+        #?(:cljs (when (seq (:testing-contexts (t/get-current-env)))
+                   (println (t/testing-contexts-str))))
+        (when-let [message (:message m)] (println message))
+        #?(:cljs (t/print-comparison m))
+        (l/group-end))))
 
 
 (defmethod report :end-run-tests [m]

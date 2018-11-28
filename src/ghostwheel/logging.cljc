@@ -115,14 +115,14 @@
   ([& msgs]
    (do
      (doseq [msg msgs]
-       (if-not msg (log "nil") (log msg)))
+       (if (nil? msg) (log "nil") (log msg)))
      (last msgs))))
 
 
 (defn- plain-group [label]
   (do
     (log)
-    (log (str @*nesting "|> " label))
+    (log (str "|> " label))
     (swap! *nesting #(str % "| "))))
 
 (defn- group*
