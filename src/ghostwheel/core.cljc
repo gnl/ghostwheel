@@ -986,7 +986,7 @@
         {:keys [::check-coverage ::check]} (merge (u/get-base-config env)
                                                   (if cljs?
                                                     (:meta (ana-api/find-ns nspace))
-                                                    #?(:clj (meta (find-ns nspace)))))
+                                                    #?(:clj (meta nspace))))
 
         get-intern-meta   (comp meta (if cljs? key val))
         all-checked-fns   (when check-coverage
@@ -1082,7 +1082,7 @@
 
                              :else
                              nil))
-                 :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) #?(:clj (find-ns sym)))
+                 :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) #?(:clj sym))
                            metadata (if cljs? (:meta ns-data) #?(:clj (meta ns-data)))
                            {:keys [::check]} (merge base-config metadata)]
                        ;; TODO Shout if namespace doesn't have ::check enabled
