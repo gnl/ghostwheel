@@ -98,6 +98,7 @@
         cljs-compiler-config
         (when (and cljs? cljs.env/*compiler*)
           (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
+              ;; Deprecated.
               (get-in @cljs.env/*compiler* [:options :ghostwheel])))
 
         clj-overrides

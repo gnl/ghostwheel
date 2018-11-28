@@ -99,7 +99,7 @@
 
 (defn log
   ([]
-   (log "\n" nil))
+   (log nil nil))
   ([msg]
    (log msg nil))
   ([msg style]

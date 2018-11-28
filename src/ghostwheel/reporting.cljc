@@ -72,7 +72,7 @@
                 ::unchecked-ns ::report-output]} (:message m)
 
         warning-style       {::l/background (:orange0 ghostwheel-colors)}
-        incomplete-coverage " => Test coverage incomplete."
+        incomplete-coverage " => Test coverage incomplete:"
         no-gen-testing      " => No generative testing performed"]
     (do
       (inc-report-counter! :pass)
@@ -84,8 +84,7 @@
                 (l/group (str "WARNING: "
                               "Plain `defn` functions detected in "
                               ns-name
-                              incomplete-coverage
-                              ":")
+                              incomplete-coverage)
                          warning-style)
                 (log (mapv symbol plain-defns))
                 (log-bold "=> Use `>defn` instead.")
@@ -97,8 +96,7 @@
                 (l/group (str "WARNING: "
                               "`::g/check` disabled for some functions in "
                               ns-name
-                              incomplete-coverage
-                              ":")
+                              incomplete-coverage)
                          warning-style)
                 (log (mapv symbol unchecked-defns))
                 (l/group-end))
@@ -214,7 +212,7 @@
           :let [spec-error (:result test-ret)
                 data       (.-data spec-error)
                 msg        (try (.-message spec-error)
-                                (catch #?(:cljs js/Object :clj Exception) e nil))]]
+                                (catch #?(:cljs js/Object :clj Exception) _ nil))]]
     (if-not data
       (log-bold msg)
       (do
