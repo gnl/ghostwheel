@@ -885,14 +885,14 @@
                             `(quote ~(symbol (str (get-ns-name env)) (str fn-name)))
           traced-fn-name    (gensym (str fn-name "__"))
           docstring         (:docstring conformed-gdefn)
-          meta-map          (merge (:meta conformed-gdefn)
+          meta-map          (merge (meta fn-name)
+                                   (:meta conformed-gdefn)
                                    (generate-type-annotations env fn-bodies)
                                    {::ghostwheel true})
           ;;; Assemble the config
           config            (s/assert ::ghostwheel-config
                                       (->> (merge (u/get-base-config env)
                                                   (get-ns-meta env)
-                                                  (meta fn-name)
                                                   meta-map)
                                            (filter #(= (-> % key namespace) (name `ghostwheel.core)))
                                            (into {})))
