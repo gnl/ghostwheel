@@ -13,7 +13,7 @@
             [ghostwheel.utils :as u]
             #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
                        [orchestra.spec.test :as ost]
-                       [ghostwheel.tracing :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
+                       [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
                        [ghostwheel.test-utils :as tu :refer [process-fdef extract-fdef
                                                              threading-test deftest-permutations]]
                        [ghostwheel.test-utils-clj :refer [expand]]

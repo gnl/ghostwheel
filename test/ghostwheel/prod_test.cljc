@@ -10,7 +10,7 @@
   (:require #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
                        [ghostwheel.test-utils :refer [threading-expansion-test]]
                        [ghostwheel.test-utils-clj :refer [expand expand-full]]
-                       [ghostwheel.tracing :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
+                       [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
                        [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]]
                 :cljs [[clojure.test :as t :refer-macros [deftest testing is]]
                        [ghostwheel.test-utils :refer-macros [threading-expansion-test]]

@@ -17,7 +17,7 @@
             [clojure.spec.gen.alpha :as gen]
             [cljs.analyzer.api :as ana-api]
             [ghostwheel.reporting :as r]
-            [ghostwheel.tracing]
+            [ghostwheel.threading-macros]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config
                                             get-ns-meta get-ns-name clj->cljs]]
             [ghostwheel.logging :as l :refer [pr-clog clog log]]
@@ -845,13 +845,13 @@
 
                                   (>= trace 4)
                                   (let [threading-macros-mappings
-                                        {'->      'ghostwheel.tracing/*->
-                                         '->>     'ghostwheel.tracing/*->>
-                                         'as->    'ghostwheel.tracing/*as->
-                                         'cond->  'ghostwheel.tracing/*cond->
-                                         'cond->> 'ghostwheel.tracing/*cond->>
-                                         'some->  'ghostwheel.tracing/*some->
-                                         'some->> 'ghostwheel.tracing/*some->>}]
+                                        {'->      'ghostwheel.threading-macros/*->
+                                         '->>     'ghostwheel.threading-macros/*->>
+                                         'as->    'ghostwheel.threading-macros/*as->
+                                         'cond->  'ghostwheel.threading-macros/*cond->
+                                         'cond->> 'ghostwheel.threading-macros/*cond->>
+                                         'some->  'ghostwheel.threading-macros/*some->
+                                         'some->> 'ghostwheel.threading-macros/*some->>}]
                                     (cond->> (walk/postwalk-replace threading-macros-mappings
                                                                     orig-body-forms)
 
