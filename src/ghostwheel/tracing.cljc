@@ -19,9 +19,8 @@
 ;; between Clojure and -Script
 (defn log-threading-header
   [threading-type expr & [name]]
-  #?(:cljs
-     (apply js/console.group (l/get-styled-label (str threading-type " " expr (when name " ") name)
-                                                 {::l/background (:black ghostwheel-colors)}))))
+  (l/group (str threading-type " " expr (when name " ") name)
+           {::l/background (:black ghostwheel-colors)}))
 
 (defmacro *->
   "Traced version of ->"
@@ -47,7 +46,7 @@
                   (pr-clog ~(str orig-x) ~orig-x)
                   (let [x# ~x]
                     ~(when (cljs-env? &env)
-                       `(js/console.groupEnd))
+                       `(l/group-end))
                     x#))))))
      (cljs-env? &env) clj->cljs)))
 
@@ -76,7 +75,7 @@
                     (pr-clog ~(str orig-x) ~orig-x)
                     (let [x# ~x]
                       ~(when (cljs-env? &env)
-                         `(js/console.groupEnd))
+                         `(l/group-end))
                       x#)))))))
      (cljs-env? &env) clj->cljs)))
 
@@ -96,7 +95,7 @@
             (let [~name ~expr
                   ~@(interleave (repeat name) (map log-step forms))]
               ~(when (cljs-env? &env)
-                 `(js/console.groupEnd))
+                 `(l/group-end))
               ~name))))
      (cljs-env? &env) clj->cljs)))
 
@@ -130,7 +129,7 @@
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
                   ~(when (cljs-env? &env)
-                     `(js/console.groupEnd))
+                     `(l/group-end))
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
 
@@ -155,7 +154,7 @@
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
                   ~(when (cljs-env? &env)
-                     `(js/console.groupEnd))
+                     `(l/group-end))
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
 
@@ -184,7 +183,7 @@
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-some-step (map pstep forms)))]
                   ~(when (cljs-env? &env)
-                     `(js/console.groupEnd))
+                     `(l/group-end))
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
 
@@ -205,7 +204,7 @@
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-some-step (map pstep forms)))]
                   ~(when (cljs-env? &env)
-                     `(js/console.groupEnd))
+                     `(l/group-end))
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
 

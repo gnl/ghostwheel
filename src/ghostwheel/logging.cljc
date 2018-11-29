@@ -51,23 +51,8 @@
   (str (cs/slice long-string 0 limit)
        (when (>= (count long-string) limit) "...")))
 
-(defn get-styled-label [label {:keys [::foreground ::background ::weight]} & [length]]
-  (let [label (str "%c"
-                   #_(when background " ")
-                   (if length
-                     (truncate-string label length)
-                     label))
-        #_(when background " ")
-        style (str "color: " (cond foreground foreground
-                                   background "white"
-                                   :else (:black ghostwheel-colors)) ";"
-                   "background: " (if background background "white") ";"
-                   "font-weight: " (if weight weight "500") ";"
-                   (when background "text-shadow: 0.5px 0.5px black;")
-                   (when background "padding: 2px 6px; border-radius: 2px;"))]
-    [label style]))
 
-(defn get-styled-label-2
+(defn get-styled-label
   [label {:keys [::foreground ::background ::weight] :as style} output & [length]]
   (if-not style
     [label]
@@ -87,7 +72,6 @@
       (vec (remove nil? [label style])))))
 
 
-
 (defn- plain-log [msg]
   (println (->> (if (string? msg) msg (with-out-str (pprint msg)))
                 (cs/lines)
@@ -101,7 +85,7 @@
   ([msg]
    (log msg nil))
   ([msg style]
-   (let [styled-msg (get-styled-label-2 msg style *report-output*)]
+   (let [styled-msg (get-styled-label msg style *report-output*)]
      (case *report-output*
        :repl (apply plain-log styled-msg)
        :js-console #?(:cljs (apply js/console.log styled-msg))))))
@@ -127,7 +111,7 @@
   ([open? label]
    (group* open? label nil))
   ([open? label style]
-   (let [styled-label (get-styled-label-2 label style *report-output*)]
+   (let [styled-label (get-styled-label label style *report-output*)]
      (case *report-output*
        :repl (apply plain-group styled-label)
        :js-console #?(:cljs (apply (if open?
@@ -163,20 +147,16 @@
     (log data)
     data))
 
-;; TODO: implement basic pr-clog version for Clojure using
-;; https://github.com/clojure/tools.logging or something.
 (defn pr-clog
   "Pretty console log"
   [label data & [style]]
-  (do
-    #?(:cljs (let [[label style] (get-styled-label label style)]
-               (if data
-                 (do
-                   (js/console.group label style)
-                   (js/console.log data)
-                   (js/console.groupEnd))
-                 (js/console.log label style))))
-    data))
+  (if data
+    (do
+      (group label style)
+      (log data)
+      (group-end))
+    (log label style))
+  data)
 
 
 

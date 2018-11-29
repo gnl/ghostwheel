@@ -18,9 +18,10 @@
             [clairvoyant.core :as cv :include-macros true]
             [cljs.analyzer.api :as ana-api]
             [ghostwheel.reporting :as r]
+            [ghostwheel.tracing]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config
                                             get-ns-meta get-ns-name clj->cljs]]
-            [ghostwheel.logging :as l :refer [pr-clog get-styled-label clog log]]
+            [ghostwheel.logging :as l :refer [pr-clog clog log]]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]
                        #_[com.rpl.specter

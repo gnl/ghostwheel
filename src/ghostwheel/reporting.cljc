@@ -14,7 +14,7 @@
             [cuerdas.core :as cs]
             [ghostwheel.utils :as u]
             [ghostwheel.logging :as l
-             :refer [ghostwheel-colors get-styled-label pr-clog log-bold log DBG]]))
+             :refer [ghostwheel-colors log-bold log DBG]]))
 
 
 (def *all-tests-successful (atom true))
