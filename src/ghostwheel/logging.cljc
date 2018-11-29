@@ -7,15 +7,16 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ghostwheel.logging
-  (:require [cuerdas.core :as cs]
-            [clojure.pprint :refer [pprint]]
-            [ghostwheel.utils :as u :include-macros true]))
+  (:require [clojure.string :as string]
+            [cuerdas.core :as cs]
+            [clojure.pprint :as pprint]))
 
 
 (def *nesting (atom ""))
 
 
-(def ^:dynamic *report-output* (:ghostwheel.core/report-output (u/get-env-config)))
+(def ^:dynamic *report-output* #?(:clj  :repl
+                                  :cljs :js-console))
 
 
 (def ghostwheel-colors
@@ -46,8 +47,15 @@
    :green   "#859900"})
 
 
+;; Borrowed from Rosetta Code
+(defn wrap-line [size text]
+  (pprint/cl-format nil
+                    (str "~{~<~%~1," size ":;~A~> ~}")
+                    (string/split text #" ")))
+
+
 (defn wrap [line]
-  (u/wrap-line 80 line))
+  (wrap-line 80 line))
 
 
 (defn truncate-string
@@ -76,7 +84,7 @@
 
 
 (defn- plain-log [msg]
-  (println (->> (if (string? msg) msg (with-out-str (pprint msg)))
+  (println (->> (if (string? msg) msg (with-out-str (pprint/pprint msg)))
                 (cs/lines)
                 (map #(str @*nesting %))
                 (cs/join "\n"))))

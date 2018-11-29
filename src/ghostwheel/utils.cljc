@@ -10,7 +10,6 @@
   #?(:cljs (:require-macros ghostwheel.utils))
   (:require [cljs.env]
             [clojure.walk :as walk]
-            [clojure.pprint :as pprint]
             [cuerdas.core :as cs]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]
@@ -162,12 +161,6 @@
                                   (symbol (get ns-replacements nspace) (name %))
                                   %)))]
      (walk/postwalk replace-namespace form))))
-
-;; Copy-pasted from Rosetta Code
-(defn wrap-line [size text]
-  (pprint/cl-format nil
-                    (str "~{~<~%~1," size ":;~A~> ~}")
-                    (cs/split text #" ")))
 
 (defn gen-exception [env msg]
   `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.) ~msg)))

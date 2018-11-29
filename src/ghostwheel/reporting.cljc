@@ -20,7 +20,7 @@
 (def *all-tests-successful (atom true))
 
 
-(def wrap (partial u/wrap-line 80))
+(def wrap (partial l/wrap-line 80))
 
 
 (def inc-report-counter! #?(:clj  t/inc-report-counter

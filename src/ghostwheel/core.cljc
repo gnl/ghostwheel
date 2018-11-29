@@ -39,6 +39,11 @@
 
 
 (def ghostwheel-colors l/ghostwheel-colors)
+
+(let [report-output (::report-output (u/get-env-config))]
+  #?(:clj  (alter-var-root #'ghostwheel.logging/*report-output* (constantly report-output))
+     :cljs (set! ghostwheel.logging/*report-output* report-output)))
+
 (def ^:private test-suffix "__ghostwheel-test")
 (def ^:private *after-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
