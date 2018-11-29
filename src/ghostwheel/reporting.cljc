@@ -11,7 +11,7 @@
             [clojure.spec.test.alpha :as st]
             [clojure.test :as t]
             [expound.alpha :as expound]
-            [cuerdas.core :as cs]
+            [clojure.string :as string]
             [ghostwheel.utils :as u]
             [ghostwheel.logging :as l
              :refer [ghostwheel-colors log-bold log DBG]]))
@@ -161,11 +161,7 @@
 
 
 (def ^:private issue-msg
-  (str "\n"
-       (cs/clean
-        "Please file an issue at https://github.com/gnl/ghostwheel/issues if
-        you encounter false positives or negatives in side effect detection.")))
-
+  "\nPlease file an issue at https://github.com/gnl/ghostwheel/issues if you encounter false positives or negatives in side effect detection.")
 
 (defn- report-unexpected-side-effects [message]
   (let [{:keys [::fn-name ::found-fx]} message]
@@ -180,24 +176,18 @@
          (doall))
     (->> (str "=> Either remove the side effects, rename the function to '"
               (str (name fn-name) "!'")
-              " to mark it as unsafe, or add ^::g/ignore-fx to its
-              metadata to disable this warning and consider the
-              function safe for automated generative testing.")
-         cs/clean
+              " to mark it as unsafe, or add ^::g/ignore-fx to its metadata to disable this warning and consider the function safe for automated generative testing.")
          wrap
          log)
     (log (wrap issue-msg))))
 
 
 (defn- report-unexpected-safety [message]
-  (let [safe-name (cs/strip-suffix (name (::fn-name message)) "!")]
+  (let [safe-name (string/replace (name (::fn-name message)) #"!$" "")]
     (log-bold "No side effects detected in function marked as unsafe.")
     (->> (str "=> If safe, rename to '"
               safe-name
-              "'. If unsafe, rename the called unsafe
-              functions to suffix them with a '!', or add the
-              ^::g/ignore-fx metadata to disable this check.")
-         cs/clean
+              "'. If unsafe, rename the called unsafe functions to suffix them with a '!', or add the ^::g/ignore-fx metadata to disable this check.")
          wrap
          log)
     (log (wrap issue-msg))
@@ -221,7 +211,7 @@
           (log (cons (with-meta fn-name nil) args)))
         (log)
         (when (= (::s/failure data) :instrument)
-          (log (-> msg cs/lines first (str "\n"))))
+          (log (-> msg string/split-lines first (str "\n"))))
         (-> (#?(:cljs expound/printer-str :clj #'expound/printer-str) nil data)
             (str "\n")
             log)

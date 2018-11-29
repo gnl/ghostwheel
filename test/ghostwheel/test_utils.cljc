@@ -9,7 +9,7 @@
 (ns ghostwheel.test-utils
   (:require [clojure.test :as t]
             [clojure.walk :as walk]
-            [cuerdas.core :as cs]
+            [clojure.string :as string]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs get-ns-meta]]
             [ghostwheel.test-utils-cljs :as ucljs]
             #?@(:clj  [[com.rpl.specter
@@ -39,11 +39,11 @@
   [fdef]
   (walk/postwalk (fn [form]
                    (cond (and (symbol? form)
-                              (-> form str (cs/starts-with? "ret__")))
+                              (-> form str (string/starts-with? "ret__")))
                          'ret__1
 
                          (and (symbol? form)
-                              (-> form str (cs/starts-with? "p1__")))
+                              (-> form str (string/starts-with? "p1__")))
                          'p1__1
 
                          :else

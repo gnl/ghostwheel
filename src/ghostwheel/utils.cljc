@@ -10,7 +10,6 @@
   #?(:cljs (:require-macros ghostwheel.utils))
   (:require [cljs.env]
             [clojure.walk :as walk]
-            [cuerdas.core :as cs]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]
                        [clojure.edn :as edn]]

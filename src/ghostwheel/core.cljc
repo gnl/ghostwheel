@@ -8,7 +8,7 @@
 
 (ns ghostwheel.core
   #?(:cljs (:require-macros ghostwheel.core))
-  (:require [cuerdas.core :as cs]
+  (:require [clojure.string :as string]
             [clojure.set :refer [union difference map-invert]]
             [clojure.walk :as walk]
             [clojure.test :as t]
@@ -206,7 +206,7 @@
         :pred-sym (s/and symbol?
                          (complement #{'| '=>})
                          ;; REVIEW: should the `?` be a requirement?
-                         #(cs/ends-with? (str %) "?"))
+                         #(string/ends-with? (str %) "?"))
         :gspec (s/or :nilable-gspec ::nilable-gspec :gspec ::gspec)
         :spec-key qualified-keyword?
         :fun ::pred-fn
@@ -329,7 +329,7 @@
                           :some-unsafe-ops ::some-unsafe-ops
                           :rest ::rest)))
 
-(let [bang-suffix? #(cs/ends-with? (str %) "!")]
+(let [bang-suffix? #(string/ends-with? (str %) "!")]
   (s/def ::bang-suffix (every-pred symbol? bang-suffix?))
   (s/def ::unsafe-op
     (s/alt :bang-suffix ::bang-suffix
@@ -773,7 +773,7 @@
                       ""
                       (->> (-> conformed-gspec :args :args)
                            (map (partial get-type false))
-                           (cs/join ", ")))
+                           (string/join ", ")))
         ret-jstype  (get-type false (:ret conformed-gspec))]
     (str "function(" args-jstype "): " ret-jstype)))
 
@@ -790,7 +790,7 @@
                                                 (map #(get-type false (-> % :gspec :ret)) x)
                                                 (distinct x)
                                                 (when (not-any? #{"*" "?"} x) x))]
-                       {:jsdoc [(str "@return {" (cs/join "|" ret-types) "}")]}))))
+                       {:jsdoc [(str "@return {" (string/join "|" ret-types) "}")]}))))
 
 (defn- generate-fdef
   [forms]
@@ -1000,7 +1000,7 @@
                             ;; TODO: Make this work on clj in addition to cljs
                             (some->> (if cljs? (ana-api/ns-interns nspace) #?(:clj (ns-interns nspace)))
                                      (filter #(if cljs? (-> % val :fn-var) #?(:clj (t/function? (key %)))))
-                                     (remove #(-> % key str (cs/ends-with? test-suffix)))
+                                     (remove #(-> % key str (string/ends-with? test-suffix)))
                                      (remove #(-> % get-intern-meta ::check-coverage false?))))
         plain-defns       (when check-coverage
                             ;; TODO: Make this work on clj in addition to cljs
@@ -1018,7 +1018,7 @@
         ;; TODO check for unchecked >defn
         base-data         {::r/ns-name        (str nspace)
                            ::r/check-coverage check-coverage}
-        test-name         (let [escaped-nspace (cs/replace (str nspace) "." "_")]
+        test-name         (let [escaped-nspace (string/replace (str nspace) "." "_")]
                             (symbol (str "coverage__" escaped-nspace test-suffix)))
         run-coverage-test (fn [prefix data]
                             (let [test-name (symbol (str prefix test-name))]
@@ -1100,7 +1100,7 @@
                              nil))))
              (remove nil?))]
     (if (not-empty errors)
-      (u/gen-exception env (str "\n" (cs/join "\n" errors)))
+      (u/gen-exception env (str "\n" (string/join "\n" errors)))
       `(when *global-check-allowed?*
          (binding [*global-trace-allowed?* false]
            (do
@@ -1210,8 +1210,8 @@
                    (s/cat :quote #{'quote}
                           :sym (s/and symbol?
                                       #(let [s (str %)]
-                                         (or (cs/includes? s "/")
-                                             (not (cs/includes? s ".")))))))
+                                         (or (string/includes? s "/")
+                                             (not (string/includes? s ".")))))))
         :ns (s/and seq? (s/cat :quote #{'quote} :sym symbol?))
         :regex #?(:clj  #(instance? java.util.regex.Pattern %)
                   :cljs regexp?)))
