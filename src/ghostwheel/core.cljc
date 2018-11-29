@@ -938,16 +938,23 @@
                                                 individual-arity-fspecs
                                                 (val fn-bodies)))))
           clairvoyant-trace (fn [forms exclude]
-                              `(clairvoyant.core/trace-forms
-                                {:enabled true
-                                 :tracer  (ghostwheel.tracer/tracer
-                                           :color "#fff"
-                                           :background ~color
-                                           :expand ~(if (>= trace 3)
-                                                      '#{:bindings 'let 'defn 'defn-}
-                                                      '#{'defn 'defn-}))
-                                 :exclude ~exclude}
-                                ~forms))
+                              (let [clairvoyant 'clairvoyant.core/trace-forms
+                                    tracer      'ghostwheel.tracer/tracer]
+                                #?(:clj (if cljs?
+                                          (when-not (and (find-ns (symbol (namespace clairvoyant)))
+                                                         (find-ns (symbol (namespace tracer))))
+                                            (throw (Exception. "Can't find tracing namespaces. Either add `gnl/ghostwheel-tracer` artifact and `(:require [ghostwheel.tracer])`, or disable tracing in order to compile.")))
+                                          (throw (Exception. "Tracing is not yet implemented for Clojure."))))
+                                `(~clairvoyant
+                                  {:enabled true
+                                   :tracer  (~tracer
+                                             :color "#fff"
+                                             :background ~color
+                                             :expand ~(if (>= trace 3)
+                                                        '#{:bindings 'let 'defn 'defn-}
+                                                        '#{'defn 'defn-}))
+                                   :exclude ~exclude}
+                                  ~forms)))
           main-defn         (remove nil? `(~defn-sym
                                            ~fn-name
                                            ~docstring
