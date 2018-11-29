@@ -13,15 +13,9 @@
             [cuerdas.core :as cs]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]
-                       [clojure.edn :as edn]
-                       [com.rpl.specter
-                        :refer [setval transform select select-any
-                                filterer nthpath ALL MAP-VALS MAP-KEYS NAMESPACE]]]
+                       [clojure.edn :as edn]]
                 :cljs [[cljs.core.specs.alpha :include-macros true]
-                       [orchestra-cljs.spec.test :as ost]
-                       [com.rpl.specter
-                        :refer-macros [setval transform select select-any]
-                        :refer [filterer nthpath ALL MAP-VALS MAP-KEYS NAMESPACE]]])))
+                       [orchestra-cljs.spec.test :as ost]])))
 
 
 (def ghostwheel-default-config
@@ -118,7 +112,8 @@
               (merge (read-config-file)
                      {:report-output :repl})))]
       (when plain-config
-        (setval [MAP-KEYS NAMESPACE] (str `ghostwheel.core) plain-config)))))
+        (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
+                      plain-config))))))
 
 
 (defn get-base-config [env]
