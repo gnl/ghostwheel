@@ -89,17 +89,15 @@
 
 
 (defn- plain-log [msg]
-  (if (nil? msg)
-    (println @*nesting)
-    (println (->> (if (string? msg) msg (with-out-str (pprint msg)))
-                  (cs/lines)
-                  (map #(str @*nesting %))
-                  (cs/join "\n")))))
+  (println (->> (if (string? msg) msg (with-out-str (pprint msg)))
+                (cs/lines)
+                (map #(str @*nesting %))
+                (cs/join "\n"))))
 
 
 (defn log
   ([]
-   (log nil nil))
+   (log "" nil))
   ([msg]
    (log msg nil))
   ([msg style]
