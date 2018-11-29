@@ -91,31 +91,33 @@
 (defn cljs-env? [env] (boolean (:ns env)))
 
 
-(defn get-ghostwheel-compiler-config [env]
-  (let [cljs?
-        (cljs-env? env)
+(let [read-config-file
+      (fn []
+        #?(:clj  (edn/read-string (slurp "ghostwheel.edn"))
+           :cljs nil))]
+  (defn get-ghostwheel-compiler-config [env]
+    (let [cljs?
+          (cljs-env? env)
 
-        cljs-compiler-config
-        (when (and cljs? cljs.env/*compiler*)
-          (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
-              ;; Deprecated.
-              (get-in @cljs.env/*compiler* [:options :ghostwheel])))
+          ghostwheel-system-property
+          (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
+                       :cljs nil))
 
-        clj-overrides
-        (when-not cljs? {:report-output :repl})]
-    ;; TODO validation
-    (cond (and cljs? (not cljs-compiler-config))
-          nil
-
-          (and (not cljs?) #?(:clj (not= (System/getProperty "ghostwheel.enabled") "true")))
-          nil
-
-          :else
-          (setval [MAP-KEYS NAMESPACE]
-                  (str `ghostwheel.core)
-                  (merge #?(:clj (edn/read-string (slurp "ghostwheel.edn")))
-                         cljs-compiler-config
-                         clj-overrides)))))
+          plain-config                                ;; TODO validation
+          (if cljs?
+            (let [cljs-compiler-config
+                  (when cljs.env/*compiler*
+                    (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
+                        ;; Deprecated.
+                        (get-in @cljs.env/*compiler* [:options :ghostwheel])))]
+              (when (or cljs-compiler-config ghostwheel-system-property)
+                (merge (read-config-file)
+                       cljs-compiler-config)))
+            (when ghostwheel-system-property
+              (merge (read-config-file)
+                     {:report-output :repl})))]
+      (when plain-config
+        (setval [MAP-KEYS NAMESPACE] (str `ghostwheel.core) plain-config)))))
 
 
 (defn get-base-config [env]
