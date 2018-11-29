@@ -17,7 +17,6 @@
             [clojure.spec.gen.alpha :as gen]
             [cljs.analyzer.api :as ana-api]
             [ghostwheel.reporting :as r]
-            [ghostwheel.threading-macros]
             [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config
                                             get-ns-meta get-ns-name clj->cljs]]
             [ghostwheel.logging :as l :refer [pr-clog clog log]]
