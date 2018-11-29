@@ -93,7 +93,9 @@
 
 (let [read-config-file
       (fn []
-        #?(:clj  (edn/read-string (slurp "ghostwheel.edn"))
+        #?(:clj  (try
+                   (edn/read-string (slurp "ghostwheel.edn"))
+                   (catch Exception _ {}))
            :cljs nil))]
   (defn get-ghostwheel-compiler-config [env]
     (let [cljs?
