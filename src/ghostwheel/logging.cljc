@@ -11,9 +11,12 @@
             [clojure.pprint :refer [pprint]]
             [ghostwheel.utils :as u :include-macros true]))
 
+
 (def *nesting (atom ""))
 
+
 (def ^:dynamic *report-output* (:ghostwheel.core/report-output (u/get-env-config)))
+
 
 (def ghostwheel-colors
   {:purple0 "#967a93"
@@ -45,6 +48,7 @@
 
 (defn wrap [line]
   (u/wrap-line 80 line))
+
 
 (defn truncate-string
   [long-string limit]
@@ -101,11 +105,25 @@
      (last msgs))))
 
 
+(defn log-raw
+  [format-strings & objs]
+  (case *report-output*
+    :repl (doseq [obj objs] (plain-log obj))
+    :js-console #?(:cljs (apply js/console.log (concat format-strings objs)))))
+
+
+(defn error [msg]
+  (case *report-output*
+    :repl (do (plain-log "ERROR:") (plain-log msg))
+    :js-console #?(:cljs (js/console.error msg))))
+
+
 (defn- plain-group [label]
   (do
     (log)
     (log (str "|> " label))
     (swap! *nesting #(str % "| "))))
+
 
 (defn- group*
   ([open? label]
@@ -119,11 +137,13 @@
                                      js/console.groupCollapsed)
                                    styled-label))))))
 
+
 (defn group
   ([label]
    (group label nil))
   ([label style]
    (group* true label style)))
+
 
 (defn group-collapsed
   ([label]
@@ -131,21 +151,24 @@
   ([label style]
    (group* false label style)))
 
-(defn- plain-group-end []
-  (swap! *nesting #(subs % 0 (max 0 (- (count %) 2)))))
 
-(defn group-end []
-  (case *report-output*
-    :repl (plain-group-end)
-    :js-console #?(:cljs (js/console.groupEnd))))
+(let [plain-group-end
+      (fn [] (swap! *nesting #(subs % 0 (max 0 (- (count %) 2)))))]
+  (defn group-end []
+    (case *report-output*
+      :repl (plain-group-end)
+      :js-console #?(:cljs (js/console.groupEnd)))))
+
 
 (defn log-bold [msg]
   (log msg {::weight "bold"}))
+
 
 (defn clog [data]
   (do
     (log data)
     data))
+
 
 (defn pr-clog
   "Pretty console log"
