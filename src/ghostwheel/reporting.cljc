@@ -218,7 +218,7 @@
       (do
         (when-let [args (::st/args data)]
           (log "\nCall:")
-          (log (cons fn-name args)))
+          (log (cons (with-meta fn-name nil) args)))
         (log)
         (when (= (::s/failure data) :instrument)
           (log (-> msg cs/lines first (str "\n"))))
