@@ -1031,12 +1031,13 @@
                                            (quote ~test-name))
                                  nil)))]
     `(do
-       ~(when (not check)
-          (run-coverage-test "unchecked-ns-" {::r/unchecked-ns true}))
-       ~(when (not-empty plain-defns)
-          (run-coverage-test "plain-defns-" {::r/plain-defns plain-defns}))
-       ~(when (not-empty unchecked-defns)
-          (run-coverage-test "unchecked-defns-" {::r/unchecked-defns unchecked-defns})))))
+       ~@(remove nil?
+                 [(when (not check)
+                    (run-coverage-test "unchecked-ns-" {::r/unchecked-ns true}))
+                  (when (not-empty plain-defns)
+                    (run-coverage-test "plain-defns-" {::r/plain-defns plain-defns}))
+                  (when (not-empty unchecked-defns)
+                    (run-coverage-test "unchecked-defns-" {::r/unchecked-defns unchecked-defns}))]))))
 
 
 (defn- generate-check [env targets]
