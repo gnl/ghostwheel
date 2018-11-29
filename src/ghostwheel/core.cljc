@@ -15,7 +15,6 @@
             [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
             [clojure.spec.gen.alpha :as gen]
-            [clairvoyant.core :as cv :include-macros true]
             [cljs.analyzer.api :as ana-api]
             [ghostwheel.reporting :as r]
             [ghostwheel.tracing]
@@ -23,16 +22,9 @@
                                             get-ns-meta get-ns-name clj->cljs]]
             [ghostwheel.logging :as l :refer [pr-clog clog log]]
             #?@(:clj  [[clojure.core.specs.alpha]
-                       [orchestra.spec.test :as ost]
-                       #_[com.rpl.specter
-                          :refer [setval transform select select-any
-                                  filterer nthpath ALL MAP-VALS MAP-KEYS NAMESPACE]]]
+                       [orchestra.spec.test :as ost]]
                 :cljs [[cljs.core.specs.alpha :include-macros true]
-                       [orchestra-cljs.spec.test :as ost]
-                       [re-frame-tracer.core :as rt]
-                       #_[com.rpl.specter
-                          :refer-macros [setval transform select select-any]
-                          :refer [filterer nthpath ALL MAP-VALS MAP-KEYS NAMESPACE]]])))
+                       [orchestra-cljs.spec.test :as ost]])))
 
 
 ;; REVIEW: Replace this pattern:
@@ -946,9 +938,9 @@
                                                 individual-arity-fspecs
                                                 (val fn-bodies)))))
           clairvoyant-trace (fn [forms exclude]
-                              `(cv/trace-forms
+                              `(clairvoyant.core/trace-forms
                                 {:enabled true
-                                 :tracer  (re-frame-tracer.core/tracer
+                                 :tracer  (ghostwheel.tracer/tracer
                                            :color "#fff"
                                            :background ~color
                                            :expand ~(if (>= trace 3)

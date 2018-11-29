@@ -14,8 +14,6 @@
                  [com.rpl/specter "1.1.2"]
                  [orchestra "2018.08.19-1"]
                  [expound "0.7.1"]
-                 [gnl/re-frame-tracer "0.1.7"]
-                 [org.clojars.stumitchell/clairvoyant "0.2.1"]
                  [funcool/cuerdas "2.0.5"]]
   :plugins [[lein-doo "0.1.10"]]
   :source-paths ["src"]
