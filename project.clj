@@ -18,7 +18,8 @@
   :plugins [[lein-doo "0.1.10"]]
   :source-paths ["src"]
   :clean-targets ^{:protect false} ["target" "resources"]
-  :profiles {:dev          {:dependencies [[com.rpl/specter "1.1.2"]]}
+  :profiles {:dev          {:dependencies [[com.rpl/specter "1.1.2"]
+                                           [gnl/ghostwheel-tracer "0.3.0-SNAPSHOT"]]}
              :clj-dev-test {:jvm-opts ["-Dghostwheel.enabled=true"]}}
   :cljsbuild {:builds [{:id           "dev-test"
                         :source-paths ["src" "test"]
