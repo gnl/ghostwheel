@@ -1105,22 +1105,23 @@
       `(when *global-check-allowed?*
          (binding [*global-trace-allowed?* false]
            (do
-             ~(when extrument
-                `(st/instrument (quote ~extrument)))
-             ~@(for [target processed-targets
-                     :let [[type sym] target]]
-                 (case type
-                   :fn `(binding [t/report r/report]
-                          (~(symbol (str sym test-suffix))))
-                   :ns `(binding [t/report r/report]
-                          (t/run-tests (quote ~sym)))))
-             ~@(->> (for [target processed-targets
-                          :let [[type sym] target]
-                          :when (= type :ns)]
-                      (generate-coverage-check env sym))
-                    (remove nil?))
-             ~(when extrument
-                `(st/unstrument (quote ~extrument)))))))))
+             ~@(remove nil?
+                       `[~(when extrument
+                            `(st/instrument (quote ~extrument)))
+                         ~@(for [target processed-targets
+                                 :let [[type sym] target]]
+                             (case type
+                               :fn `(binding [t/report r/report]
+                                      (~(symbol (str sym test-suffix))))
+                               :ns `(binding [t/report r/report]
+                                      (t/run-tests (quote ~sym)))))
+                         ~@(->> (for [target processed-targets
+                                      :let [[type sym] target]
+                                      :when (= type :ns)]
+                                  (generate-coverage-check env sym))
+                                (remove nil?))
+                         ~(when extrument
+                            `(st/unstrument (quote ~extrument)))])))))))
 
 
 (defn- generate-after-check [env callbacks]
