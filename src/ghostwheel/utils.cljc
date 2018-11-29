@@ -46,7 +46,7 @@
                     :ignore-fx       false
 
                     ;; Number of generative tests performed when quick-checking (on hot-reload)
-                    :num-tests-quick 0
+                    :num-tests       0
 
                     ;; Number of generative tests performed when checking extensively (test suite)
                     :num-tests-ext   100

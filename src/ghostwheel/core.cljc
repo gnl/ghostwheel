@@ -103,7 +103,7 @@
 (s/def ::check boolean?)
 (s/def ::check-coverage boolean?)
 (s/def ::ignore-fx boolean?)
-(s/def ::num-tests-quick nat-int?)
+(s/def ::num-tests nat-int?)
 (s/def ::num-tests-ext nat-int?)
 (s/def ::extensive-tests boolean?)
 (s/def ::defn-macro (s/nilable string?))
@@ -115,7 +115,7 @@
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
   (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
-                       ::num-tests-quick ::num-tests-ext ::extensive-tests ::defn-macro
+                       ::num-tests ::num-tests-ext ::extensive-tests ::defn-macro
                        ::instrument ::outstrument ::extrument ::report-output])))
 
 (s/assert ::ghostwheel-config u/ghostwheel-default-config)
@@ -444,11 +444,11 @@
                       vec)])
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config cljs?]
-    (let [{:keys [::check ::num-tests-quick ::num-tests-ext ::extensive-tests
+    (let [{:keys [::check ::num-tests ::num-tests-ext ::extensive-tests
                   ::check-coverage ::ignore-fx]}
           config
 
-          num-tests         (if extensive-tests num-tests-ext num-tests-quick)
+          num-tests         (if extensive-tests num-tests-ext num-tests)
           marked-unsafe     (s/valid? ::bang-suffix fn-name)
           found-fx          (if ignore-fx
                               []
