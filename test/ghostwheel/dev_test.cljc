@@ -20,15 +20,15 @@
                        [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]]
                 :cljs [[clojure.test :as t :refer-macros [deftest testing is]]
                        [orchestra-cljs.spec.test :as ost]
-                       [ghostwheel.tracing :refer-macros [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
+                       [ghostwheel.threading-macros :refer-macros [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
                        [ghostwheel.test-utils :as tu
                         :refer [process-fdef extract-fdef]
                         :refer-macros [threading-test deftest-permutations]]
                        [ghostwheel.test-utils-cljs :refer-macros [expand]]
+                       [ghostwheel.tracer]
                        [ghostwheel.core :as g
                         :refer [=> | <-]
-                        :refer-macros [>defn >defn- >fdef ?]]
-                       [re-frame-tracer.core :as rt]])))
+                        :refer-macros [>defn >defn- >fdef ?]]])))
 
 ;; TODO - test fx detection
 

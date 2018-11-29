@@ -15,7 +15,7 @@
                 :cljs [[clojure.test :as t :refer-macros [deftest testing is]]
                        [ghostwheel.test-utils :refer-macros [threading-expansion-test]]
                        [ghostwheel.test-utils-cljs :refer-macros [expand expand-full]]
-                       [ghostwheel.tracing :refer-macros [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
+                       [ghostwheel.threading-macros :refer-macros [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
                        [ghostwheel.core :as g
                         :refer [=> | <-]
                         :refer-macros [>defn >defn- >fdef ?]]])))
@@ -158,7 +158,7 @@
                       [int? int? => int?])))))
 
 (deftest check-test
-  (is (nil? (expand-full (g/check)))))
+  (is (string? (expand-full (g/check)))))
 
 (deftest *->-test
   (is (threading-expansion-test -> *->
