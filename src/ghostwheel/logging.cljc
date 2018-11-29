@@ -63,7 +63,6 @@
     (let [label (cond->> (if length
                            (truncate-string label length)
                            label)
-                         (and (= output :repl) weight) (#(str "*" % "*"))
                          (= output :js-console) (str "%c"))
           style (when (= output :js-console)
                   (str "color: " (cond foreground foreground
