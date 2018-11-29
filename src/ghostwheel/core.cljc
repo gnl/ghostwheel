@@ -56,15 +56,15 @@
 
 
 (defn- set-trace [enabled]
-  #?(:clj (alter-var-root #'*global-trace-allowed?* enabled))
-  #?(:cljs (set! *global-trace-allowed?* enabled)))
+  #?(:clj  (alter-var-root #'*global-trace-allowed?* (constantly enabled))
+     :cljs (set! *global-trace-allowed?* enabled)))
 
 (defn enable-trace! [] (set-trace true) "Tracing enabled.")
 (defn disable-trace! [] (set-trace false) "Tracing disabled.")
 
 (defn- set-check [enabled]
-  #?(:clj (alter-var-root #'*global-check-allowed?* enabled))
-  #?(:cljs (set! *global-check-allowed?* enabled)))
+  #?(:clj  (alter-var-root #'*global-check-allowed?* (constantly enabled))
+     :cljs (set! *global-check-allowed?* enabled)))
 
 (defn enable-check! [] (set-check true) "Check enabled.")
 (defn disable-check! [] (set-check false) "Check disabled.")
