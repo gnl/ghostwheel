@@ -45,7 +45,6 @@
     #?(:clj  (alter-var-root #'s/*explain-out* (constantly (expound/custom-printer expound-config)))
        :cljs (set! s/*explain-out* (expound/custom-printer expound-config)))))
 
-(def ghostwheel-colors l/ghostwheel-colors)
 
 (def ^:private test-suffix "__ghostwheel-test")
 (def ^:private *after-check-callbacks (atom []))
@@ -925,9 +924,9 @@
                                    {::ghostwheel true})
           ;;; Assemble the config
           config            (merge-config env meta-map)
-          color             (if-let [color (get ghostwheel-colors (::trace-color config))]
+          color             (if-let [color (get l/ghostwheel-colors (::trace-color config))]
                               color
-                              (:black ghostwheel-colors))
+                              (:black l/ghostwheel-colors))
           {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
           defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
                                   private 'defn-
