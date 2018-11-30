@@ -21,7 +21,7 @@
              :refer [cljs-env? get-ghostwheel-compiler-config
                      get-ns-meta get-ns-name clj->cljs]
              :include-macros true]
-            [ghostwheel.logging :as l :refer [pr-clog clog log]]
+            [ghostwheel.logging :as l]
             [ghostwheel.threading-macros :include-macros true]
             [expound.alpha :as expound]
             #?@(:clj  [[clojure.core.specs.alpha]
@@ -879,9 +879,9 @@
 
                                   (= trace 1)
                                   `[(do
-                                      (pr-clog ~(str (list fn-name arg-list))
-                                               nil
-                                               {::r/background ~color})
+                                      (l/pr-clog ~(str (list fn-name arg-list))
+                                                 nil
+                                                 {::r/background ~color})
                                       ~@orig-body-forms)]
 
                                   (>= trace 4)

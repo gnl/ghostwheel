@@ -12,9 +12,8 @@
             [clojure.test :as t]
             [expound.alpha :as expound]
             [clojure.string :as string]
-            [ghostwheel.utils :as u]
             [ghostwheel.logging :as l
-             :refer [ghostwheel-colors log-bold log DBG]]))
+             :refer [log log-bold group group-collapsed group-end DBG]]))
 
 
 (def *all-tests-successful (atom true))
@@ -31,12 +30,12 @@
 
 
 (defmethod report :begin-test-ns [m]
-  (l/group (str "Checking " (:ns m) " ...")
-           {::l/background (:base01 ghostwheel-colors)}))
+  (group (str "Checking " (:ns m) " ..."
+           {::l/background (:base01 l/ghostwheel-colors)})))
 
 
 (defmethod report :end-test-ns [m]
-  (l/group-end))
+  (group-end))
 
 
 (defmethod report :summary [m]
@@ -44,9 +43,9 @@
         passed?   (= pass test)
         warnings? (some-> warn (> 0))
         color     (cond
-                    (= test 0) (:black ghostwheel-colors)
-                    passed? (:green ghostwheel-colors)
-                    :else (:red ghostwheel-colors))
+                    (= test 0) (:black l/ghostwheel-colors)
+                    passed? (:green l/ghostwheel-colors)
+                    :else (:red l/ghostwheel-colors))
         label     (cond
                     (= test 0) "No active tests found"
                     passed? (str "Passed all " test " checks")
@@ -54,13 +53,13 @@
                                (when (> error 0)
                                  (str "; " error " test error(s)"))))]
     (do
-      (l/group-end)
+      (group-end)
       (when (or (not passed?) warnings?)
         (log))
       (log label {::l/background color})
       (when warnings?
         (log (str warn " warning(s)")
-             {::l/background (:orange0 ghostwheel-colors)}))
+             {::l/background (:orange0 l/ghostwheel-colors)}))
       ;; Might be overkill, but we want to make sure we reset the group nesting
       ;; in DevTools if anything should blow up above
       (dorun (repeatedly 5 l/group-end)))))
@@ -71,7 +70,7 @@
                 ::marked-unsafe ::plain-defns ::unchecked-defns
                 ::unchecked-ns ::report-output]} (:message m)
 
-        warning-style       {::l/background (:orange0 ghostwheel-colors)}
+        warning-style       {::l/background (:orange0 l/ghostwheel-colors)}
         incomplete-coverage " => Test coverage incomplete:"
         no-gen-testing      " => No generative testing performed"]
     (do
@@ -81,69 +80,69 @@
         (cond plain-defns
               (do
                 (inc-report-counter! :warn)
-                (l/group (str "WARNING: "
+                (group (str "WARNING: "
                               "Plain `defn` functions detected in "
                               ns-name
-                              incomplete-coverage)
-                         warning-style)
+                              incomplete-coverage
+                         warning-style))
                 (log (mapv symbol plain-defns))
                 (log-bold "=> Use `>defn` instead.")
-                (l/group-end))
+                (group-end))
 
               unchecked-defns
               (do
                 (inc-report-counter! :warn)
-                (l/group (str "WARNING: "
+                (group (str "WARNING: "
                               "`::g/check` disabled for some functions in "
                               ns-name
-                              incomplete-coverage)
-                         warning-style)
+                              incomplete-coverage
+                         warning-style))
                 (log (mapv symbol unchecked-defns))
-                (l/group-end))
+                (group-end))
 
               unchecked-ns
               (do
                 (inc-report-counter! :warn)
-                (l/group (str "WARNING: "
+                (group (str "WARNING: "
                               "`::g/check` disabled for "
                               ns-name
-                              incomplete-coverage)
-                         warning-style)
-                (l/group-end))
+                              incomplete-coverage
+                         warning-style))
+                (group-end))
 
 
               marked-unsafe
               (do
                 (inc-report-counter! :warn)
-                (l/group (str "WARNING: "
+                (group (str "WARNING: "
                               fn-name
                               " – Function marked as unsafe."
                               no-gen-testing
-                              incomplete-coverage)
-                         warning-style)
-                (l/group-end))
+                              incomplete-coverage
+                         warning-style))
+                (group-end))
 
               (not fspec)
               (do
                 (inc-report-counter! :warn)
-                (l/group (str "WARNING: "
+                (group (str "WARNING: "
                               fn-name
                               " – Missing fspec(s)"
                               no-gen-testing
-                              incomplete-coverage)
-                         warning-style)
-                (l/group-end))
+                              incomplete-coverage
+                         warning-style))
+                (group-end))
 
               (not spec-checks)
               (do
                 (inc-report-counter! :warn)
-                (l/group (str "WARNING: "
+                (group (str "WARNING: "
                               fn-name
                               " – Number of tests set to 0"
                               no-gen-testing
-                              incomplete-coverage)
-                         warning-style)
-                (l/group-end))
+                              incomplete-coverage
+                         warning-style))
+                (group-end))
 
               :else nil)))))
 
@@ -218,10 +217,10 @@
         ;; REVIEW: Too noisy in the REPL, but
         ;; maybe add an option to enable it later
         (when (= l/*report-output* :js-console)
-          (l/group-collapsed "Raw error data:" {::l/background (:base0 ghostwheel-colors)})
+          (group-collapsed "Raw error data:" {::l/background (:base0 l/ghostwheel-colors)})
           (log msg)
           (log data)
-          (l/group-end))))))
+          (group-end))))))
 
 
 (defmethod report :fail [m]
@@ -235,7 +234,7 @@
         start-group l/group]
     (inc-report-counter! :fail)
     (start-group (str "FAILED: " fn-name " – " summary)
-                 {::l/background (:red ghostwheel-colors)})
+                 {::l/background (:red l/ghostwheel-colors)})
     (case failure
       ::unexpected-fx (report-unexpected-side-effects message)
       ::unexpected-safety (report-unexpected-safety message)
@@ -243,7 +242,7 @@
       (do
         (log-bold (str "Undefined failure reason: " failure))
         (log message)))
-    (l/group-end)))
+    (group-end)))
 
 
 ;; REVIEW - test this and clean it up
@@ -252,15 +251,15 @@
   #_(let [[fn-name spec-check] (:message m)]
       (do
         (inc-report-counter! :error)
-        (l/group (str "ERROR when testing " fn-name)
-                 {::l/background (:red ghostwheel-colors)})
+        (group (str "ERROR when testing " fn-name
+                 {::l/background (:red l/ghostwheel-colors)}))
         (inc-report-counter! :error)
         (println "\nERROR in" (t/testing-vars-str m))
         #?(:cljs (when (seq (:testing-contexts (t/get-current-env)))
                    (println (t/testing-contexts-str))))
         (when-let [message (:message m)] (println message))
         #?(:cljs (t/print-comparison m))
-        (l/group-end))))
+        (group-end))))
 
 
 (defmethod report :end-run-tests [m]
