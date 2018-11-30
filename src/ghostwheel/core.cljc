@@ -792,12 +792,35 @@
                                                 (when (not-any? #{"*" "?"} x) x))]
                        {:jsdoc [(str "@return {" (string/join "|" ret-types) "}")]}))))
 
+
+(defn- merge-config [env metadata]
+  (s/assert ::ghostwheel-config
+            (->> (merge (u/get-base-config env)
+                        (get-ns-meta env)
+                        metadata)
+                 (filter #(= (-> % key namespace) (name `ghostwheel.core)))
+                 (into {}))))
+
+
+(defn- get-quoted-qualified-fn-name [env fn-name]
+  `(quote ~(symbol (str (get-ns-name env)) (str fn-name))))
+
+
 (defn- generate-fdef
-  [forms]
-  (let [{:keys [name bs]} (s/conform ::>fdef-args forms)]
-    (case (key name)
-      :sym `(s/fdef ~(val name) ~@(generate-fspec-body bs))
-      :key `(s/def ~(val name) (s/fspec ~@(generate-fspec-body bs))))))
+  [forms env]
+  (let [{[type fn-name] :name bs :bs} (s/conform ::>fdef-args forms)]
+    (case type
+      :sym (let [quoted-qualified-fn-name (get-quoted-qualified-fn-name env fn-name)
+                 {:keys [::instrument ::outstrument]} (merge-config env (meta fn-name))
+                 instrumentation          (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
+                                                instrument `(st/instrument ~quoted-qualified-fn-name)
+                                                :else nil)
+                 fdef                     `(s/fdef ~fn-name ~@(generate-fspec-body bs))]
+             (if instrumentation
+               `(do ~fdef ~instrumentation)
+               fdef))
+      :key `(s/def ~fn-name (s/fspec ~@(generate-fspec-body bs))))))
+
 
 (let [process-defn-body
       (fn [cfg fspec args+gspec+body]
@@ -889,7 +912,7 @@
           arity             (key fn-bodies)
           fn-name           (:name conformed-gdefn)
           quoted-qualified-fn-name
-                            `(quote ~(symbol (str (get-ns-name env)) (str fn-name)))
+                            (get-quoted-qualified-fn-name env fn-name)
           traced-fn-name    (gensym (str fn-name "__"))
           docstring         (:docstring conformed-gdefn)
           meta-map          (merge (meta fn-name)
@@ -897,12 +920,7 @@
                                    (generate-type-annotations env fn-bodies)
                                    {::ghostwheel true})
           ;;; Assemble the config
-          config            (s/assert ::ghostwheel-config
-                                      (->> (merge (u/get-base-config env)
-                                                  (get-ns-meta env)
-                                                  meta-map)
-                                           (filter #(= (-> % key namespace) (name `ghostwheel.core)))
-                                           (into {})))
+          config            (merge-config env meta-map)
           color             (if-let [color (get ghostwheel-colors (::trace-color config))]
                               color
                               (:black ghostwheel-colors))
@@ -1260,36 +1278,16 @@
   "Defines an fspec, supports gspec syntax. `name` can be a symbol
   or a qualified keyword, depending on whether the fspec is meant
   to be registered as a top-level fspec (=> s/fdef fn-sym ...) or
-  used in other specs (=> s/def ::spec-keyword (s/fspec ...))."
+  used in other specs (=> s/def ::spec-keyword (s/fspec ...)).
+
+  When defining global fspecs, instrumentation can be directly enabled by
+  setting the `^::g/instrument` or `^::g/outstrument` metadata on the symbol."
   {:arglists '([name [params*] gspec]
                [name ([params*] gspec) +])}
   [& forms]
   (when (get-ghostwheel-compiler-config &env)
-    (cond-> (remove nil? (generate-fdef forms))
+    (cond-> (remove nil? (generate-fdef forms &env))
             (cljs-env? &env) clj->cljs)))
 
 
-;;;; DEBUG
-
-#_(defmacro dbg-meta [sym]
-    #_`(clog (quote ~(ana-api/find-ns sym)))
-    `(clog (quote ~(ana-api/resolve &env sym))))
-
-#_(defmacro print-env []
-    `(clog (quote ~&env)))
-
-;; This can be used to trace code generating functions at
-;; runtime when hacking on Ghostwheel in ClojureScript
-;#?(:cljs
-;   (when (identical? js/goog.DEBUG true)
-;     (s/check-asserts true)
-;     (def env {:ns {:name (with-meta 'ghostwheel.whatever ghostwheel-default-config)}})
-;     (cv/trace-forms
-;      {:enabled true
-;       ;:exclude #{'fn 'fn*}
-;       :tracer  (rt/tracer
-;                 :color "#fff"
-;                 :background (:violet ghostwheel-colors)
-;                 :expand #{'defn 'defn- 'let :bindings})}
-;      #_(defn traced-function-goes-here))))
 
