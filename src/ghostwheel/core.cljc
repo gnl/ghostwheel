@@ -38,6 +38,7 @@
 
 ;;;; Global vars and state
 
+
 (let [{:keys [::report-output] :as config} (u/get-env-config*)]
   #?(:clj  (alter-var-root #'ghostwheel.logging/*report-output* (constantly report-output))
      :cljs (set! ghostwheel.logging/*report-output* report-output))
@@ -50,6 +51,7 @@
 (def ^:private *after-check-callbacks (atom []))
 (def ^:private ^:dynamic *unsafe-bound-ops* #{})
 
+
 (def ^:dynamic *global-trace-allowed?* true)
 (def ^:dynamic *global-check-allowed?* true)          ; REVIEW: Is anyone using this?
 
@@ -61,22 +63,19 @@
   #?(:clj  (alter-var-root #'*global-trace-allowed?* (constantly enabled))
      :cljs (set! *global-trace-allowed?* enabled)))
 
+
 (defn enable-trace! [] (set-trace true) "Tracing enabled.")
 (defn disable-trace! [] (set-trace false) "Tracing disabled.")
+
 
 (defn- set-check [enabled]
   #?(:clj  (alter-var-root #'*global-check-allowed?* (constantly enabled))
      :cljs (set! *global-check-allowed?* enabled)))
 
+
 (defn enable-check! [] (set-check true) "Check enabled.")
 (defn disable-check! [] (set-check false) "Check disabled.")
 
-;; REVIEW: this doesn't seem to be needed, there's a function for
-;; it in the cljs.analyzer namespace, ns-resolve or something
-(defn- get-qualified-symbol
-  [sym-name]
-  (let [namespace (if *ns* (.-name *ns*) 'undefined)]
-    (symbol (str namespace) (str sym-name))))
 
 (defn- count-args
   "Returns a tuple with the number of regular and non-variadic arguments."
@@ -94,6 +93,7 @@
 (def => :ret)
 (def | :st)
 (def <- :gen)
+
 
 (defmacro ? [& forms]
   (cond-> `(s/nilable ~@forms)
@@ -130,6 +130,7 @@
 
 (s/assert ::ghostwheel-config u/ghostwheel-default-config)
 ;; TODO: Add check to make sure instrument and outstrument aren't both on
+
 
 ;; These are lifted straight from clojure.core.specs.alpha, because it
 ;; didn't seem possible to access them directly in the original namespace.
@@ -508,6 +509,7 @@
                    ::r/found-fx       (quote ~found-fx)
                    ::r/marked-unsafe  ~marked-unsafe})))])))
 
+
 (defn- unscrew-vec-unform
   "Half-arsed workaround for spec bugs CLJ-2003 and CLJ-2021."
   [unformed-arg]
@@ -516,6 +518,7 @@
     (let [malformed-seq-destructuring? (every-pred seq? (comp #{:as '&} first))
           [unformed malformed] (split-with (complement malformed-seq-destructuring?) unformed-arg)]
       (vec (concat unformed (apply concat malformed))))))
+
 
 (defn- gspec->fspec*
   [conformed-arg-list conformed-gspec anon-fspec? multi-arity-args? nilable?]
@@ -688,6 +691,7 @@
                              multi-fn-clause)
                            multi-ret-clause)])))))))
 
+
 (def ^:private spec-op->type
   (let [map-prot     "cljs.core.IMap"
         coll-prot    "cljs.core.ICollection"
@@ -728,7 +732,9 @@
      'ifn?         "cljs.core.IFn"
      'fn?          "Function"}))
 
+
 (declare get-gspec-type)
+
 
 (defn- get-type [recursive-call conformed-spec-elem]
   (let [[spec-type spec-def] conformed-spec-elem
@@ -770,6 +776,7 @@
                 (str (when (::variadic modifiers) "...") t)))
         "*"))))
 
+
 (defn- get-gspec-type [conformed-gspec]
   (let [argspec-def (:args conformed-gspec)
         args-jstype (if-not argspec-def
@@ -779,6 +786,7 @@
                            (string/join ", ")))
         ret-jstype  (get-type false (:ret conformed-gspec))]
     (str "function(" args-jstype "): " ret-jstype)))
+
 
 (defn- generate-type-annotations [env conformed-bs]
   (when (cljs-env? env)
@@ -1184,7 +1192,6 @@
 
 (s/fdef >defn :args ::>defn-args)
 
-
 (defmacro >defn
   "Like defn, but requires a (nilable) gspec definition and generates
   additional s/fdef, generative tests, instrumentation code, an
@@ -1200,7 +1207,6 @@
 
 
 (s/fdef >defn- :args ::>defn-args)
-
 
 ;; NOTE: lots of duplication - refactor this to set/pass ^:private differently and call >defn
 (defmacro >defn-
@@ -1239,7 +1245,6 @@
         :regex #?(:clj  #(instance? java.util.regex.Pattern %)
                   :cljs regexp?)))
 
-
 (s/def ::check-targets
   (s/or :single ::check-target
         :multi (s/spec (s/+ ::check-target))))
@@ -1247,7 +1252,6 @@
 
 (s/fdef check
   :args (s/spec (s/? ::check-targets)))
-
 
 (defmacro check
   "Runs Ghostwheel checks on the given namespaces and/or functions.
@@ -1275,7 +1279,6 @@
 
 
 (s/fdef >fdef :args ::>fdef-args)
-
 
 (defmacro >fdef
   "Defines an fspec, supports gspec syntax. `name` can be a symbol
