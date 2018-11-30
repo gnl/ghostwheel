@@ -121,12 +121,14 @@
                       plain-config))))))
 
 
-(defn get-base-config [env]
-  (merge ghostwheel-default-config (get-ghostwheel-compiler-config env)))
+(def get-env-config
+  (memoize
+   (fn [env]
+     (merge ghostwheel-default-config (get-ghostwheel-compiler-config env)))))
 
 
-(defmacro get-env-config []
-  (merge ghostwheel-default-config (get-ghostwheel-compiler-config &env)))
+(defmacro get-env-config* []
+  (get-env-config &env))
 
 
 (defn get-ns-meta [env]

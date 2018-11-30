@@ -38,7 +38,7 @@
 
 ;;;; Global vars and state
 
-(let [{:keys [::report-output] :as config} (u/get-env-config)]
+(let [{:keys [::report-output] :as config} (u/get-env-config*)]
   #?(:clj  (alter-var-root #'ghostwheel.logging/*report-output* (constantly report-output))
      :cljs (set! ghostwheel.logging/*report-output* report-output))
   (when-let [expound-config (::expound config)]
@@ -798,7 +798,7 @@
 
 (defn- merge-config [env metadata]
   (s/assert ::ghostwheel-config
-            (->> (merge (u/get-base-config env)
+            (->> (merge (u/get-env-config env)
                         (get-ns-meta env)
                         metadata)
                  (filter #(= (-> % key namespace) (name `ghostwheel.core)))
@@ -1011,7 +1011,7 @@
 
 (defn- generate-coverage-check [env nspace]
   (let [cljs?             (cljs-env? env)
-        {:keys [::check-coverage ::check]} (merge (u/get-base-config env)
+        {:keys [::check-coverage ::check]} (merge (u/get-env-config env)
                                                   (if cljs?
                                                     (:meta (ana-api/find-ns nspace))
                                                     #?(:clj (meta nspace))))
@@ -1063,7 +1063,7 @@
 
 (defn- generate-check [env targets]
   (let [base-config
-        (u/get-base-config env)
+        (u/get-env-config env)
 
         cljs?
         (cljs-env? env)
@@ -1094,7 +1094,7 @@
                            metadata (if cljs? (:meta fn-data) #?(:clj (meta fn-data)))
 
                            {:keys [::check-coverage ::check]}
-                           (merge (u/get-base-config env)
+                           (merge (u/get-env-config env)
                                   (meta (:ns fn-data))
                                   metadata)]
                        (cond (not fn-data)
@@ -1147,7 +1147,7 @@
 
 (defn- generate-after-check [env callbacks]
   (let [{:keys [::check]}
-        (merge (u/get-base-config env)
+        (merge (u/get-env-config env)
                (get-ns-meta env))]
     ;; TODO implement for clj
     (when (and check (seq callbacks))
