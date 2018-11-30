@@ -95,30 +95,32 @@
                    (edn/read-string (slurp "ghostwheel.edn"))
                    (catch Exception _ {}))
            :cljs nil))]
-  (defn get-ghostwheel-compiler-config [env]
-    (let [cljs?
-          (cljs-env? env)
+  (def get-ghostwheel-compiler-config
+    (memoize
+     (fn [env]
+       (let [cljs?
+             (cljs-env? env)
 
-          ghostwheel-system-property
-          (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
-                       :cljs nil))
+             ghostwheel-system-property
+             (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
+                          :cljs nil))
 
-          plain-config                                ;; TODO validation
-          (if cljs?
-            (let [cljs-compiler-config
-                  (when cljs.env/*compiler*
-                    (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
-                        ;; Deprecated.
-                        (get-in @cljs.env/*compiler* [:options :ghostwheel])))]
-              (when (or cljs-compiler-config ghostwheel-system-property)
-                (merge (read-config-file)
-                       cljs-compiler-config)))
-            (when ghostwheel-system-property
-              (merge (read-config-file)
-                     {:report-output :repl})))]
-      (when plain-config
-        (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
-                      plain-config))))))
+             plain-config                             ;; TODO validation
+             (if cljs?
+               (let [cljs-compiler-config
+                     (when cljs.env/*compiler*
+                       (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
+                           ;; Deprecated.
+                           (get-in @cljs.env/*compiler* [:options :ghostwheel])))]
+                 (when (or cljs-compiler-config ghostwheel-system-property)
+                   (merge (read-config-file)
+                          cljs-compiler-config)))
+               (when ghostwheel-system-property
+                 (merge (read-config-file)
+                        {:report-output :repl})))]
+         (when plain-config
+           (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
+                         plain-config))))))))
 
 
 (def get-env-config
