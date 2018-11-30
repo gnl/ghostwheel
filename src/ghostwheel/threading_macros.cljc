@@ -24,7 +24,7 @@
 (defmacro *->
   "Traced version of ->"
   [orig-x & orig-forms]
-  (let [untraced `(-> ~orig-x ~@orig-forms)]
+  (let [untraced `(~'-> ~orig-x ~@orig-forms)]
     (cond->
      (if-not (get-ghostwheel-compiler-config &env)
        untraced
@@ -52,7 +52,7 @@
 (defmacro *->>
   "Traced version of ->>"
   [orig-x & orig-forms]
-  (let [untraced `(->> ~orig-x ~@orig-forms)]
+  (let [untraced `(~'->> ~orig-x ~@orig-forms)]
     (cond->
      (if-not (get-ghostwheel-compiler-config &env)
        untraced
@@ -81,7 +81,7 @@
 (defmacro *as->
   "Traced version of as->"
   [expr name & forms]
-  (let [untraced `(as-> ~expr ~name ~@forms)
+  (let [untraced `(~'as-> ~expr ~name ~@forms)
         log-step (fn [form] `(pr-clog ~(str form) ~form))]
     (cond->
      (if-not (get-ghostwheel-compiler-config &env)
@@ -111,7 +111,7 @@
   "Traced version of cond->"
   [expr & clauses]
   (assert (even? (count clauses)))
-  (let [untraced `(cond-> ~expr ~@clauses)]
+  (let [untraced `(~'cond-> ~expr ~@clauses)]
     (cond->
      (if-not (get-ghostwheel-compiler-config &env)
        untraced
@@ -136,7 +136,7 @@
   "Traced version of cond->>"
   [expr & clauses]
   (assert (even? (count clauses)))
-  (let [untraced `(cond->> ~expr ~@clauses)]
+  (let [untraced `(~'cond->> ~expr ~@clauses)]
     (cond->
      (if-not (get-ghostwheel-compiler-config &env)
        untraced
@@ -168,7 +168,7 @@
 (defmacro *some->
   "Traced version of some->"
   [expr & forms]
-  (let [untraced `(some-> ~expr ~@forms)]
+  (let [untraced `(~'some-> ~expr ~@forms)]
     (cond->
      (if-not (get-ghostwheel-compiler-config &env)
        untraced
@@ -189,7 +189,7 @@
 (defmacro *some->>
   "Traced version of some->>"
   [expr & forms]
-  (let [untraced `(some->> ~expr ~@forms)]
+  (let [untraced `(~'some->> ~expr ~@forms)]
     (cond->
      (if-not (get-ghostwheel-compiler-config &env)
        untraced
