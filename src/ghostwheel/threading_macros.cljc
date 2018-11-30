@@ -8,7 +8,8 @@
 
 (ns ghostwheel.threading-macros
   (:require [ghostwheel.logging :as l :refer [ghostwheel-colors pr-clog]]
-            [ghostwheel.utils :as u :refer [cljs-env? get-ghostwheel-compiler-config get-ns-meta clj->cljs]]))
+            [ghostwheel.utils :as u
+             :refer [cljs-env? get-ghostwheel-compiler-config get-ns-meta clj->cljs]]))
 
 
 ;;;; Traced threading macros
