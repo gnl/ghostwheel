@@ -23,6 +23,7 @@
              :include-macros true]
             [ghostwheel.logging :as l :refer [pr-clog clog log]]
             [ghostwheel.threading-macros :include-macros true]
+            [expound.alpha :as expound]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]]
                 :cljs [[cljs.core.specs.alpha :include-macros true]
@@ -37,12 +38,14 @@
 
 ;;;; Global vars and state
 
+(let [{:keys [::report-output] :as config} (u/get-env-config)]
+  #?(:clj  (alter-var-root #'ghostwheel.logging/*report-output* (constantly report-output))
+     :cljs (set! ghostwheel.logging/*report-output* report-output))
+  (when-let [expound-config (::expound config)]
+    #?(:clj  (alter-var-root #'s/*explain-out* (constantly (expound/custom-printer expound-config)))
+       :cljs (set! s/*explain-out* (expound/custom-printer expound-config)))))
 
 (def ghostwheel-colors l/ghostwheel-colors)
-
-(let [report-output (::report-output (u/get-env-config))]
-  #?(:clj  (alter-var-root #'ghostwheel.logging/*report-output* (constantly report-output))
-     :cljs (set! ghostwheel.logging/*report-output* report-output)))
 
 (def ^:private test-suffix "__ghostwheel-test")
 (def ^:private *after-check-callbacks (atom []))
@@ -117,13 +120,14 @@
 (s/def ::instrument boolean?)
 (s/def ::outstrument boolean?)
 (s/def ::extrument (s/nilable (s/coll-of qualified-symbol? :kind vector?)))
+(s/def ::expound (s/nilable (s/map-of keyword? any?)))
 (s/def ::report-output (s/coll-of #{:repl :js-console} :kind set? :distinct true :min-count 1))
 
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
   (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
                        ::num-tests ::num-tests-ext ::extensive-tests ::defn-macro
-                       ::instrument ::outstrument ::extrument ::report-output])))
+                       ::instrument ::outstrument ::extrument ::expound ::report-output])))
 
 (s/assert ::ghostwheel-config u/ghostwheel-default-config)
 ;; TODO: Add check to make sure instrument and outstrument aren't both on

@@ -73,6 +73,12 @@
                     ;; using either `s/fdef` or Ghostwheel's `>fdef`.
                     :extrument       nil
 
+                    ;; Nilable map of Expound configuration options.
+                    ;; If not nil, the spec printer will be set to
+                    ;; expound's with the given configuration options.
+                    :expound         {:show-valid-values? true
+                                      :print-specs?       true}
+
                     ;; Output channel for tracing and check
                     ;; reports. Only `:repl` and `:js-console`
                     ;; are supported at the moment. The option is
