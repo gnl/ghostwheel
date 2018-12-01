@@ -36,8 +36,6 @@ Ghostwheel makes using clojure.spec easy, minimises the need for unit tests, det
 
 It's about getting the mundane, frustrating stuff out of the way in order to let you focus on the creative side of building software and maybe even get some link:https://gnl.gitlab.io/images/clojurian-using-ghostwheel.gif[quality hammock time^] without cryptic stack traces invading your dreams.
 
-It's currently in Alpha and was originally written for ClojureScript – the Clojure port is functional but incomplete.
-
 Here are some buzzwords and pictures:
 
 // TODO: Add notes on runtime and compile time performance impact
@@ -58,8 +56,6 @@ image::image-2.png[,700]
 image::image-3.png[,700]
 
 - *Automagical generative testing – off by default – of specced, side-effect-free functions on namespace reload, with human-readable expound-powered reporting and support for spec instrumentation of internal and external namespaces, including experimental specs for most of clojure.core*
-+
-The test generation works on Clojure, but the automatic execution on namespace reload and the fancy reporting are ClojureScript only for now.
 +
 image::image-6-1.png[,700]
 +
@@ -126,100 +122,62 @@ NOTE: This is additional information on how and/or why something works the way i
 
 ### Getting Started
 
-. Make sure your Clojure version is at least 1.9.0 and add the artifact to your project dependencies:
+. *Install*
 +
-image:clojars-0.2.3.svg[link=https://clojars.org/gnl/ghostwheel]
+image:https://img.shields.io/clojars/v/gnl/ghostwheel.svg[link=https://clojars.org/gnl/ghostwheel]
 +
-See the changelog for the pre-release version and the newest features and fixes.
+.ClojureScript only – optional tracing:
+image:https://img.shields.io/clojars/v/gnl/ghostwheel.tracer.svg[link=https://clojars.org/gnl/ghostwheel.tracer]
 +
-[WARNING]
+.ClojureScript only – optional, but highly recommended:
+link:https://github.com/binaryage/cljs-devtools[Setup CLJS DevTools]
++
+WARNING: Make sure you use Clojure 1.9.0 or higher and don't override Ghostwheel's dependencies with lower versions or you might get link:https://github.com/gnl/ghostwheel/issues/9[strange behaviour].
+
+. *Enable*
++
+.. On Clojure – launch the REPL / build with the JVM system property `-Dghostwheel.enabled=true`
+.. On ClojureScript – either set `-Dghostwheel.enabled=true` or add `:external-config {:ghostwheel {}}` to the compiler options in your development build config.
++
+CAUTION: Do not enable Ghostwheel in your production build config or you might end up with tracing, testing or instrumentation code in production. When disabled, Ghostwheel doesn't generate any extra code whatsoever other than simply passing through the plain, unchanged `defn`.
+
+. *Configure*
++
+Ghostwheel's behaviour is determined individually for each function by merging the configuration maps:
++
+`ghostwheel.utils/ghostwheel-default-config` -> `ghostwheel.edn` config file in the project root -> compiler options (ClojureScript only) -> namespace metadata -> function metadata.
++
+See the link:https://github.com/gnl/ghostwheel/blob/master/src/ghostwheel/utils.cljc#L21[default configuration map] for a description of the options – unless explicitly stated otherwise, each one can be overridden on any level.
++
+NOTE: Most of the functionality is disabled by default to avoid any nasty surprises.
++
+[TIP]
 --
-It is currently recommended that you follow this walkthrough in a ClojureScript environment running in Chrome using https://github.com/thheller/shadow-cljs[Shadow CLJS] or https://github.com/bhauman/lein-figwheel[Figwheel] for hot-reloading – the Clojure port is still quite bare-bones as described in the introduction.
-
-Shadow CLJS has the additional advantage of apparently being the only build tool able to pick up changes in namespace metadata when hot-reloading (and without cleaning the whole build) because it is not affected by https://dev.clojure.org/jira/browse/CLJS-1926[this bug].
---
-. ClojureScript only – setup link:https://github.com/binaryage/cljs-devtools[CLJS DevTools]
-
-. ClojureScript only – add `:external-config {:ghostwheel {}}` to the compiler options in your development build config.
-+
-CAUTION: Make sure not to add `:ghostwheel` to your production build config or you might end up with tracing, testing or instrumentation code in production.
-
-. Require it from the namespaces you intend to use it in
-+
-```clojure
-(:require [ghostwheel.core :as g
-            :refer [>defn >defn- >fdef => | <- ?]])
-```
-NOTE: `\=>`, `|`, `\<-` and `?` <<gspec-syntax, are optional>>
-
-. Optional – override the default configuration
-+
-Ghostwheel's behaviour is determined individually for each function by merging the configuration maps – default config -> global/compiler config -> namespace metadata -> function metadata. The more intrusive and performance-wise expensive functionality is disabled by default to avoid any nasty surprises.
-+
-Here's the default configuration map – each option (except `::extrument`) can be overridden on any level and will be explained in more detail in the relevant sections below.
-+
-```clojure
-{;; Evaluation trace verbosity level. 0 disables all tracing code generation.
- ::trace           0
-
- ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
- ::trace-color     :violet
-
- ;; When disabled no checks of any kind are
- ;; performed and no test code is generated.
- ::check           false
-
- ;; Determines whether Ghostwheel should warn on missing fspecs
- ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
- ;; namespace or higher level, you can exclude individual `defn`s or
- ;; `declare`s by setting it to false in their respective metadata
- ::check-coverage  false
-
- ;; Disable side effect detection
- ::ignore-fx       false
-
- ;; Number of generative tests performed when quick-checking (on hot-reload)
- ::num-tests       0
-
- ;; Number of generative tests performed when checking extensively (test suite)
- ::num-tests-ext   100
-
- ;; Determines which of the above two options should take
- ;; precedence. Set to true in your test build configuration.
- ::extensive-tests false
-
- ;; Spec-instrument functions on namespace reload.
- ::instrument      false
-
- ;; Spec-instrument functions on namespace reload using
- ;; orchestra, which spec-checks the output in addition to
- ;; the input. Use either this or `::instrument`, not both.
- ::outstrument     false
-
- ;; Nilable vector of qualified external namespaces or functions
- ;; (unquoted) to spec-instrument before and unstrument after
- ;; testing to catch incorrect function calls at test time without
- ;; the runtime performance impact. Fspecs must be defined for
- ;; the relevant functions in a `require`d namespace using either
- ;; `s/fdef` or Ghostwheel's `>fdef`. Only works down to the
- ;; namespace level, cannot be set for an individual function.
- ::extrument       nil}
-```
-+
-Note that Ghostwheel uses `ghostwheel.core`-qualified keywords for its configuration, except in the `:ghostwheel {}` compiler options map. To minimise verbosity you can use namespaced maps for the namespace metadata like this:
-+
+Note that Ghostwheel uses `ghostwheel.core`-qualified keywords for its configuration, except in the top level configuration (`ghostwheel.edn` or compiler options). To minimise verbosity you can use namespaced maps for the namespace metadata like this:
 ```clojure
 (ns test-chamber.one
   #:ghostwheel.core{:check     true
                     :num-tests 10}
   ...)
 ```
+There's no need for this in the function metadata – if you alias Ghostwheel with `[ghostwheel.core :as g]` you can just reference the options as `::g/check`.
+--
+
+. *Use*
 +
-There's no need for this in the function metadata – if you alias Ghostwheel with `ghostwheel.core :as g` you can just reference the options as `::g/check`.
+```clojure
+(:require [ghostwheel.core :as g
+            :refer [>defn >defn- >fdef => | <- ?]])
+```
++
+.ClojureScript tracing only – somewhere in your project:
+```clojure
+(:require [ghostwheel.tracer])
+```
+NOTE: `\=>`, `|`, `\<-` and `?` <<gspec-syntax, are optional>>
 
-// TODO: A note on metadata
 
-### Staying Sane with Function Specs
+### Staying Sane with Function Specs and Generative Testing
 
 [quote, 'Neil Gaiman & Terry Pratchett, Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch']
 25 And the Lord spake unto the Angel that guarded the eastern gate, saying "`Where is the flaming sword that was given unto thee?`" +
@@ -295,8 +253,6 @@ Ghostwheel handles this by simply passing a qualified keyword to `>fdef` instead
    [i s]
    [int? string? => string?])
 ```
-
-NOTE: If `::g/check` is `false` and `::g/trace` is `0`, as in the default configuration, Ghostwheel does nothing other than generate a `defn` and an `fdef` block. When `:ghostwheel` isn't set to a truthy value in the compiler options, it doesn't generate any code whatsoever other than the plain `defn` block with the gspec vectors stripped – this is recommended for production builds.
 
 [[gspec-syntax]]
 #### The Gspec Syntax
@@ -407,6 +363,11 @@ Yay! Ghostwheel is already proving invaluable. Fix it by changing `(- a b)` to `
 
 image::image-16.png[,700]
 
+[TIP]
+--
+You can test any single or multiple functions or namespaces in the REPL or your test-runner by passing the quoted symbols or namespace regex to `(g/check)`. When checking as part of a test-suite make sure to enable `::g/extensive-tests` and set `::g/num-tests-ext` to a high number.
+--
+
 [[shadow-hooks]]
 [TIP]
 --
@@ -420,15 +381,13 @@ The Ghostwheel hook will short-circuit the hook queue if a test fails in any nam
 
 NOTE: In multi-arity functions each arity is tested as a separate function to ensure adequate test coverage, so a function with 3 arities and `::g/num-tests 5` will have 15 spec checks run against it.
 
-NOTE: Only enabling `::g/check` and leaving `::g/num-tests` at the default value of 0 would enable the various side effect and Ghostwheel coverage checks – `::g/check-coverage` – but no generative testing.
-
 #### Performance Considerations or How Much Generative Testing Is Enough
 
 Depending on the number and kind of functions in a namespace as well as the dependencies between namespaces, even basic testing on every reload could take long enough to make your fancy hot-reloading workflow useless. The general idea here is to keep `::g/num-tests` low enough that the tests complete in a reasonable amount of time, but high enough that you still catch a relatively large number of errors on every run.
 
 NOTE: Keep in mind that the tests are only executed per namespace reload – whenever `(g/check)` is called – so if you're working on some view and hot-reloading its namespace, only the tests defined there (if any) would run. If you change something deep down in a namespace that's heavily depended on, more namespaces will be reloaded and more tests will run.
 
-Either way – _you should not be relying on this alone_, especially for functions with complex input and a larger number of parameters. Setup a separate test build config just like you would when writing unit tests, set `:ghostwheel {:extensive-tests true}` in the compiler options, set `::g/num-tests-ext` as high as possible without making your test times unacceptable, and run the whole thing in a CI environment and/or on a regular basis – before coffee breaks, merges to master, releases, etc.
+Either way – _you should not be relying on this alone_, especially for functions with complex input and a larger number of parameters. Setup a separate test build config just like you would when writing unit tests, enable `::g/extensive-tests`, set `::g/num-tests-ext` as high as possible without making your test times unacceptable, and run the whole thing in a CI environment or manually on a regular basis – before coffee breaks, merges to master, releases, etc.
 
 // TODO: Add note about optimising this process with spec generators.
 
@@ -602,11 +561,12 @@ The blood of generations of LISPers is coursing through your veins? You've howle
 Or maybe you just like breaking things and telling people about it. Either way, there's enough work to go around. First and foremost:
 
 * Put it to use and report any issues you run into
-* Submit PRs with gspecs for external libraries similar to the way they're done in `ghostwheel.specs.clojure.core`. You can probably figure out the recommended naming scheme.
+* Submit PRs with gspecs for external libraries to the link:https://github.com/gnl/ghostwheel.specs[ghostwheel.specs repo]
 
 Other than that, here's the rather loose roadmap, not necessarily sorted by priority or particularly rich on detail. PRs are welcome if anything should tickle your fancy (or annoy the hell out of you), but if you are planning on doing anything bigger maybe open an issue first so we can discuss it.
 
-* Complete Clojure port including support for a global compiler-level configuration similar to ClojureScript.
+* Automatically re-run failed gen-tests with tracing enabled.
+* Enable spec-based generation of safe stubs for gen-testing unsafe functions
 * Solve miscellaneous issues around fully instrumenting the `ghostwheel.specs.clojure.core` namespace during testing
 * Get the Closure type annotations working properly
 * Integrate link:https://github.com/bhauman/spell-spec[bhauman/spell-spec]
@@ -665,7 +625,7 @@ Some other projects and people without which/whom it likely wouldn't exist in it
 
 https://github.com/plumatic/schema[plumatic's schema] for offering a glimpse into the future of generative testing for quite some time before spec was introduced;
 
-https://github.com/thheller/shadow-cljs[Thomas Heller's Shadow CLJS] and https://github.com/bhauman/lein-figwheel[Bruce Haumann's Figwheel] – for providing robust hot-reloading which is essential to ClojureScript development and to the Ghostwheel experience in particular;
+https://github.com/thheller/shadow-cljs[Thomas Heller's Shadow CLJS] and https://github.com/bhauman/lein-figwheel[Bruce Hauman's Figwheel] – for providing robust hot-reloading which is essential to ClojureScript development and to the Ghostwheel experience in particular;
 
 https://github.com/binaryage/cljs-devtools[BinaryAge's CLJS DevTools], without which ClojureScript tracing and data inspection would be a lot less fun;
 
