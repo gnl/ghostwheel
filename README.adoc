@@ -4,16 +4,16 @@
 :toc-placement!:
 :hardbreaks:
 :sectanchors:
-ifdef::env-github[]
+ifndef::env-github,env-cljdoc[]
+:imagesdir: ../gnl.gitlab.io/public/images
+endif::[]
+ifdef::env-github,env-cljdoc[]
 :imagesdir: https://gnl.gitlab.io/images
 :tip-caption: :bulb:
 :note-caption: :information_source:
 :important-caption: :heavy_exclamation_mark:
 :caution-caption: :fire:
 :warning-caption: :warning:
-endif::[]
-ifndef::env-github[]
-:imagesdir: ../gnl.gitlab.io/public/images
 endif::[]
 
 [quote, 'Roger Zelazny, Trumps of Doom']

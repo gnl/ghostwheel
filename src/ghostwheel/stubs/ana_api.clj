@@ -1,4 +1,4 @@
-(ns ghostwheel.stubs.ana-api)
+(ns ^:no-doc ghostwheel.stubs.ana-api)
 
 (defn find-ns [ns] nil)
 (defn ns-interns [ns] nil)
