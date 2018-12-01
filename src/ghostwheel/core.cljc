@@ -927,12 +927,12 @@
                             (get-quoted-qualified-fn-name env fn-name)
           traced-fn-name    (gensym (str fn-name "__"))
           docstring         (:docstring conformed-gdefn)
-          meta-map          (merge (meta fn-name)
-                                   (:meta conformed-gdefn)
+          meta-map          (merge (:meta conformed-gdefn)
                                    (generate-type-annotations env fn-bodies)
                                    {::ghostwheel true})
           ;;; Assemble the config
-          config            (merge-config env meta-map)
+          config            (merge-config env
+                                          (merge (meta fn-name) meta-map))
           color             (if-let [color (get l/ghostwheel-colors (::trace-color config))]
                               color
                               (:black l/ghostwheel-colors))
