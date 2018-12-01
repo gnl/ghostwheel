@@ -8,6 +8,7 @@
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
   :dependencies [[gnl/ghostwheel.logging "0.3.0"]
+                 [gnl/ghostwheel.unghost "0.3.0"]
                  [org.clojure/spec.alpha "0.2.176"]
                  [org.clojure/test.check "0.10.0-alpha3"]
                  [orchestra "2018.08.19-1"]
