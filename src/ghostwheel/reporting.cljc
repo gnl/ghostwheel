@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ghostwheel.reporting
+(ns ^:no-doc ghostwheel.reporting
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
             [clojure.test :as t]

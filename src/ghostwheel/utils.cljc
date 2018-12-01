@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ghostwheel.utils
+(ns ^:no-doc ghostwheel.utils
   #?(:cljs (:require-macros ghostwheel.utils))
   (:require [cljs.env]
             [clojure.walk :as walk]
