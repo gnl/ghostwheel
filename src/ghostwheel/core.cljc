@@ -1194,7 +1194,7 @@
 
 (defmacro >defn
   "Like defn, but requires a (nilable) gspec definition and generates
-  additional s/fdef, generative tests, instrumentation code, an
+  additional `s/fdef`, generative tests, instrumentation code, an
   fspec-based stub, and/or tracing code, depending on the configuration
   metadata and the existence of a valid gspec and non-nil body."
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
@@ -1211,7 +1211,7 @@
 ;; NOTE: lots of duplication - refactor this to set/pass ^:private differently and call >defn
 (defmacro >defn-
   "Like defn-, but requires a (nilable) gspec definition and generates
-  additional s/fdef, generative tests, instrumentation code, an
+  additional `s/fdef`, generative tests, instrumentation code, an
   fspec-based stub, and/or tracing code, depending on the configuration
   metadata and the existence of a valid gspec and non-nil body."
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
@@ -1224,10 +1224,12 @@
 
 
 (defmacro after-check
-  "The callbacks are for a hot-reloading environment and
-  will be executed only if all reloaded namespaces test
-  successfully and `ghostwheel.core/after-check-async` is
-  called correctly from the build system after reloading."
+  "Takes a number of 0-arity functions to run
+  after all checks are completed successfully.
+
+  Meant to be used in a hot-reloading environment by putting it at the bottom
+  of a `(g/check)`-ed namespace and calling `ghostwheel.core/after-check-async`
+  correctly in the build system post-reload hooks."
   [& callbacks]
   (when (get-ghostwheel-compiler-config &env)
     (cond-> (generate-after-check &env callbacks)
@@ -1281,10 +1283,11 @@
 (s/fdef >fdef :args ::>fdef-args)
 
 (defmacro >fdef
-  "Defines an fspec, supports gspec syntax. `name` can be a symbol
-  or a qualified keyword, depending on whether the fspec is meant
-  to be registered as a top-level fspec (=> s/fdef fn-sym ...) or
-  used in other specs (=> s/def ::spec-keyword (s/fspec ...)).
+  "Defines an fspec using gspec syntax – pretty much a `>defn` without the body.
+
+  `name` can be a symbol or a qualified keyword, depending on whether the
+  fspec is meant to be registered as a top-level fspec (=> s/fdef fn-sym
+  ...) or used in other specs (=> s/def ::spec-keyword (s/fspec ...)).
 
   When defining global fspecs, instrumentation can be directly enabled by
   setting the `^::g/instrument` or `^::g/outstrument` metadata on the symbol."
