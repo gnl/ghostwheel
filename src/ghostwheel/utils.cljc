@@ -99,44 +99,53 @@
           (catch Exception _ (require '[ghostwheel.stubs.cljs-env :as cljs-env]))))
 
 
-(let [read-config-file
+(let [last-config (atom {:value {}
+                         :cache-time  0})
+      read-config-file
       (fn []
-        #?(:clj  (try
-                   (edn/read-string (slurp "ghostwheel.edn"))
-                   (catch Exception _ {}))
-           :cljs nil))]
+        (let [last-modified #?(:clj (.lastModified (java.io.File. "ghostwheel.edn")) :cljs 0)
+              expired?              (not= last-modified (:cache-time @last-config))]
+          #?(:clj  (if expired?
+                     (try
+                       (let [value (edn/read-string (slurp "ghostwheel.edn"))]
+                         ;(.println System/err "Reloaded ghostwheel.edn.")
+                         (reset! last-config {:value value :cache-time last-modified})
+                         value)
+                       (catch Exception e
+                         ;(.println System/err (str "Syntax error in ghostwheel.edn." (.getMessage e)))
+                         {}))
+                     (:value @last-config))
+             :cljs nil)))]
   (def get-ghostwheel-compiler-config
-    (memoize
-     (fn [env]
-       (let [cljs?
-             (cljs-env? env)
+    (fn [env]
+      (let [cljs?
+            (cljs-env? env)
 
-             ghostwheel-system-property
-             (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
-                          :cljs nil))
+            ghostwheel-system-property
+            (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
+                         :cljs nil))
 
-             plain-config                             ;; TODO validation
-             (if cljs?
-               (let [cljs-compiler-config
-                     (when cljs-env/*compiler*
-                       (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
-                           ;; Deprecated.
-                           (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
-                 (when (or cljs-compiler-config ghostwheel-system-property)
-                   (merge (read-config-file)
-                          cljs-compiler-config)))
-               (when ghostwheel-system-property
-                 (merge (read-config-file)
-                        {:report-output :repl})))]
-         (when plain-config
-           (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
-                         plain-config))))))))
+            plain-config                                    ;; TODO validation
+            (if cljs?
+              (let [cljs-compiler-config
+                    (when cljs-env/*compiler*
+                      (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
+                        ;; Deprecated.
+                        (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
+                (when (or cljs-compiler-config ghostwheel-system-property)
+                  (merge (read-config-file)
+                    cljs-compiler-config)))
+              (when ghostwheel-system-property
+                (merge (read-config-file)
+                  {:report-output :repl})))]
+        (when plain-config
+          (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
+                     plain-config)))))))
 
 
 (def get-env-config
-  (memoize
-   (fn [env]
-     (merge ghostwheel-default-config (get-ghostwheel-compiler-config env)))))
+  (fn [env]
+    (merge ghostwheel-default-config (get-ghostwheel-compiler-config env))))
 
 
 (defmacro get-env-config* []
