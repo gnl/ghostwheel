@@ -43,15 +43,15 @@ jobs:
           when: always
           command: lein test ghostwheel.prod-test
 
-      - run:
-          name: Testing ClojureScript build (chrome-headless, dev environment)
-          when: always
-          command: lein doo chrome-headless dev-test once
-
-      - run:
-          name: Testing ClojureScript build (chrome-headless, prod environment)
-          when: always
-          command: lein doo chrome-headless prod-test once
+#      - run:
+#          name: Testing ClojureScript build (chrome-headless, dev environment)
+#          when: always
+#          command: lein doo chrome-headless dev-test once
+#
+#      - run:
+#          name: Testing ClojureScript build (chrome-headless, prod environment)
+#          when: always
+#          command: lein doo chrome-headless prod-test once
 
       - run:
           name: Testing ClojureScript build (node, dev environment)
