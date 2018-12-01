@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## [0.3.0-SNAPSHOT] 
+## [0.3.0] 
 
 ### Fixed
 
@@ -10,8 +10,8 @@ All notable changes to this project will be documented in this file. This change
 
 ### Removed
 
-- Removed many runtime dependencies – specter, cuerdas, uniontypes, clairvoyant.core, re-frame-tracer.
-  - Specter and cuerdas were grudgingly replaced by core functions, clairvoyant.core and the tracer are now required by/part of the separate `ghostwheel.tracer` module, and uniontypes may be re-added later when the functionality it was originally planned for is introduced. 
+- Dropped many runtime dependencies – specter, cuerdas, uniontypes, clairvoyant.core, re-frame-tracer, and when running on Clojure – ClojureScript.
+  - Specter and cuerdas were grudgingly replaced with core functions, clairvoyant.core and the tracer are now required by/part of the separate `ghostwheel.tracer` module, and uniontypes was meant for a functionality that isn't implemented yet.
 
 ### Changed
 
@@ -23,7 +23,7 @@ All notable changes to this project will be documented in this file. This change
 
 - The releases are now being signed.
 
-- The cljdoc documentation should be much cleaner and more usable now as a number of internal namespaces have been excluded from the generation.
+- The cljdoc documentation should be much cleaner and more usable now as a number of internal namespaces have been excluded from the doc generation.
 
 ### Added
 
