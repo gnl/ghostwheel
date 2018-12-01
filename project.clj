@@ -1,4 +1,4 @@
-(defproject gnl/ghostwheel "0.3.3"
+(defproject gnl/ghostwheel "0.3.4-SNAPSHOT"
   :description "Hassle-free and concise clojure.spec, automatic generative testing, side effect detection, and evaluation tracing for Clojure(-Script)"
   :url "https://github.com/gnl/ghostwheel"
   :scm {:name "git"
