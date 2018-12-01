@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file. This change
 
 ## [-SNAPSHOT]
 
-## [0.3.1] 
+## [0.3.1] – 2018-12-01
 
 ### Fixed
 
