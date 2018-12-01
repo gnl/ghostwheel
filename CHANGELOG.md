@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. This change
 
 - `Use of undeclared Var com.rpl.specter/java` warning – #15
   - Specter is no longer required at runtime as its minimal use wasn't worth the additional dependency (it's still used in testing though). 
+- Remove unnecessary calls to `s/unstrument` on namespace reload.
 
 ### Removed
 
@@ -42,13 +43,6 @@ All notable changes to this project will be documented in this file. This change
 - Support for easy spec-instrumentation with metadata when writing external specs with `>fdef` with identical behaviour to `>defn` – `^::g/outstrument`/`^::g/instrument`
 
 - `::g/expound` option to configure the Expound spec error pretty-printer. On by default.
-
-
-## [0.2.4-SNAPSHOT] – Pre-Release
-
-### Fixed
-
-- Remove unnecessary calls to `s/unstrument` on namespace reload.
 
 ## [0.2.3] – 2018-07-13
 
