@@ -170,7 +170,7 @@ There's no need for this in the function metadata – if you alias Ghostwheel wi
             :refer [>defn >defn- >fdef => | <- ?]])
 ```
 +
-.ClojureScript tracing only – somewhere in your project:
+.ClojureScript tracing only – require once, somewhere in your project:
 ```clojure
 (:require [ghostwheel.tracer])
 ```
