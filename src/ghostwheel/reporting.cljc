@@ -30,8 +30,8 @@
 
 
 (defmethod report :begin-test-ns [m]
-  (group (str "Checking " (:ns m) " ..."
-           {::l/background (:base01 l/ghostwheel-colors)})))
+  (group (str "Checking " (:ns m) " ...")
+         {::l/background (:base01 l/ghostwheel-colors)}))
 
 
 (defmethod report :end-test-ns [m]
@@ -83,8 +83,8 @@
                 (group (str "WARNING: "
                               "Plain `defn` functions detected in "
                               ns-name
-                              incomplete-coverage
-                         warning-style))
+                              incomplete-coverage)
+                       warning-style)
                 (log (mapv symbol plain-defns))
                 (log-bold "=> Use `>defn` instead.")
                 (group-end))
@@ -95,8 +95,8 @@
                 (group (str "WARNING: "
                               "`::g/check` disabled for some functions in "
                               ns-name
-                              incomplete-coverage
-                         warning-style))
+                              incomplete-coverage)
+                       warning-style)
                 (log (mapv symbol unchecked-defns))
                 (group-end))
 
@@ -106,8 +106,8 @@
                 (group (str "WARNING: "
                               "`::g/check` disabled for "
                               ns-name
-                              incomplete-coverage
-                         warning-style))
+                              incomplete-coverage)
+                       warning-style)
                 (group-end))
 
 
@@ -118,8 +118,8 @@
                               fn-name
                               " – Function marked as unsafe."
                               no-gen-testing
-                              incomplete-coverage
-                         warning-style))
+                              incomplete-coverage)
+                       warning-style)
                 (group-end))
 
               (not fspec)
@@ -129,8 +129,8 @@
                               fn-name
                               " – Missing fspec(s)"
                               no-gen-testing
-                              incomplete-coverage
-                         warning-style))
+                              incomplete-coverage)
+                       warning-style)
                 (group-end))
 
               (not spec-checks)
@@ -140,8 +140,8 @@
                               fn-name
                               " – Number of tests set to 0"
                               no-gen-testing
-                              incomplete-coverage
-                         warning-style))
+                              incomplete-coverage)
+                       warning-style)
                 (group-end))
 
               :else nil)))))
