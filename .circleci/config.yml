@@ -20,7 +20,7 @@ jobs:
       # changes (see the checksum in the name of the key below).
       - restore_cache:
           keys:
-          - m2-{{ checksum "project.clj" }}
+            - m2-{{ checksum "project.clj" }}
 
       - run: lein deps
 
@@ -34,16 +34,21 @@ jobs:
       # on first failure, so we use the `when` keyword.
 
       - run:
-          name: Testing Clojure build
+          name: Testing Clojure build (dev environment)
           when: on_success # This is the first test
-          command: lein test ghostwheel.dev-test
+          command: lein with-profile +clj-dev-test test ghostwheel.dev-test
+
+      - run:
+          name: Testing Clojure build (prod environment)
+          when: always
+          command: lein test ghostwheel.prod-test
 
       - run:
           name: Testing ClojureScript build (chrome-headless, dev environment)
           when: always
           command: lein doo chrome-headless dev-test once
 
-      - run: 
+      - run:
           name: Testing ClojureScript build (chrome-headless, prod environment)
           when: always
           command: lein doo chrome-headless prod-test once
