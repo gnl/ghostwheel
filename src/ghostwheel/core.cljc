@@ -15,7 +15,6 @@
             [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
             [clojure.spec.gen.alpha :as gen]
-            [cljs.analyzer.api :as ana-api]
             [ghostwheel.reporting :as r]
             [ghostwheel.unghost :refer [clean-defn]]
             [ghostwheel.utils :as u
@@ -26,8 +25,10 @@
             [ghostwheel.threading-macros :include-macros true]
             [expound.alpha :as expound]
             #?@(:clj  [[clojure.core.specs.alpha]
+                       [ghostwheel.stubs.ana-api :as ana-api]
                        [orchestra.spec.test :as ost]]
                 :cljs [[cljs.core.specs.alpha :include-macros true]
+                       [cljs.analyzer.api :as ana-api]
                        [orchestra-cljs.spec.test :as ost]])))
 
 
@@ -38,6 +39,15 @@
 
 
 ;;;; Global vars and state
+
+
+;; This isn't particularly pretty, but it's how we avoid
+;; having ClojureScript as a required dependency on Clojure
+#?(:clj (try
+          (do
+            (ns-unalias (find-ns 'ghostwheel.core) 'ana-api)
+            (require '[cljs.analyzer.api :as ana-api]))
+          (catch Exception _ (require '[ghostwheel.stubs.ana-api :as ana-api]))))
 
 
 (let [{:keys [::report-output] :as config} (u/get-env-config*)]
@@ -1283,6 +1293,4 @@
   (when (get-ghostwheel-compiler-config &env)
     (cond-> (remove nil? (generate-fdef forms &env))
             (cljs-env? &env) clj->cljs)))
-
-
 

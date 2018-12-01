@@ -8,12 +8,13 @@
 
 (ns ^:no-doc ghostwheel.utils
   #?(:cljs (:require-macros ghostwheel.utils))
-  (:require [cljs.env]
-            [clojure.walk :as walk]
+  (:require [clojure.walk :as walk]
             #?@(:clj  [[clojure.core.specs.alpha]
+                       [ghostwheel.stubs.cljs-env :as cljs-env]
                        [orchestra.spec.test :as ost]
                        [clojure.edn :as edn]]
                 :cljs [[cljs.core.specs.alpha :include-macros true]
+                       [cljs.env :as cljs-env]
                        [orchestra-cljs.spec.test :as ost]])))
 
 
@@ -89,6 +90,15 @@
 (defn cljs-env? [env] (boolean (:ns env)))
 
 
+;; This isn't particularly pretty, but it's how we avoid
+;; having ClojureScript as a required dependency on Clojure
+#?(:clj (try
+          (do
+            (ns-unalias (find-ns 'ghostwheel.utils) 'cljs-env)
+            (require '[cljs.env :as cljs-env]))
+          (catch Exception _ (require '[ghostwheel.stubs.cljs-env :as cljs-env]))))
+
+
 (let [read-config-file
       (fn []
         #?(:clj  (try
@@ -108,10 +118,10 @@
              plain-config                             ;; TODO validation
              (if cljs?
                (let [cljs-compiler-config
-                     (when cljs.env/*compiler*
-                       (or (get-in @cljs.env/*compiler* [:options :external-config :ghostwheel])
+                     (when cljs-env/*compiler*
+                       (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
                            ;; Deprecated.
-                           (get-in @cljs.env/*compiler* [:options :ghostwheel])))]
+                           (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
                  (when (or cljs-compiler-config ghostwheel-system-property)
                    (merge (read-config-file)
                           cljs-compiler-config)))
