@@ -7,6 +7,7 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ghostwheel.threading-macros
+  #?(:cljs (:require-macros ghostwheel.threading-macros))
   (:require [ghostwheel.logging :as l :refer [ghostwheel-colors pr-clog]]
             [ghostwheel.utils :as u
              :refer [cljs-env? get-base-config get-ns-meta clj->cljs]]))

@@ -10,25 +10,17 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
             [clojure.spec.gen.alpha :as gen]
-            [ghostwheel.utils :as u]
+            [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]
+            [ghostwheel.test-utils :as tu
+             :refer [process-fdef extract-fdef threading-test deftest-permutations]]
+            [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
             #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
                        [orchestra.spec.test :as ost]
-                       [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
-                       [ghostwheel.test-utils :as tu :refer [process-fdef extract-fdef
-                                                             threading-test deftest-permutations]]
-                       [ghostwheel.test-utils-clj :refer [expand]]
-                       [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]]
+                       [ghostwheel.test-utils-clj :refer [expand]]]
                 :cljs [[clojure.test :as t :refer-macros [deftest testing is]]
                        [orchestra-cljs.spec.test :as ost]
-                       [ghostwheel.threading-macros :refer-macros [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
-                       [ghostwheel.test-utils :as tu
-                        :refer [process-fdef extract-fdef]
-                        :refer-macros [threading-test deftest-permutations]]
                        [ghostwheel.test-utils-cljs :refer-macros [expand]]
-                       [ghostwheel.tracer]
-                       [ghostwheel.core :as g
-                        :refer [=> | <-]
-                        :refer-macros [>defn >defn- >fdef ?]]])))
+                       [ghostwheel.tracer]])))
 
 ;; TODO - test fx detection
 

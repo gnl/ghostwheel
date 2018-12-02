@@ -7,6 +7,7 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ghostwheel.test-utils
+  #?(:cljs (:require-macros ghostwheel.test-utils))
   (:require [clojure.test :as t]
             [clojure.walk :as walk]
             [clojure.string :as string]

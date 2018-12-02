@@ -7,18 +7,15 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ghostwheel.prod-test
-  (:require #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
-                       [ghostwheel.test-utils :refer [threading-expansion-test]]
-                       [ghostwheel.test-utils-clj :refer [expand expand-full]]
-                       [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
-                       [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]]
+  (:require [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
+            [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]
+            [ghostwheel.utils]
+            [ghostwheel.test-utils :refer [threading-expansion-test]]
+            #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
+                       [ghostwheel.test-utils-clj :refer [expand expand-full]]]
                 :cljs [[clojure.test :as t :refer-macros [deftest testing is]]
-                       [ghostwheel.test-utils :refer-macros [threading-expansion-test]]
-                       [ghostwheel.test-utils-cljs :refer-macros [expand expand-full]]
-                       [ghostwheel.threading-macros :refer-macros [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
-                       [ghostwheel.core :as g
-                        :refer [=> | <-]
-                        :refer-macros [>defn >defn- >fdef ?]]])))
+                       [ghostwheel.test-utils-cljs :refer-macros [expand expand-full]]])))
+
 
 (deftest >defn-arity-1-test
   (is (= (expand (>defn foobar-1-prod
