@@ -127,13 +127,13 @@
                             ;; Deprecated.
                             (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
                   (when (or cljs-compiler-config ghostwheel-system-property)
-                    (merge (read-config-file)
-                           cljs-compiler-config)))
+                    (merge (read-config-file) cljs-compiler-config)))
                 (when ghostwheel-system-property
-                  (merge (read-config-file)
-                         {:report-output :repl})))]
+                  (merge (read-config-file) {:report-output :repl})))]
           (when plain-config
-            (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
+            (into {} (map (fn [[k v]]
+                            [(keyword "ghostwheel.core" (name k))
+                             v])
                           plain-config)))))
 
       load-config
