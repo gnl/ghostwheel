@@ -7,7 +7,7 @@
             :url  "https://choosealicense.com/licenses/epl-2.0/"}
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
-  :dependencies [[gnl/ghostwheel.logging "0.3.0"]
+  :dependencies [[gnl/ghostwheel.logging "0.3.1"]
                  [gnl/ghostwheel.unghost "0.3.0"]
                  [org.clojure/spec.alpha "0.2.176"]
                  [org.clojure/test.check "0.10.0-alpha3"]
@@ -19,7 +19,8 @@
   :profiles {:dev          {:dependencies [[org.clojure/clojurescript "1.10.439"]
                                            [org.clojure/clojure "1.9.0"]
                                            [com.rpl/specter "1.1.2"]
-                                           [gnl/ghostwheel.tracer "0.3.0"]]}
+                                           [gnl/ghostwheel.tracer "0.3.0"]]
+                            :jvm-opts     ["-Dghostwheel.cache=false"]}
              :clj-dev-test {:jvm-opts ["-Dghostwheel.enabled=true"]}}
   :cljsbuild {:builds [{:id           "dev-test"
                         :source-paths ["src" "test"]

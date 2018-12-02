@@ -111,49 +111,45 @@
            :cljs nil))
 
       reload-config
-      (fn [env]
-        (let [cljs?
-              (cljs-env? env)
-
-              ghostwheel-system-property
-              (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
-                           :cljs nil))
-
-              plain-config                            ;; TODO validation
-              (if cljs?
-                (let [cljs-compiler-config
-                      (when cljs-env/*compiler*
-                        (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
-                            ;; Deprecated.
-                            (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
-                  (when (or cljs-compiler-config ghostwheel-system-property)
-                    (merge (read-config-file) cljs-compiler-config)))
-                (when ghostwheel-system-property
-                  (merge (read-config-file) {:report-output :repl})))]
+      (fn []
+        #?(:clj (.println System/err "Reloaded ghostwheel config."))
+        (let [plain-config                            ;; TODO validation
+              (let [cljs-compiler-config
+                    (when cljs-env/*compiler*
+                      (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
+                          ;; Deprecated.
+                          (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
+                (when (or #?(:clj (= (System/getProperty "ghostwheel.enabled") "true"))
+                          cljs-compiler-config)
+                  (merge (read-config-file)
+                         cljs-compiler-config)))]
           (when plain-config
             (into {} (map (fn [[k v]]
                             [(keyword "ghostwheel.core" (name k))
                              v])
-                          plain-config)))))
+                          plain-config)))))]
 
-      load-config
-      (fn [env]
-        (let [now (identity #?(:clj (System/currentTimeMillis) :cljs (js/Date.now)))]
-          (if (< (- now (::timestamp @*config-cache))
-                 2000)
-            (::value @*config-cache)
-            (::value (reset! *config-cache
-                             {::timestamp now
-                              ::value     (reload-config env)})))))]
+  (defn get-env-config
+    ([]
+     (get-env-config true))
+    ([cache?]
+     (if (or (not cache?)
+             #?(:clj (= (System/getProperty "ghostwheel.cache") "false")))
+       (reload-config)
+       (let [now (identity #?(:clj (System/currentTimeMillis) :cljs (js/Date.now)))]
+         (if (> (- now (::timestamp @*config-cache))
+                2000)
+           (::value (reset! *config-cache
+                            {::timestamp now
+                             ::value     (reload-config)}))
+           (::value @*config-cache)))))))
 
-  (defn get-base-config
-    [env]
-    (when-let [env-config (load-config env)]
-      (merge ghostwheel-default-config env-config))))
 
-
-(defmacro get-base-config* []
-  (get-base-config &env))
+(defn get-base-config
+  ([]
+   (get-base-config true))
+  ([cache?]
+   (merge ghostwheel-default-config (get-env-config cache?))))
 
 
 (defn get-ns-meta [env]
@@ -191,4 +187,3 @@
 
 (defn gen-exception [env msg]
   `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.) ~msg)))
-

@@ -17,13 +17,10 @@
             [clojure.spec.gen.alpha :as gen]
             [ghostwheel.reporting :as r]
             [ghostwheel.unghost :refer [clean-defn]]
-            [ghostwheel.utils :as u
-             :refer [cljs-env? get-base-config
-                     get-ns-meta get-ns-name clj->cljs]
-             :include-macros true]
+            [ghostwheel.utils :as u :refer [cljs-env? get-ns-meta get-ns-name clj->cljs]]
             [ghostwheel.logging :as l]
             [ghostwheel.threading-macros :include-macros true]
-            [expound.alpha :as expound]
+            [expound.alpha :as exp]
             #?@(:clj  [[clojure.core.specs.alpha]
                        [ghostwheel.stubs.ana-api :as ana-api]
                        [orchestra.spec.test :as ost]]
@@ -50,12 +47,9 @@
           (catch Exception _ (require '[ghostwheel.stubs.ana-api :as ana-api]))))
 
 
-(let [{:keys [::report-output] :as config} (u/get-base-config*)]
-  #?(:clj  (alter-var-root #'ghostwheel.logging/*report-output* (constantly report-output))
-     :cljs (set! ghostwheel.logging/*report-output* report-output))
-  (when-let [expound-config (::expound config)]
-    #?(:clj  (alter-var-root #'s/*explain-out* (constantly (expound/custom-printer expound-config)))
-       :cljs (set! s/*explain-out* (expound/custom-printer expound-config)))))
+(when-let [expound-cfg (::expound (u/get-base-config false))]
+  #?(:clj  (alter-var-root #'s/*explain-out* (constantly (exp/custom-printer expound-cfg)))
+     :cljs (set! s/*explain-out* (exp/custom-printer expound-cfg))))
 
 
 (def ^:private test-suffix "__ghostwheel-test")
@@ -817,7 +811,7 @@
 
 (defn- merge-config [env metadata]
   (s/assert ::ghostwheel-config
-            (->> (merge (u/get-base-config env)
+            (->> (merge (u/get-base-config)
                         (get-ns-meta env)
                         metadata)
                  (filter #(= (-> % key namespace) (name `ghostwheel.core)))
@@ -1030,7 +1024,7 @@
 
 (defn- generate-coverage-check [env nspace]
   (let [cljs?             (cljs-env? env)
-        {:keys [::check-coverage ::check]} (merge (u/get-base-config env)
+        {:keys [::check-coverage ::check]} (merge (u/get-base-config)
                                                   (if cljs?
                                                     (:meta (ana-api/find-ns nspace))
                                                     #?(:clj (meta nspace))))
@@ -1082,12 +1076,12 @@
 
 (defn- generate-check [env targets]
   (let [base-config
-        (u/get-base-config env)
+        (u/get-base-config)
 
         cljs?
         (cljs-env? env)
 
-        {:keys [::extrument]}
+        {:keys [::extrument ::report-output]}
         base-config
 
         conformed-targets
@@ -1113,7 +1107,7 @@
                            metadata (if cljs? (:meta fn-data) #?(:clj (meta fn-data)))
 
                            {:keys [::check-coverage ::check]}
-                           (merge (u/get-base-config env)
+                           (merge (u/get-base-config)
                                   (meta (:ns fn-data))
                                   metadata)]
                        (cond (not fn-data)
@@ -1143,7 +1137,8 @@
     (if (not-empty errors)
       (u/gen-exception env (str "\n" (string/join "\n" errors)))
       `(when *global-check-allowed?*
-         (binding [*global-trace-allowed?* false]
+         (binding [*global-trace-allowed?* false
+                   l/*report-output*       ~(if cljs? report-output :repl)]
            (do
              ~@(remove nil?
                        `[~(when extrument
@@ -1166,7 +1161,7 @@
 
 (defn- generate-after-check [env callbacks]
   (let [{:keys [::check]}
-        (merge (u/get-base-config env)
+        (merge (u/get-base-config)
                (get-ns-meta env))]
     ;; TODO implement for clj
     (when (and check (seq callbacks))
@@ -1196,7 +1191,7 @@
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
                [name doc-string? attr-map? ([params*] gspec prepost-map? body?) + attr-map?])}
   [& forms]
-  (if (get-base-config &env)
+  (if (u/get-env-config)
     (cond-> (remove nil? (generate-defn forms false &env))
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn forms)))
@@ -1213,7 +1208,7 @@
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
                [name doc-string? attr-map? ([params*] gspec prepost-map? body?) + attr-map?])}
   [& forms]
-  (if (get-base-config &env)
+  (if (u/get-env-config)
     (cond-> (remove nil? (generate-defn forms true &env))
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn- forms)))
@@ -1227,7 +1222,7 @@
   of a `(g/check)`-ed namespace and calling `ghostwheel.core/after-check-async`
   correctly in the build system post-reload hooks."
   [& callbacks]
-  (when (get-base-config &env)
+  (when (u/get-env-config)
     (cond-> (generate-after-check &env callbacks)
             (cljs-env? &env) (clj->cljs false))))
 
@@ -1260,7 +1255,7 @@
   ([]
    `(check (quote ~(get-ns-name &env))))
   ([things]
-   (if (get-base-config &env)
+   (if (u/get-env-config)
      (cond-> (generate-check &env things)
              (cljs-env? &env) (clj->cljs false))
      (str "Ghostwheel disabled => "
@@ -1290,7 +1285,7 @@
   {:arglists '([name [params*] gspec]
                [name ([params*] gspec) +])}
   [& forms]
-  (when (get-base-config &env)
+  (when (u/get-env-config)
     (cond-> (remove nil? (generate-fdef forms &env))
             (cljs-env? &env) clj->cljs)))
 

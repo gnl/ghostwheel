@@ -9,8 +9,7 @@
 (ns ghostwheel.threading-macros
   #?(:cljs (:require-macros ghostwheel.threading-macros))
   (:require [ghostwheel.logging :as l :refer [ghostwheel-colors pr-clog]]
-            [ghostwheel.utils :as u
-             :refer [cljs-env? get-base-config get-ns-meta clj->cljs]]))
+            [ghostwheel.utils :as u :refer [cljs-env? get-ns-meta clj->cljs]]))
 
 
 ;;;; Traced threading macros
@@ -28,7 +27,7 @@
   [orig-x & orig-forms]
   (let [untraced `(~'-> ~orig-x ~@orig-forms)]
     (cond->
-     (if-not (get-base-config &env)
+     (if-not (u/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -56,7 +55,7 @@
   [orig-x & orig-forms]
   (let [untraced `(~'->> ~orig-x ~@orig-forms)]
     (cond->
-     (if-not (get-base-config &env)
+     (if-not (u/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -86,7 +85,7 @@
   (let [untraced `(~'as-> ~expr ~name ~@forms)
         log-step (fn [form] `(pr-clog ~(str form) ~form))]
     (cond->
-     (if-not (get-base-config &env)
+     (if-not (u/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -115,7 +114,7 @@
   (assert (even? (count clauses)))
   (let [untraced `(~'cond-> ~expr ~@clauses)]
     (cond->
-     (if-not (get-base-config &env)
+     (if-not (u/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -140,7 +139,7 @@
   (assert (even? (count clauses)))
   (let [untraced `(~'cond->> ~expr ~@clauses)]
     (cond->
-     (if-not (get-base-config &env)
+     (if-not (u/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -172,7 +171,7 @@
   [expr & forms]
   (let [untraced `(~'some-> ~expr ~@forms)]
     (cond->
-     (if-not (get-base-config &env)
+     (if-not (u/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -193,7 +192,7 @@
   [expr & forms]
   (let [untraced `(~'some->> ~expr ~@forms)]
     (cond->
-     (if-not (get-base-config &env)
+     (if-not (u/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
