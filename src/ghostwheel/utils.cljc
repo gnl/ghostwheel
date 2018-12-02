@@ -152,19 +152,6 @@
    (merge ghostwheel-default-config (get-env-config cache?))))
 
 
-(defn get-ns-meta [env]
-  (if (cljs-env? env)
-    ;; This isn't necessary, strictly speaking, but it makes hacking on
-    ;; Ghostwheel easier, because it allows env to be stubbed in order to
-    ;; trace-debug code generating functions at runtime in ClojureScript
-    (or (meta *ns*) (some-> env :ns :meta))
-    (meta *ns*)))
-
-(defn get-ns-name [env]
-  (if (cljs-env? env)
-    (or (.-name *ns*) (some-> env :ns :name))
-    (.-name *ns*)))
-
 (defn clj->cljs
   ([form]
    (clj->cljs form true))
@@ -184,6 +171,7 @@
                                   (symbol (get ns-replacements nspace) (name %))
                                   %)))]
      (walk/postwalk replace-namespace form))))
+
 
 (defn gen-exception [env msg]
   `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.) ~msg)))

@@ -11,7 +11,7 @@
   (:require [clojure.test :as t]
             [clojure.walk :as walk]
             [clojure.string :as string]
-            [ghostwheel.utils :as u :refer [cljs-env? clj->cljs get-ns-meta]]
+            [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
             [ghostwheel.test-utils-cljs :as ucljs]
             #?@(:clj  [[com.rpl.specter
                         :refer [setval transform select select-any

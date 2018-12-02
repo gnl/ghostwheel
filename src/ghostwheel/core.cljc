@@ -17,7 +17,7 @@
             [clojure.spec.gen.alpha :as gen]
             [ghostwheel.reporting :as r]
             [ghostwheel.unghost :refer [clean-defn]]
-            [ghostwheel.utils :as u :refer [cljs-env? get-ns-meta get-ns-name clj->cljs]]
+            [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
             [ghostwheel.logging :as l]
             [ghostwheel.threading-macros :include-macros true]
             [expound.alpha :as exp]
@@ -812,21 +812,21 @@
 (defn- merge-config [env metadata]
   (s/assert ::ghostwheel-config
             (->> (merge (u/get-base-config)
-                        (get-ns-meta env)
+                        (meta *ns*)
                         metadata)
                  (filter #(= (-> % key namespace) (name `ghostwheel.core)))
                  (into {}))))
 
 
-(defn- get-quoted-qualified-fn-name [env fn-name]
-  `(quote ~(symbol (str (get-ns-name env)) (str fn-name))))
+(defn- get-quoted-qualified-fn-name [fn-name]
+  `(quote ~(symbol (str (.-name *ns*)) (str fn-name))))
 
 
 (defn- generate-fdef
   [forms env]
   (let [{[type fn-name] :name bs :bs} (s/conform ::>fdef-args forms)]
     (case type
-      :sym (let [quoted-qualified-fn-name (get-quoted-qualified-fn-name env fn-name)
+      :sym (let [quoted-qualified-fn-name (get-quoted-qualified-fn-name fn-name)
                  {:keys [::instrument ::outstrument]} (merge-config env (meta fn-name))
                  instrumentation          (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
                                                 instrument `(st/instrument ~quoted-qualified-fn-name)
@@ -928,7 +928,7 @@
           arity             (key fn-bodies)
           fn-name           (:name conformed-gdefn)
           quoted-qualified-fn-name
-                            (get-quoted-qualified-fn-name env fn-name)
+                            (get-quoted-qualified-fn-name fn-name)
           traced-fn-name    (gensym (str fn-name "__"))
           docstring         (:docstring conformed-gdefn)
           meta-map          (merge (:meta conformed-gdefn)
@@ -1162,7 +1162,7 @@
 (defn- generate-after-check [env callbacks]
   (let [{:keys [::check]}
         (merge (u/get-base-config)
-               (get-ns-meta env))]
+               (meta *ns*))]
     ;; TODO implement for clj
     (when (and check (seq callbacks))
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
@@ -1253,7 +1253,7 @@
                [ns-regex-or-quoted-ns-or-fn]
                [[ns-regex-or-quoted-ns-or-fn+]])}
   ([]
-   `(check (quote ~(get-ns-name &env))))
+   `(check (quote ~(.-name *ns*))))
   ([things]
    (if (u/get-env-config)
      (cond-> (generate-check &env things)
