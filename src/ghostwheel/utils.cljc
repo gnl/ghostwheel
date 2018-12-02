@@ -99,53 +99,61 @@
           (catch Exception _ (require '[ghostwheel.stubs.cljs-env :as cljs-env]))))
 
 
-(let [*config-timestamp (atom 0)
-      *config-cache     (atom nil)
-      read-config-file  (fn []
-                          #?(:clj  (let [now (System/currentTimeMillis)]
-                                     (if (< (- now @*config-timestamp) 2000)
-                                       @*config-cache
-                                       (do
-                                         (reset! *config-timestamp now)
-                                         (reset! *config-cache
-                                                 (try
-                                                   (edn/read-string (slurp "ghostwheel.edn"))
-                                                   (catch Exception _ nil))))))
-                             :cljs nil))]
-  (defn get-ghostwheel-compiler-config
+(let [*config-cache
+      (atom {::timestamp 0
+             ::value     nil})
+
+      read-config-file
+      (fn []
+        #?(:clj  (try
+                   (edn/read-string (slurp "ghostwheel.edn"))
+                   (catch Exception _ nil))
+           :cljs nil))
+
+      reload-config
+      (fn [env]
+        (let [cljs?
+              (cljs-env? env)
+
+              ghostwheel-system-property
+              (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
+                           :cljs nil))
+
+              plain-config                            ;; TODO validation
+              (if cljs?
+                (let [cljs-compiler-config
+                      (when cljs-env/*compiler*
+                        (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
+                            ;; Deprecated.
+                            (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
+                  (when (or cljs-compiler-config ghostwheel-system-property)
+                    (merge (read-config-file)
+                           cljs-compiler-config)))
+                (when ghostwheel-system-property
+                  (merge (read-config-file)
+                         {:report-output :repl})))]
+          (when plain-config
+            (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
+                          plain-config)))))
+
+      load-config
+      (fn [env]
+        (let [now (identity #?(:clj (System/currentTimeMillis) :cljs (js/Date.now)))]
+          (if (< (- now (::timestamp @*config-cache))
+                 2000)
+            (::value @*config-cache)
+            (::value (reset! *config-cache
+                             {::timestamp now
+                              ::value     (reload-config env)})))))]
+
+  (defn get-base-config
     [env]
-    (let [cljs?
-          (cljs-env? env)
-
-          ghostwheel-system-property
-          (identity #?(:clj  (= (System/getProperty "ghostwheel.enabled") "true")
-                       :cljs nil))
-
-          plain-config                                ;; TODO validation
-          (if cljs?
-            (let [cljs-compiler-config
-                  (when cljs-env/*compiler*
-                    (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
-                        ;; Deprecated.
-                        (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
-              (when (or cljs-compiler-config ghostwheel-system-property)
-                (merge (read-config-file)
-                       cljs-compiler-config)))
-            (when ghostwheel-system-property
-              (merge (read-config-file)
-                     {:report-output :repl})))]
-      (when plain-config
-        (into {} (map (fn [[k v]] [(keyword "ghostwheel.core" (name k)) v])
-                      plain-config))))))
+    (when-let [env-config (load-config env)]
+      (merge ghostwheel-default-config env-config))))
 
 
-(defn get-env-config
-  [env]
-  (merge ghostwheel-default-config (get-ghostwheel-compiler-config env)))
-
-
-(defmacro get-env-config* []
-  (get-env-config &env))
+(defmacro get-base-config* []
+  (get-base-config &env))
 
 
 (defn get-ns-meta [env]
