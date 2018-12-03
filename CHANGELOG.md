@@ -1,7 +1,28 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## [-SNAPSHOT]
+## [SNAPSHOT]
+
+## [0.3.4] – 2018-12-03
+
+### Added
+
+- Simple 2-second base config cache to avoid rereading and parsing the global configuration on every `>defn` during recompile.
+
+### Fixed 
+
+- Warnings when running `(g/check)`
+
+- Compile warnings about replaced core functions
+
+- Exception when hot-reloading Ghostwheel namespaces
+
+### Removed
+
+- Headless Chrome tests in CircleCI – they run fine locally, until the issue is resolved, the CLJS tests will be run on node only.
+
+- Some dead or confusing code
+
 
 ## [0.3.1] – 2018-12-01
 
@@ -84,7 +105,8 @@ All notable changes to this project will be documented in this file. This change
 
 ## 0.2.1 – 2018-06-28 – Initial release
 
-[-SNAPSHOT]: https://github.com/gnl/ghostwheel/compare/v0.3.1...HEAD
-[0.3.1]: https://github.com/gnl/ghostwheel/compare/v0.2.3...v0.3.1
+[SNAPSHOT]: https://github.com/gnl/ghostwheel/compare/0.3.4...HEAD
+[0.3.4]: https://github.com/gnl/ghostwheel/compare/0.3.1...0.3.4
+[0.3.1]: https://github.com/gnl/ghostwheel/compare/v0.2.3...0.3.1
 [0.2.3]: https://github.com/gnl/ghostwheel/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/gnl/ghostwheel/compare/v0.2.1...v0.2.2
