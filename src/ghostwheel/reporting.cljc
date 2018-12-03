@@ -25,6 +25,13 @@
 (def inc-report-counter! #?(:clj  t/inc-report-counter
                             :cljs t/inc-report-counter!))
 
+(def warning-style {::l/background (:orange0 l/ghostwheel-colors)})
+
+
+(def snippets
+  {::incomplete-coverage " => Test coverage incomplete:"
+   ::no-gen-testing      " => No generative testing performed"})
+
 
 (defmulti ^:dynamic report :type)
 
@@ -66,85 +73,45 @@
 
 
 (defmethod report :pass [m]
-  (let [{:keys [::ns-name ::fn-name ::fspec ::spec-checks ::check-coverage
-                ::marked-unsafe ::plain-defns ::unchecked-defns
-                ::unchecked-ns ::report-output]} (:message m)
+  (let [{:keys [::fn-name ::fspec ::spec-checks ::check-coverage
+                ::marked-unsafe ::report-output]} (:message m)]
+    (inc-report-counter! :pass)
+    ;; REVIEW : We don't expect
+    (when check-coverage
+      (cond marked-unsafe
+            (do
+              (inc-report-counter! :warn)
+              (group (str "WARNING: "
+                          fn-name
+                          " – Function marked as unsafe."
+                          (::no-gen-testing snippets)
+                          (::incomplete-coverage snippets))
+                     warning-style)
+              (group-end))
 
-        warning-style       {::l/background (:orange0 l/ghostwheel-colors)}
-        incomplete-coverage " => Test coverage incomplete:"
-        no-gen-testing      " => No generative testing performed"]
-    (do
-      (inc-report-counter! :pass)
-      ;; REVIEW : We don't expect
-      (when check-coverage
-        (cond plain-defns
-              (do
-                (inc-report-counter! :warn)
-                (group (str "WARNING: "
-                              "Plain `defn` functions detected in "
-                              ns-name
-                              incomplete-coverage)
-                       warning-style)
-                (log (mapv symbol plain-defns))
-                (log-bold "=> Use `>defn` instead.")
-                (group-end))
+            (not fspec)
+            (do
+              (inc-report-counter! :warn)
+              (group (str "WARNING: "
+                          fn-name
+                          " – Missing fspec(s)"
+                          (::no-gen-testing snippets)
+                          (::incomplete-coverage snippets))
+                     warning-style)
+              (group-end))
 
-              unchecked-defns
-              (do
-                (inc-report-counter! :warn)
-                (group (str "WARNING: "
-                              "`::g/check` disabled for some functions in "
-                              ns-name
-                              incomplete-coverage)
-                       warning-style)
-                (log (mapv symbol unchecked-defns))
-                (group-end))
+            (not spec-checks)
+            (do
+              (inc-report-counter! :warn)
+              (group (str "WARNING: "
+                          fn-name
+                          " – Number of tests set to 0"
+                          (::no-gen-testing snippets)
+                          (::incomplete-coverage snippets))
+                     warning-style)
+              (group-end))
 
-              unchecked-ns
-              (do
-                (inc-report-counter! :warn)
-                (group (str "WARNING: "
-                              "`::g/check` disabled for "
-                              ns-name
-                              incomplete-coverage)
-                       warning-style)
-                (group-end))
-
-
-              marked-unsafe
-              (do
-                (inc-report-counter! :warn)
-                (group (str "WARNING: "
-                              fn-name
-                              " – Function marked as unsafe."
-                              no-gen-testing
-                              incomplete-coverage)
-                       warning-style)
-                (group-end))
-
-              (not fspec)
-              (do
-                (inc-report-counter! :warn)
-                (group (str "WARNING: "
-                              fn-name
-                              " – Missing fspec(s)"
-                              no-gen-testing
-                              incomplete-coverage)
-                       warning-style)
-                (group-end))
-
-              (not spec-checks)
-              (do
-                (inc-report-counter! :warn)
-                (group (str "WARNING: "
-                              fn-name
-                              " – Number of tests set to 0"
-                              no-gen-testing
-                              incomplete-coverage)
-                       warning-style)
-                (group-end))
-
-              :else nil)))))
+            :else nil))))
 
 
 ;; REVIEW: We don't seem to be needing this anymore.
@@ -252,7 +219,7 @@
       (do
         (inc-report-counter! :error)
         (group (str "ERROR when testing " fn-name
-                 {::l/background (:red l/ghostwheel-colors)}))
+                    {::l/background (:red l/ghostwheel-colors)}))
         (inc-report-counter! :error)
         (println "\nERROR in" (t/testing-vars-str m))
         #?(:cljs (when (seq (:testing-contexts (t/get-current-env)))
