@@ -19,7 +19,7 @@
   :profiles {:dev          {:dependencies [[org.clojure/clojurescript "1.10.439"]
                                            [org.clojure/clojure "1.9.0"]
                                            [com.rpl/specter "1.1.2"]
-                                           [gnl/ghostwheel.tracer "0.3.0"]]
+                                           [gnl/ghostwheel.tracer "0.3.1"]]
                             :jvm-opts     ["-Dghostwheel.cache=false"]}
              :clj-dev-test {:jvm-opts ["-Dghostwheel.enabled=true"]}}
   :cljsbuild {:builds [{:id           "dev-test"
