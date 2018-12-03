@@ -145,9 +145,9 @@ CAUTION: Do not enable Ghostwheel in your production build config or you might e
 +
 Ghostwheel's behaviour is determined individually for each function by merging the configuration maps:
 +
-`ghostwheel.utils/ghostwheel-default-config` -> `ghostwheel.edn` config file in the project root -> compiler options (ClojureScript only) -> namespace metadata -> function metadata.
+`ghostwheel.utils/ghostwheel-default-config` -> `ghostwheel.edn` config file in the project root -> `{:external-config {:ghostwheel {...}}` compiler options (ClojureScript only) -> namespace metadata -> function metadata.
 +
-See the link:https://github.com/gnl/ghostwheel/blob/master/src/ghostwheel/utils.cljc#L21[default configuration map] for a description of the options – unless explicitly stated otherwise, each one can be overridden on any level.
+See the link:https://github.com/gnl/ghostwheel/blob/master/src/ghostwheel/utils.cljc#L29[default configuration map] for a description of the options – unless explicitly stated otherwise, each one can be overridden on any level.
 +
 NOTE: Most of the functionality is disabled by default to avoid any nasty surprises.
 +
