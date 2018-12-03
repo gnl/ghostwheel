@@ -120,7 +120,8 @@
                           (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
                 (when (or #?(:clj (= (System/getProperty "ghostwheel.enabled") "true"))
                           cljs-compiler-config)
-                  (merge (read-config-file)
+                  (merge {}
+                         (read-config-file)
                          cljs-compiler-config)))]
           (when plain-config
             (into {} (map (fn [[k v]]
