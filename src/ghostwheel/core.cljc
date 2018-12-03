@@ -1057,12 +1057,13 @@
         run-coverage-test (fn [prefix data]
                             (let [test-name (symbol (str prefix test-name))]
                               `(do
+                                 ;; TODO: don't do this with tests.
                                  (t/deftest ~test-name
                                    (t/is true ~(merge base-data data)))
                                  (binding [t/report r/report]
                                    (~test-name))
-                                 (ns-unmap (quote ~(get-ns-name env))
-                                           (quote ~test-name))
+                                 ;(ns-unmap (quote ~(get-ns-name env))
+                                 ;          (quote ~test-name))
                                  nil)))]
     `(do
        ~@(remove nil?
