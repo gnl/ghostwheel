@@ -137,12 +137,11 @@
              #?(:clj (= (System/getProperty "ghostwheel.cache") "false")))
        (reload-config)
        (let [now (identity #?(:clj (System/currentTimeMillis) :cljs (js/Date.now)))]
-         (if (> (- now (::timestamp @*config-cache))
+         (if (< (- now (::timestamp @*config-cache))
                 2000)
-           (::value (reset! *config-cache
-                            {::timestamp now
-                             ::value     (reload-config)}))
-           (::value @*config-cache)))))))
+           (::value @*config-cache)
+           (::value (reset! *config-cache {::timestamp now
+                                           ::value     (reload-config)}))))))))
 
 
 (defn get-base-config

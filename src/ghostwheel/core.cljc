@@ -808,7 +808,7 @@
                        {:jsdoc [(str "@return {" (string/join "|" ret-types) "}")]}))))
 
 
-(defn- merge-config [env metadata]
+(defn- merge-config [metadata]
   (s/assert ::ghostwheel-config
             (->> (merge (u/get-base-config)
                         (meta *ns*)
@@ -822,11 +822,11 @@
 
 
 (defn- generate-fdef
-  [forms env]
+  [forms]
   (let [{[type fn-name] :name bs :bs} (s/conform ::>fdef-args forms)]
     (case type
       :sym (let [quoted-qualified-fn-name (get-quoted-qualified-fn-name fn-name)
-                 {:keys [::instrument ::outstrument]} (merge-config env (meta fn-name))
+                 {:keys [::instrument ::outstrument]} (merge-config (meta fn-name))
                  instrumentation          (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
                                                 instrument `(st/instrument ~quoted-qualified-fn-name)
                                                 :else nil)
@@ -934,8 +934,7 @@
                                    (generate-type-annotations env fn-bodies)
                                    {::ghostwheel true})
           ;;; Assemble the config
-          config            (merge-config env
-                                          (merge (meta fn-name) meta-map))
+          config            (merge-config (merge (meta fn-name) meta-map))
           color             (if-let [color (get l/ghostwheel-colors (::trace-color config))]
                               color
                               (:black l/ghostwheel-colors))
@@ -1159,7 +1158,7 @@
                             `(st/unstrument (quote ~extrument)))])))))))
 
 
-(defn- generate-after-check [env callbacks]
+(defn- generate-after-check [callbacks]
   (let [{:keys [::check]}
         (merge (u/get-base-config)
                (meta *ns*))]
@@ -1223,7 +1222,7 @@
   correctly in the build system post-reload hooks."
   [& callbacks]
   (when (u/get-env-config)
-    (cond-> (generate-after-check &env callbacks)
+    (cond-> (generate-after-check callbacks)
             (cljs-env? &env) (clj->cljs false))))
 
 
@@ -1286,6 +1285,6 @@
                [name ([params*] gspec) +])}
   [& forms]
   (when (u/get-env-config)
-    (cond-> (remove nil? (generate-fdef forms &env))
+    (cond-> (remove nil? (generate-fdef forms))
             (cljs-env? &env) clj->cljs)))
 
