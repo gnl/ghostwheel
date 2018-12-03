@@ -22,7 +22,6 @@
             [ghostwheel.threading-macros :include-macros true]
             [expound.alpha :as exp]
             #?@(:clj  [[clojure.core.specs.alpha]
-                       [ghostwheel.stubs.ana-api :as ana-api]
                        [orchestra.spec.test :as ost]]
                 :cljs [[cljs.core.specs.alpha :include-macros true]
                        [cljs.analyzer.api :as ana-api]

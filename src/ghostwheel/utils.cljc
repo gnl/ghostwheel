@@ -10,12 +10,20 @@
   #?(:cljs (:require-macros ghostwheel.utils))
   (:require [clojure.walk :as walk]
             #?@(:clj  [[clojure.core.specs.alpha]
-                       [ghostwheel.stubs.cljs-env :as cljs-env]
                        [orchestra.spec.test :as ost]
                        [clojure.edn :as edn]]
                 :cljs [[cljs.core.specs.alpha :include-macros true]
                        [cljs.env :as cljs-env]
                        [orchestra-cljs.spec.test :as ost]])))
+
+
+;; This isn't particularly pretty, but it's how we avoid
+;; having ClojureScript as a required dependency on Clojure
+#?(:clj (try
+          (do
+            (ns-unalias (find-ns 'ghostwheel.utils) 'cljs-env)
+            (require '[cljs.env :as cljs-env]))
+          (catch Exception _ (require '[ghostwheel.stubs.cljs-env :as cljs-env]))))
 
 
 (def ghostwheel-default-config
@@ -88,15 +96,6 @@
 
 
 (defn cljs-env? [env] (boolean (:ns env)))
-
-
-;; This isn't particularly pretty, but it's how we avoid
-;; having ClojureScript as a required dependency on Clojure
-#?(:clj (try
-          (do
-            (ns-unalias (find-ns 'ghostwheel.utils) 'cljs-env)
-            (require '[cljs.env :as cljs-env]))
-          (catch Exception _ (require '[ghostwheel.stubs.cljs-env :as cljs-env]))))
 
 
 (let [*config-cache
