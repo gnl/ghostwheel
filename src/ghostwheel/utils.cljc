@@ -111,7 +111,7 @@
 
       reload-config
       (fn []
-        #?(:clj (.println System/err "Reloaded ghostwheel config."))
+        ;#?(:clj (.println System/err "Reloaded ghostwheel config.")) ; DEBUG
         (let [plain-config                            ;; TODO validation
               (let [cljs-compiler-config
                     (when cljs-env/*compiler*
