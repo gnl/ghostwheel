@@ -3,11 +3,17 @@ All notable changes to this project will be documented in this file. This change
 
 ## [SNAPSHOT]
 
+## [0.3.5] – 2018-12-03
+
+### Changed
+
+- Synchronised versions across modules
+
 ## [0.3.4] – 2018-12-03
 
 ### Added
 
-- Simple 2-second base config cache to avoid rereading and parsing the global configuration on every `>defn` during recompile.
+- Simple 2-second base config cache to avoid rereading and parsing the global configuration on every `>defn` during recompile. Thanks @awkay for the pointer / idea.
 
 ### Fixed 
 
@@ -105,7 +111,8 @@ All notable changes to this project will be documented in this file. This change
 
 ## 0.2.1 – 2018-06-28 – Initial release
 
-[SNAPSHOT]: https://github.com/gnl/ghostwheel/compare/0.3.4...HEAD
+[SNAPSHOT]: https://github.com/gnl/ghostwheel/compare/0.3.5...HEAD
+[0.3.5]: https://github.com/gnl/ghostwheel/compare/0.3.4...0.3.5
 [0.3.4]: https://github.com/gnl/ghostwheel/compare/0.3.1...0.3.4
 [0.3.1]: https://github.com/gnl/ghostwheel/compare/v0.2.3...0.3.1
 [0.2.3]: https://github.com/gnl/ghostwheel/compare/v0.2.2...v0.2.3
