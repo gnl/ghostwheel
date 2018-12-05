@@ -7,7 +7,7 @@
             :url  "https://choosealicense.com/licenses/epl-2.0/"}
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
-  :dependencies [[gnl/ghostwheel.logging "0.3.5"]
+  :dependencies [[gnl/ghostwheel.logging "0.3.6-SNAPSHOT"]
                  [gnl/ghostwheel.unghost "0.3.5"]
                  [org.clojure/spec.alpha "0.2.176"]
                  [org.clojure/test.check "0.10.0-alpha3"]
