@@ -982,11 +982,13 @@
           clairvoyant-trace (fn [forms exclude]
                               (let [clairvoyant 'clairvoyant.core/trace-forms
                                     tracer      'ghostwheel.tracer/tracer]
-                                #?(:clj (if cljs?
-                                          (when-not (and (find-ns (symbol (namespace clairvoyant)))
-                                                         (find-ns (symbol (namespace tracer))))
-                                            (throw (Exception. "Can't find tracing namespaces. Either add `gnl/ghostwheel-tracer` artifact and `(:require [ghostwheel.tracer])`, or disable tracing in order to compile.")))
-                                          (throw (Exception. "Tracing is not yet implemented for Clojure."))))
+                                ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
+                                (comment
+                                 #?(:clj (if cljs?
+                                           (when-not (and (find-ns (symbol (namespace clairvoyant)))
+                                                          (find-ns (symbol (namespace tracer))))
+                                             (throw (Exception. "Can't find tracing namespaces. Either add `gnl/ghostwheel-tracer` artifact and `(:require [ghostwheel.tracer])`, or disable tracing in order to compile.")))
+                                           (throw (Exception. "Tracing is not yet implemented for Clojure.")))))
                                 `(~clairvoyant
                                   {:enabled true
                                    :tracer  (~tracer
