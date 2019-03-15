@@ -315,20 +315,21 @@
                    => int? | #(> % a) #(> % (+ a c))]))))]
     (is (= fdef arity-n-fdef-multiret))))
 
-(deftest arity-1-stub-test
-  (>defn arity-1-stub
-    [a b]
-    [int? string? => string?])
-  (is (string? (arity-1-stub 1 "abc"))))
+(comment
+ (deftest arity-1-stub-test
+   (>defn arity-1-stub
+     [a b]
+     [int? string? => string?])
+   (is (string? (arity-1-stub 1 "abc"))))
 
-(deftest arity-n-stub-test
-  (>defn arity-n-stub
-    ([a]
-     [int? => int?])
-    ([a b]
-     [int? string? => string?]))
-  (is (int? (arity-n-stub 1)))
-  (is (string? (arity-n-stub 1 "abc"))))
+ (deftest arity-n-stub-test
+   (>defn arity-n-stub
+     ([a]
+      [int? => int?])
+     ([a b]
+      [int? string? => string?]))
+   (is (int? (arity-n-stub 1)))
+   (is (string? (arity-n-stub 1 "abc")))))
 
 (deftest *->-test
   (is (threading-test -> *->
