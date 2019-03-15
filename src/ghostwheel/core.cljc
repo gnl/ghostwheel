@@ -94,9 +94,9 @@
 ;;;; Operators
 
 
-;; It doesn't actually matter what these are bound to, they are stripped by the macros
-;; they're used in and never end up in the final code. This is just so they can be used
-;; without '=> cannot be resolved' errors in the IDE.
+;; It doesn't actually matter what these are bound to, they are stripped by
+;; the macros they're used in and never end up in the final code. This is just
+;; so they can be used without '=> cannot be resolved' errors in the IDE.
 (def => :ret)
 (def | :st)
 (def <- :gen)
