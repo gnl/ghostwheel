@@ -21,9 +21,12 @@
             [ghostwheel.logging :as l]
             [ghostwheel.threading-macros :include-macros true]
             [expound.alpha :as exp]
-            #?@(:clj  [[clojure.core.specs.alpha]
+            ;; REVIEW: Not requiring the clojure.core.specs.alpha
+            ;; namespaces for now because they break a lot
+            ;; of older code including lein-figwheel <0.5.18
+            #?@(:clj  [;[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]]
-                :cljs [[cljs.core.specs.alpha :include-macros true]
+                :cljs [;[cljs.core.specs.alpha :include-macros true]
                        [cljs.analyzer.api :as ana-api]
                        [orchestra-cljs.spec.test :as ost]])))
 

@@ -9,11 +9,9 @@
 (ns ^:no-doc ghostwheel.utils
   #?(:cljs (:require-macros ghostwheel.utils))
   (:require [clojure.walk :as walk]
-            #?@(:clj  [[clojure.core.specs.alpha]
-                       [orchestra.spec.test :as ost]
+            #?@(:clj  [[orchestra.spec.test :as ost]
                        [clojure.edn :as edn]]
-                :cljs [[cljs.core.specs.alpha :include-macros true]
-                       [cljs.env :as cljs-env]
+                :cljs [[cljs.env :as cljs-env]
                        [orchestra-cljs.spec.test :as ost]])))
 
 
