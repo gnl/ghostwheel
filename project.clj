@@ -16,7 +16,7 @@
   :plugins [[lein-doo "0.1.10"]]
   :source-paths ["src"]
   :clean-targets ^{:protect false} ["target" "resources"]
-  :profiles {:dev          {:dependencies [[org.clojure/clojurescript "1.10.439"]
+  :profiles {:dev          {:dependencies [[org.clojure/clojurescript "1.10.520"]
                                            [org.clojure/clojure "1.9.0"]
                                            [com.rpl/specter "1.1.2"]
                                            [gnl/ghostwheel.tracer "0.3.5"]]
