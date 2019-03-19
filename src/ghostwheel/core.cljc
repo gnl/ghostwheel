@@ -91,6 +91,14 @@
    (if (:varargs conformed-args) 1 0)])
 
 
+(defn- resolve-trace-color [color]
+  (let [[color-type color-value] (s/conform ::trace-color color)]
+    (case color-type
+      :literal color-value
+      :keyword (if-let [color-value (get l/ghostwheel-colors color)]
+                 color-value
+                 (:black l/ghostwheel-colors)))))
+
 ;;;; Operators
 
 
@@ -292,9 +300,11 @@
 
 ;;; Side effect detection specs
 
-(s/def ::threading-macro-op
+(def threading-macro-syms
   #{'-> '->> 'as-> 'cond-> 'cond->> 'some-> 'some->>
     '*-> '*->> '*as-> '*cond-> '*cond->> '*some-> '*some->>})
+
+(s/def ::threading-macro-op threading-macro-syms)
 
 (s/def ::binding-op
   #{'let 'for 'doseq 'binding})
@@ -824,6 +834,58 @@
   `(quote ~(symbol (str (.-name *ns*)) (str fn-name))))
 
 
+(defn- trace-threading-macros [forms trace]
+  (if (< trace 4)
+    forms
+    (let [threading-macros-mappings
+          {'->      'ghostwheel.threading-macros/*->
+           '->>     'ghostwheel.threading-macros/*->>
+           'as->    'ghostwheel.threading-macros/*as->
+           'cond->  'ghostwheel.threading-macros/*cond->
+           'cond->> 'ghostwheel.threading-macros/*cond->>
+           'some->  'ghostwheel.threading-macros/*some->
+           'some->> 'ghostwheel.threading-macros/*some->>}]
+      (cond->> (walk/postwalk-replace threading-macros-mappings forms)
+
+               ;; Make sure we don't trace threading macros in anon-fns
+               ;; when anon-fns themselves aren't traced
+               (< trace 5)
+               (walk/postwalk
+                #(if (and (list? %)
+                          (#{'fn 'fn*} (first %)))
+                   (walk/postwalk-replace (map-invert threading-macros-mappings) %)
+                   %))))))
+
+
+(defn- clairvoyant-trace [forms trace color]
+  (let [clairvoyant 'clairvoyant.core/trace-forms
+        tracer      'ghostwheel.tracer/tracer
+        exclude     (case trace
+                      2 '#{'fn 'fn* 'let}
+                      3 '#{'fn 'fn*}
+                      4 '#{'fn 'fn*}
+                      nil)]
+    ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
+    (comment
+     #?(:clj (if cljs?
+               (when-not (and (find-ns (symbol (namespace clairvoyant)))
+                              (find-ns (symbol (namespace tracer))))
+                 (throw (Exception. "Can't find tracing namespaces. Either add `gnl/ghostwheel-tracer` artifact and `(:require [ghostwheel.tracer])`, or disable tracing in order to compile.")))
+               (throw (Exception. "Tracing is not yet implemented for Clojure.")))))
+    (if (< trace 2)
+      forms
+      `(~clairvoyant
+        {:enabled true
+         :tracer  (~tracer
+                   :color "#fff"
+                   :background ~color
+                   :expand ~(if (>= trace 3)
+                              '#{:bindings 'let 'defn 'defn-}
+                              '#{'defn 'defn-}))
+         :exclude ~exclude}
+        ~forms))))
+
+
 (defn- generate-fdef
   [forms]
   (let [{[type fn-name] :name bs :bs} (s/conform ::>fdef-args forms)]
@@ -840,181 +902,140 @@
       :key `(s/def ~fn-name (s/fspec ~@(generate-fspec-body bs))))))
 
 
-(let [process-defn-body
-      (fn [cfg fspec args+gspec+body]
-        (let [{:keys [env fn-name traced-fn-name trace color unexpected-fx]} cfg
-              {:keys [args body]} args+gspec+body
-              [prepost orig-body-forms] (case (key body)
-                                          :prepost+body [(-> body val :prepost)
-                                                         (-> body val :body)]
-                                          :body [nil (val body)])
-              process-arg (fn [[arg-type arg]]
-                            (as-> arg arg
-                                  (case arg-type
-                                    :sym [arg-type arg]
-                                    :seq [arg-type (update arg :as #(or % {:as :as :sym (gensym "arg_")}))]
-                                    :map [arg-type (update arg :as #(or % (gensym "arg_")))])))
-              ;; NOTE: usage of extract-arg isn't elegant, there's duplication, refactor
-              extract-arg (fn [[arg-type arg]]
+(defn- process-defn-body
+  [cfg fspec args+gspec+body]
+  (let [{:keys [env fn-name traced-fn-name trace color unexpected-fx]} cfg
+        {:keys [args body]} args+gspec+body
+        [prepost orig-body-forms] (case (key body)
+                                    :prepost+body [(-> body val :prepost)
+                                                   (-> body val :body)]
+                                    :body [nil (val body)])
+        process-arg (fn [[arg-type arg]]
+                      (as-> arg arg
                             (case arg-type
-                              :sym arg
-                              :seq (get-in arg [:as :sym])
-                              :map (:as arg)
-                              nil))
-              unform-arg  #(->> % (s/unform ::binding-form) unscrew-vec-unform)
-              reg-args    (->> args :args (map process-arg))
-              var-arg     (some-> args :varargs :form process-arg)
-              arg-list    (vec (concat (map unform-arg reg-args)
-                                       (when var-arg ['& (unform-arg var-arg)])))
-              body-forms  (if (and fspec (every? nil? orig-body-forms))
-                            ;; TODO error handling when specs too fancy for stub auto-generation
-                            [`(apply (-> ~fspec s/gen gen/generate)
-                                     ~@(map extract-arg reg-args) ~(extract-arg var-arg))]
+                              :sym [arg-type arg]
+                              :seq [arg-type (update arg :as #(or % {:as :as :sym (gensym "arg_")}))]
+                              :map [arg-type (update arg :as #(or % (gensym "arg_")))])))
+        ;; NOTE: usage of extract-arg isn't elegant, there's duplication, refactor
+        extract-arg (fn [[arg-type arg]]
+                      (case arg-type
+                        :sym arg
+                        :seq (get-in arg [:as :sym])
+                        :map (:as arg)
+                        nil))
+        unform-arg  #(->> % (s/unform ::binding-form) unscrew-vec-unform)
+        reg-args    (->> args :args (map process-arg))
+        var-arg     (some-> args :varargs :form process-arg)
+        arg-list    (vec (concat (map unform-arg reg-args)
+                                 (when var-arg ['& (unform-arg var-arg)])))
+        body-forms  (if (and fspec (every? nil? orig-body-forms))
+                      ;; TODO error handling when specs too fancy for stub auto-generation
+                      [`(apply (-> ~fspec s/gen gen/generate)
+                               ~@(map extract-arg reg-args) ~(extract-arg var-arg))]
 
-                            (cond unexpected-fx
-                                  [`(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
-                                            ~(str "Calling function `"
-                                                  fn-name
-                                                  "` which has unexpected side effects.")))]
+                      (cond unexpected-fx
+                            [`(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
+                                      ~(str "Calling function `"
+                                            fn-name
+                                            "` which has unexpected side effects.")))]
 
-                                  (= trace :dispatch)
-                                  [`(if *global-trace-allowed?*
-                                      (apply ~traced-fn-name
-                                             ~@(map extract-arg reg-args)
-                                             ~(extract-arg var-arg))
-                                      (do ~@orig-body-forms))]
+                            (= trace :dispatch)
+                            [`(if *global-trace-allowed?*
+                                (apply ~traced-fn-name
+                                       ~@(map extract-arg reg-args)
+                                       ~(extract-arg var-arg))
+                                (do ~@orig-body-forms))]
 
-                                  (= trace 1)
-                                  `[(do
-                                      (l/pr-clog ~(str (list fn-name arg-list))
-                                                 nil
-                                                 {::r/background ~color})
-                                      ~@orig-body-forms)]
+                            (= trace 1)
+                            `[(do
+                                (l/pr-clog ~(str (list fn-name arg-list))
+                                           nil
+                                           {::r/background ~color})
+                                ~@orig-body-forms)]
 
-                                  (>= trace 4)
-                                  (let [threading-macros-mappings
-                                        {'->      'ghostwheel.threading-macros/*->
-                                         '->>     'ghostwheel.threading-macros/*->>
-                                         'as->    'ghostwheel.threading-macros/*as->
-                                         'cond->  'ghostwheel.threading-macros/*cond->
-                                         'cond->> 'ghostwheel.threading-macros/*cond->>
-                                         'some->  'ghostwheel.threading-macros/*some->
-                                         'some->> 'ghostwheel.threading-macros/*some->>}]
-                                    (cond->> (walk/postwalk-replace threading-macros-mappings
-                                                                    orig-body-forms)
+                            (>= trace 4)
+                            (trace-threading-macros orig-body-forms trace)
 
-                                             ;; Make sure we don't trace threading macros in anon-fns
-                                             ;; when anon-fns themselves aren't traced
-                                             (< trace 5)
-                                             (walk/postwalk
-                                              #(if (and (list? %)
-                                                        (#{'fn 'fn*} (first %)))
-                                                 (walk/postwalk-replace (map-invert threading-macros-mappings) %)
-                                                 %))))
+                            :else
+                            orig-body-forms))]
+    (remove nil? `(~arg-list ~prepost ~@body-forms))))
 
-                                  :else
-                                  orig-body-forms))]
-          (remove nil? `(~arg-list ~prepost ~@body-forms))))]
-  (defn- generate-defn
-    [forms private env]
-    (let [cljs?             (cljs-env? env)
-          conformed-gdefn   (s/conform ::>defn-args forms)
-          fn-bodies         (:bs conformed-gdefn)
-          empty-bodies      (every? empty?
-                                    (case (key fn-bodies)
-                                      :arity-1 (list (-> fn-bodies val :body val))
-                                      :arity-n (->> fn-bodies
-                                                    val
-                                                    (map :body)
-                                                    (map val))))
-          arity             (key fn-bodies)
-          fn-name           (:name conformed-gdefn)
-          quoted-qualified-fn-name
-                            (get-quoted-qualified-fn-name fn-name)
-          traced-fn-name    (gensym (str fn-name "__"))
-          docstring         (:docstring conformed-gdefn)
-          meta-map          (merge (:meta conformed-gdefn)
-                                   (generate-type-annotations env fn-bodies)
-                                   {::ghostwheel true})
-          ;;; Assemble the config
-          config            (merge-config (merge (meta fn-name) meta-map))
-          color             (if-let [color (get l/ghostwheel-colors (::trace-color config))]
-                              color
-                              (:black l/ghostwheel-colors))
-          {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
-          defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
-                                  private 'defn-
-                                  :else 'defn)
-          trace             (if (cljs-env? env)
-                              (cond empty-bodies 0
-                                    (true? trace) 4
-                                    :else trace)
-                              0)                      ; TODO: Clojure
-          ;;; Code generation
-          fdef-body         (generate-fspec-body fn-bodies)
-          fdef              (when fdef-body `(s/fdef ~fn-name ~@fdef-body))
-          instrumentation   (when (not empty-bodies)
-                              (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
-                                    instrument `(st/instrument ~quoted-qualified-fn-name)
-                                    :else nil))
-          individual-arity-fspecs
-                            (map (fn [{:keys [args gspec]}]
-                                   (when gspec
-                                     (gspec->fspec* args gspec true false false)))
-                                 (val fn-bodies))
-          [unexpected-fx generated-test] (when (and check (not empty-bodies))
-                                           (let [fspecs (case arity
-                                                          :arity-1 [(when fdef-body `(s/fspec ~@fdef-body))]
-                                                          :arity-n individual-arity-fspecs)]
-                                             (generate-test fn-name fspecs fn-bodies config cljs?)))
-          process-fn-bodies (fn [trace]
-                              (let [process-cfg {:env            env
-                                                 :fn-name        fn-name
-                                                 :traced-fn-name traced-fn-name
-                                                 :trace          trace
-                                                 :color          color
-                                                 :unexpected-fx  unexpected-fx}]
-                                (case arity
-                                  :arity-1 (->> fn-bodies val (process-defn-body process-cfg `(s/fspec ~@fdef-body)))
-                                  :arity-n (map (partial process-defn-body process-cfg)
-                                                individual-arity-fspecs
-                                                (val fn-bodies)))))
-          clairvoyant-trace (fn [forms exclude]
-                              (let [clairvoyant 'clairvoyant.core/trace-forms
-                                    tracer      'ghostwheel.tracer/tracer]
-                                ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
-                                (comment
-                                 #?(:clj (if cljs?
-                                           (when-not (and (find-ns (symbol (namespace clairvoyant)))
-                                                          (find-ns (symbol (namespace tracer))))
-                                             (throw (Exception. "Can't find tracing namespaces. Either add `gnl/ghostwheel-tracer` artifact and `(:require [ghostwheel.tracer])`, or disable tracing in order to compile.")))
-                                           (throw (Exception. "Tracing is not yet implemented for Clojure.")))))
-                                `(~clairvoyant
-                                  {:enabled true
-                                   :tracer  (~tracer
-                                             :color "#fff"
-                                             :background ~color
-                                             :expand ~(if (>= trace 3)
-                                                        '#{:bindings 'let 'defn 'defn-}
-                                                        '#{'defn 'defn-}))
-                                   :exclude ~exclude}
-                                  ~forms)))
-          main-defn         (remove nil? `(~defn-sym
-                                           ~fn-name
-                                           ~docstring
-                                           ~meta-map
-                                           ~@(process-fn-bodies (if (> trace 0) :dispatch 0))))
-          traced-defn       (when (> trace 0)
-                              (let [traced-defn (remove nil? `(~defn-sym
-                                                               ~traced-fn-name
-                                                               ~@(process-fn-bodies trace)))]
-                                (case trace
-                                  1 traced-defn
-                                  2 (clairvoyant-trace traced-defn '#{'fn 'fn* 'let})
-                                  3 (clairvoyant-trace traced-defn '#{'fn 'fn*})
-                                  4 (clairvoyant-trace traced-defn '#{'fn 'fn*})
-                                  5 (clairvoyant-trace traced-defn nil))))]
-      `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test))))
+
+(defn- generate-defn
+  [forms private env]
+  (let [cljs?             (cljs-env? env)
+        conformed-gdefn   (s/conform ::>defn-args forms)
+        fn-bodies         (:bs conformed-gdefn)
+        empty-bodies      (every? empty?
+                                  (case (key fn-bodies)
+                                    :arity-1 (list (-> fn-bodies val :body val))
+                                    :arity-n (->> fn-bodies
+                                                  val
+                                                  (map :body)
+                                                  (map val))))
+        arity             (key fn-bodies)
+        fn-name           (:name conformed-gdefn)
+        quoted-qualified-fn-name
+                          (get-quoted-qualified-fn-name fn-name)
+        traced-fn-name    (gensym (str fn-name "__"))
+        docstring         (:docstring conformed-gdefn)
+        meta-map          (merge (:meta conformed-gdefn)
+                                 (generate-type-annotations env fn-bodies)
+                                 {::ghostwheel true})
+        ;;; Assemble the config
+        config            (merge-config (merge (meta fn-name) meta-map))
+        color             (resolve-trace-color (::trace-color config))
+        {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
+        defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
+                                private 'defn-
+                                :else 'defn)
+        trace             (if (cljs-env? env)
+                            (cond empty-bodies 0
+                                  (true? trace) 4
+                                  :else trace)
+                            0)                      ; TODO: Clojure
+        ;;; Code generation
+        fdef-body         (generate-fspec-body fn-bodies)
+        fdef              (when fdef-body `(s/fdef ~fn-name ~@fdef-body))
+        instrumentation   (when (not empty-bodies)
+                            (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
+                                  instrument `(st/instrument ~quoted-qualified-fn-name)
+                                  :else nil))
+        individual-arity-fspecs
+                          (map (fn [{:keys [args gspec]}]
+                                 (when gspec
+                                   (gspec->fspec* args gspec true false false)))
+                               (val fn-bodies))
+        [unexpected-fx generated-test] (when (and check (not empty-bodies))
+                                         (let [fspecs (case arity
+                                                        :arity-1 [(when fdef-body `(s/fspec ~@fdef-body))]
+                                                        :arity-n individual-arity-fspecs)]
+                                           (generate-test fn-name fspecs fn-bodies config cljs?)))
+        process-fn-bodies (fn [trace]
+                            (let [process-cfg {:env            env
+                                               :fn-name        fn-name
+                                               :traced-fn-name traced-fn-name
+                                               :trace          trace
+                                               :color          color
+                                               :unexpected-fx  unexpected-fx}]
+                              (case arity
+                                :arity-1 (->> fn-bodies val (process-defn-body process-cfg `(s/fspec ~@fdef-body)))
+                                :arity-n (map (partial process-defn-body process-cfg)
+                                              individual-arity-fspecs
+                                              (val fn-bodies)))))
+        main-defn         (remove nil? `(~defn-sym
+                                         ~fn-name
+                                         ~docstring
+                                         ~meta-map
+                                         ~@(process-fn-bodies (if (> trace 0) :dispatch 0))))
+        traced-defn       (when (> trace 0)
+                            (let [traced-defn (remove nil? `(~defn-sym
+                                                             ~traced-fn-name
+                                                             ~@(process-fn-bodies trace)))]
+                              (if (= trace 1)
+                                traced-defn
+                                (clairvoyant-trace traced-defn trace color))))]
+    `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test)))
 
 
 (defn after-check-async [done]
@@ -1172,6 +1193,18 @@
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
 
 
+(defn- generate-traced-expr
+  [expr]
+  (if (and (seq? expr)
+           (or (contains? l/ops-with-bindings (first expr))
+               (contains? threading-macro-syms (first expr))))
+    (let [{:keys [::trace ::trace-color]} (merge-config (meta expr))
+          trace (if (= trace 0) 4 trace)
+          color (resolve-trace-color trace-color)]
+      (-> expr (trace-threading-macros trace) (clairvoyant-trace trace color)))
+    `(l/clog ~expr)))
+
+
 ;;;; Main macros and public API
 
 
@@ -1293,3 +1326,11 @@
     (cond-> (remove nil? (generate-fdef forms))
             (cljs-env? &env) clj->cljs)))
 
+
+(defmacro |>
+  "Traces or logs+returns the wrapped expression, depending on its type"
+  [expr]
+  (if (u/get-env-config)
+    (cond-> (generate-traced-expr expr)
+            (cljs-env? &env) clj->cljs)
+    expr))
