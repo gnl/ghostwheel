@@ -67,6 +67,7 @@ image::image-7.png[,700]
 +
 image::image-8.png[,700]
 
+[[tracing-overview]]
 - *Comprehensive tracing of function I/O, bindings and all threading macros for smooth debugging and exploratory programming*
 +
 ClojureScript only at the moment.
