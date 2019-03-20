@@ -1214,10 +1214,12 @@
            (or (contains? l/ops-with-bindings (first expr))
                (contains? threading-macro-syms (first expr))))
     (let [cfg   (merge-config (meta expr))
-          color (resolve-trace-color (::trace-color cfg))]
-      (cond-> (trace-threading-macros expr 6)
+          color (resolve-trace-color (::trace-color cfg))
+          trace (let [trace (::trace cfg)]
+                  (if (= trace 0) 5 trace))]
+      (cond-> (trace-threading-macros expr trace)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
-              (cljs-env? env) (clairvoyant-trace 6 color env)))
+              (cljs-env? env) (clairvoyant-trace trace color env)))
     `(l/clog ~expr)))
 
 
