@@ -118,7 +118,7 @@
 ;;;; Specs
 
 
-(s/def ::trace #{0 1 2 3 4 5 true})
+(s/def ::trace #{0 1 2 3 4 5 6 true})
 (s/def ::trace-color (s/or :keyword keyword?
                            :literal (s/and string?
                                            #(re-matches #"#[a-fA-F0-9]+" %)
@@ -894,9 +894,9 @@
          :tracer  (~tracer
                    :color "#fff"
                    :background ~color
-                   :expand ~(if (>= trace 3)
-                              '#{:bindings 'let 'defn 'defn-}
-                              '#{'defn 'defn-}))
+                   :expand ~(cond (= trace 6) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
+                                  (>= trace 3) '#{:bindings 'let 'defn 'defn-}
+                                  :else '#{'defn 'defn-}))
          :exclude ~exclude}
         ~forms))))
 
@@ -1213,12 +1213,11 @@
   (if (and (seq? expr)
            (or (contains? l/ops-with-bindings (first expr))
                (contains? threading-macro-syms (first expr))))
-    (let [{:keys [::trace ::trace-color]} (merge-config (meta expr))
-          trace (if (= trace 0) 4 trace)
-          color (resolve-trace-color trace-color)]
-      (cond-> (trace-threading-macros expr trace)
+    (let [cfg   (merge-config (meta expr))
+          color (resolve-trace-color (::trace-color cfg))]
+      (cond-> (trace-threading-macros expr 6)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
-              (cljs-env? env) (clairvoyant-trace trace color env)))
+              (cljs-env? env) (clairvoyant-trace 6 color env)))
     `(l/clog ~expr)))
 
 
