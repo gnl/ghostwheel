@@ -857,14 +857,29 @@
                    %))))))
 
 
-(defn- clairvoyant-trace [forms trace color]
+(defn- clairvoyant-trace [forms trace color env]
   (let [clairvoyant 'clairvoyant.core/trace-forms
         tracer      'ghostwheel.tracer/tracer
         exclude     (case trace
                       2 '#{'fn 'fn* 'let}
                       3 '#{'fn 'fn*}
                       4 '#{'fn 'fn*}
-                      nil)]
+                      nil)
+        inline-trace? (fn [form]
+                        (and (seq? form)
+                             (symbol? (first form))
+                             (let [sym (first form)
+
+                                   qualified-sym
+                                   (if (cljs-env? env)
+                                     (:name (ana-api/resolve env sym))
+                                     ;; REVIEW: Clairvoyant doesn't work on
+                                     ;; Clojure yet – check this when it does
+                                     #?(:clj (name (resolve sym))))]
+                               (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
+        forms       (walk/postwalk
+                     #(if (inline-trace? %) (second %) %)
+                     forms)]
     ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
     (comment
      #?(:clj (if cljs?
@@ -993,7 +1008,7 @@
                             (cond empty-bodies 0
                                   (true? trace) 4
                                   :else trace)
-                            0)                      ; TODO: Clojure
+                            0)                        ; TODO: Clojure
         ;;; Code generation
         fdef-body         (generate-fspec-body fn-bodies)
         fdef              (when fdef-body `(s/fdef ~fn-name ~@fdef-body))
@@ -1034,7 +1049,7 @@
                                                              ~@(process-fn-bodies trace)))]
                               (if (= trace 1)
                                 traced-defn
-                                (clairvoyant-trace traced-defn trace color))))]
+                                (clairvoyant-trace traced-defn trace color env))))]
     `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test)))
 
 
@@ -1194,14 +1209,16 @@
 
 
 (defn- generate-traced-expr
-  [expr]
+  [expr env]
   (if (and (seq? expr)
            (or (contains? l/ops-with-bindings (first expr))
                (contains? threading-macro-syms (first expr))))
     (let [{:keys [::trace ::trace-color]} (merge-config (meta expr))
           trace (if (= trace 0) 4 trace)
           color (resolve-trace-color trace-color)]
-      (-> expr (trace-threading-macros trace) (clairvoyant-trace trace color)))
+      (cond-> (trace-threading-macros expr trace)
+              ;; REVIEW: Clairvoyant doesn't work on Clojure yet
+              (cljs-env? env) (clairvoyant-trace trace color env)))
     `(l/clog ~expr)))
 
 
@@ -1331,6 +1348,6 @@
   "Traces or logs+returns the wrapped expression, depending on its type"
   [expr]
   (if (u/get-env-config)
-    (cond-> (generate-traced-expr expr)
+    (cond-> (generate-traced-expr expr &env)
             (cljs-env? &env) clj->cljs)
     expr))
