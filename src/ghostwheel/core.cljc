@@ -1351,3 +1351,6 @@
     (cond-> (generate-traced-expr expr &env)
             (cljs-env? &env) clj->cljs)
     expr))
+
+(defmacro tr "Alias for |>" [expr] `(|> ~expr))
+
