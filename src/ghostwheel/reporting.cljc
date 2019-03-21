@@ -178,7 +178,7 @@
         (log)
         (when (= (::s/failure data) :instrument)
           (log (-> msg string/split-lines first (str "\n"))))
-        (-> (#?(:cljs expound/printer-str :clj #'expound/printer-str) nil data)
+        (-> (with-out-str ((expound/custom-printer nil) data))
             (str "\n")
             log)
         ;; REVIEW: Too noisy in the REPL, but
