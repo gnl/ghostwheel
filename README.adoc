@@ -684,6 +684,6 @@ Now go forth and create, fellow maker. Use your new-found powers for good.
 
 {zwsp}
 
-Copyright (c) 2018 George Lipov +
+Copyright (c) 2019 George Lipov +
 Licensed under the link:https://choosealicense.com/licenses/epl-2.0/[Eclipse Public License 2.0]
 
