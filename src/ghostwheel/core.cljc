@@ -1170,9 +1170,11 @@
                  :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) #?(:clj sym))
                            metadata (if cljs? (:meta ns-data) #?(:clj (meta ns-data)))
                            {:keys [::check]} (merge base-config metadata)]
-                       ;; TODO Shout if namespace doesn't have ::check enabled
                        (cond (not ns-data)
                              (str "Cannot resolve `" (str sym) "`")
+
+                             (not check)
+                             (str "Checking disabled for `" sym "` => Set `{:ghostwheel.core/check true}` to enable.")
 
                              :else
                              nil))))
