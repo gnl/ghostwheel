@@ -24,9 +24,9 @@
             [ghostwheel.logging :as l]
             [ghostwheel.threading-macros :include-macros true]
             [expound.alpha :as exp]
-            ;; REVIEW: Not requiring the clojure.core.specs.alpha
-            ;; namespaces for now because they break a lot
-            ;; of older code including lein-figwheel <0.5.18
+   ;; REVIEW: Not requiring the clojure.core.specs.alpha
+   ;; namespaces for now because they break a lot
+   ;; of older code including lein-figwheel <0.5.18
             #?@(:clj  [;[clojure.core.specs.alpha]
                        [orchestra.spec.test :as ost]]
                 :cljs [;[cljs.core.specs.alpha :include-macros true]
@@ -861,28 +861,28 @@
 
 
 (defn- clairvoyant-trace [forms trace color env]
-  (let [clairvoyant 'clairvoyant.core/trace-forms
-        tracer      'ghostwheel.tracer/tracer
-        exclude     (case trace
-                      2 '#{'fn 'fn* 'let}
-                      3 '#{'fn 'fn*}
-                      4 '#{'fn 'fn*}
-                      nil)
+  (let [clairvoyant   'clairvoyant.core/trace-forms
+        tracer        'ghostwheel.tracer/tracer
+        exclude       (case trace
+                        2 '#{'fn 'fn* 'let}
+                        3 '#{'fn 'fn*}
+                        4 '#{'fn 'fn*}
+                        nil)
         inline-trace? (fn [form]
                         (and (seq? form)
                              (symbol? (first form))
                              (let [sym (first form)
 
                                    qualified-sym
-                                   (if (cljs-env? env)
-                                     (:name (ana-api/resolve env sym))
-                                     ;; REVIEW: Clairvoyant doesn't work on
-                                     ;; Clojure yet – check this when it does
-                                     #?(:clj (name (resolve sym))))]
+                                       (if (cljs-env? env)
+                                         (:name (ana-api/resolve env sym))
+                                         ;; REVIEW: Clairvoyant doesn't work on
+                                         ;; Clojure yet – check this when it does
+                                         #?(:clj (name (resolve sym))))]
                                (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
-        forms       (walk/postwalk
-                     #(if (inline-trace? %) (second %) %)
-                     forms)]
+        forms         (walk/postwalk
+                       #(if (inline-trace? %) (second %) %)
+                       forms)]
     ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
     (comment
      #?(:clj (if cljs?
