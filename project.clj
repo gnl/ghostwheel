@@ -1,4 +1,4 @@
-(defproject gnl/ghostwheel "0.3.8"
+(defproject gnl/ghostwheel "0.3.9"
   :description "Hassle-free and concise clojure.spec, automatic generative testing, side effect detection, and evaluation tracing for Clojure(-Script)"
   :url "https://github.com/gnl/ghostwheel"
   :scm {:name "git"
@@ -7,19 +7,19 @@
             :url  "https://choosealicense.com/licenses/epl-2.0/"}
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
-  :dependencies [[gnl/ghostwheel.logging "0.3.8"]
-                 [gnl/ghostwheel.unghost "0.3.8"]
+  :dependencies [[gnl/ghostwheel.logging "0.3.9"]
+                 [gnl/ghostwheel.unghost "0.3.9"]
                  [org.clojure/spec.alpha "0.2.176"]
-                 [org.clojure/test.check "0.10.0-alpha3"]
-                 [orchestra "2018.08.19-1"]
-                 [expound "0.7.1"]]
+                 [org.clojure/test.check "0.10.0-alpha4"]
+                 [orchestra "2019.02.06-1"]
+                 [expound "0.7.2"]]
   :plugins [[lein-doo "0.1.10"]]
   :source-paths ["src"]
   :clean-targets ^{:protect false} ["target" "resources"]
   :profiles {:dev          {:dependencies [[org.clojure/clojurescript "1.10.520"]
                                            [org.clojure/clojure "1.10.0"]
                                            [com.rpl/specter "1.1.2"]
-                                           [gnl/ghostwheel.tracer "0.3.8"]]
+                                           [gnl/ghostwheel.tracer "0.3.9"]]
                             :jvm-opts     ["-Dghostwheel.cache=false"]}
              :clj-dev-test {:jvm-opts ["-Dghostwheel.enabled=true"]}}
   :cljsbuild {:builds [{:id           "dev-test"
