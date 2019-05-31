@@ -115,13 +115,14 @@
          vec)))
 
 
-(defn- plain-log [msg]
-  (println (->> (if (string? msg)
-                  msg
-                  (with-out-str (pprint/pprint msg)))
-                string/split-lines
-                (map #(str @*nesting %))
-                (string/join "\n"))))
+(defn- plain-log [& msgs]
+  (doseq [msg msgs]
+    (println (->> (if (string? msg)
+                    msg
+                    (with-out-str (pprint/pprint msg)))
+                  string/split-lines
+                  (map #(str @*nesting %))
+                  (string/join "\n")))))
 
 
 (defn log
