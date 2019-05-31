@@ -116,7 +116,7 @@
   "Traced version of as->"
   [expr name & forms]
   (let [untraced `(~'as-> ~expr ~name ~@forms)
-        log-step (fn [form] `(pr-clog ~(str form) ~form))]
+        log-step (fn [form] (log-threading-diff (str form) name form))]
     (cond->
      (if-not (u/get-env-config)
        untraced
@@ -127,10 +127,11 @@
             (pr-clog ~(str name) ~expr)
             (let [~name ~expr
                   ~@(interleave (repeat name) (map log-step forms))]
-              ~(when (cljs-env? &env)
-                 `(l/group-end))
+              (log "=>" nil ~name)
+              (group-end)
               ~name))))
      (cljs-env? &env) clj->cljs)))
+
 
 (defn- log-cond-step
   [test step data & [style]]
