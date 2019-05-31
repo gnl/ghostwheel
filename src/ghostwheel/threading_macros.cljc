@@ -42,8 +42,6 @@
                      threaded-print `(let [new-x# ~threaded
                                            old-x# ~x-print
                                            [before# after# common#] (clojure.data/diff old-x# new-x#)]
-                                       (log old-x#)
-                                       (group-end)
                                        (group ~(str form))
                                        (cond
                                          (nil? common#)
@@ -64,13 +62,13 @@
                                                   {::l/background (:green ghostwheel-colors)
                                                    ::l/weight "bold"}
                                                   after#))))
+                                       (group-end)
                                        new-x#)]
                  (recur threaded threaded-print (next forms)))
                `(do
                   (log-threading-header "->" ~(str orig-x))
-                  (group ~(str orig-x))
+                  (pr-clog ~(str orig-x) ~orig-x)
                   (let [x# ~x-print]
-                    (group-end)
                     (log "=>" nil x#)
                     (group-end)
                     x#))))))
