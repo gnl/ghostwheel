@@ -47,8 +47,7 @@
                                  (when dispatch-val
                                    (str " " (pr-str dispatch-val)))
                                  (str " " arglist)
-                                 (when anonymous? " (anonymous)")))
-                  arglist (remove '#{&} arglist)]
+                                 (when anonymous? " (anonymous)")))]
               (group title {::l/background background ::l/foreground color})
               (l/group "bindings"))
 

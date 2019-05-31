@@ -1401,7 +1401,7 @@
 
 
 (defmacro |>
-  "Traces or logs+returns the wrapped expression, depending on its type"
+  "Traces and returns the wrapped expression, depending on its type"
   ([expr]
    `(|> nil ~expr))
   ([label expr]
@@ -1411,7 +1411,8 @@
      expr)))
 
 
-(defmacro tr "Alias for |>"
+(defmacro tr
+  "Traces and returns the wrapped expression, depending on its type"
   ([expr] `(|> ~expr))
   ([label expr] `(|> ~label ~expr)))
 
