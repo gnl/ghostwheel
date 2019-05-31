@@ -193,14 +193,6 @@
      (cljs-env? &env) clj->cljs)))
 
 
-(defn- log-some-step
-  [some-step]
-  `(pr-clog
-    ~(str #_(second some-step)
-      #_" "
-      (->> some-step (filter seq?) last last))
-    ~some-step))
-
 (defmacro *some->
   "Traced version of some->"
   [expr & forms]
@@ -210,17 +202,21 @@
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
-          ~(let [g     (gensym)
-                 pstep (fn [step] `(if (nil? ~g) nil (-> ~g ~step)))]
+          ~(let [g         (gensym)
+                 log-pstep (fn [step]
+                             `(if (nil? ~g)
+                                nil
+                                ~(log-threading-diff g `(-> ~g ~step) (str step))))]
              `(do
                 (log-threading-header "some->" ~(str expr))
                 (pr-clog ~(str expr) ~expr)
                 (let [~g ~expr
-                      ~@(interleave (repeat g) (map log-some-step (map pstep forms)))]
-                  ~(when (cljs-env? &env)
-                     `(l/group-end))
+                      ~@(interleave (repeat g) (map log-pstep forms))]
+                  (log (:symbol l/arrow) (:style l/arrow) (if (nil? ~g) "nil" ~g))
+                  (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
+
 
 (defmacro *some->>
   "Traced version of some->>"
@@ -231,15 +227,18 @@
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
-          ~(let [g     (gensym)
-                 pstep (fn [step] `(if (nil? ~g) nil (->> ~g ~step)))]
+          ~(let [g         (gensym)
+                 log-pstep (fn [step]
+                             `(if (nil? ~g)
+                                nil
+                                ~(log-threading-diff g `(->> ~g ~step) (str step))))]
              `(do
                 (log-threading-header "some->>" ~(str expr))
                 (pr-clog ~(str expr) ~expr)
                 (let [~g ~expr
-                      ~@(interleave (repeat g) (map log-some-step (map pstep forms)))]
-                  ~(when (cljs-env? &env)
-                     `(l/group-end))
+                      ~@(interleave (repeat g) (map log-pstep forms))]
+                  (log (:symbol l/arrow) (:style l/arrow) (if (nil? ~g) "nil" ~g))
+                  (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
 
