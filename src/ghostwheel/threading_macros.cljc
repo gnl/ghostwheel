@@ -21,7 +21,7 @@
 ;; between Clojure and -Script
 (defn log-threading-header
   [threading-type expr & [name]]
-  (l/group (str threading-type " " expr (when name " ") name)
+  (l/group (str "(" threading-type " " expr (when name " ") name " ...)")
            {::l/background (:black ghostwheel-colors)}))
 
 
