@@ -103,6 +103,16 @@
                  color-value
                  (:black l/ghostwheel-colors)))))
 
+
+(defn cleanup-console-on-exception
+  [form cljs?]
+  `(try ~form
+        (catch ~(if cljs? :default 'Throwable) e#
+          (do
+            (dorun (repeatedly 10 l/group-end))
+            (throw e#)))))
+
+
 ;;;; Operators
 
 
@@ -838,27 +848,39 @@
   `(quote ~(symbol (str (.-name *ns*)) (str fn-name))))
 
 
-(defn- trace-threading-macros [forms trace]
+(defn- trace-threading-macros [forms trace cljs?]
   (if (< trace 4)
     forms
-    (let [threading-macros-mappings
-          {'->      'ghostwheel.threading-macros/*->
-           '->>     'ghostwheel.threading-macros/*->>
-           'as->    'ghostwheel.threading-macros/*as->
-           'cond->  'ghostwheel.threading-macros/*cond->
-           'cond->> 'ghostwheel.threading-macros/*cond->>
-           'some->  'ghostwheel.threading-macros/*some->
-           'some->> 'ghostwheel.threading-macros/*some->>}]
-      (cond->> (walk/postwalk-replace threading-macros-mappings forms)
+    (let [untraced-macros->traced
+                                  {'->      'ghostwheel.threading-macros/*->
+                                   '->>     'ghostwheel.threading-macros/*->>
+                                   'as->    'ghostwheel.threading-macros/*as->
+                                   'cond->  'ghostwheel.threading-macros/*cond->
+                                   'cond->> 'ghostwheel.threading-macros/*cond->>
+                                   'some->  'ghostwheel.threading-macros/*some->
+                                   'some->> 'ghostwheel.threading-macros/*some->>}
+          traced-macros->untraced (map-invert untraced-macros->traced)]
+      (cond->> (walk/postwalk-replace untraced-macros->traced forms)
 
                ;; Make sure we don't trace threading macros in anon-fns
                ;; when anon-fns themselves aren't traced
                (< trace 5)
                (walk/postwalk
-                #(if (and (list? %)
-                          (#{'fn 'fn*} (first %)))
-                   (walk/postwalk-replace (map-invert threading-macros-mappings) %)
-                   %))))))
+                (fn [form]
+                  (if (and (list? form)
+                           (#{'fn 'fn*} (first form)))
+                    (walk/postwalk-replace traced-macros->untraced form)
+                    form)))
+
+               :always
+               (walk/postwalk
+                (fn [form]
+                  (if (and (list? form)
+                           (-> (keys traced-macros->untraced)
+                               set
+                               (contains? (first form))))
+                    (cleanup-console-on-exception form cljs?)
+                    form)))))))
 
 
 (defn- clairvoyant-trace [forms trace color env]
@@ -975,7 +997,7 @@
                                 ~@orig-body-forms)]
 
                             (>= trace 4)
-                            (trace-threading-macros orig-body-forms trace)
+                            (trace-threading-macros orig-body-forms trace (cljs-env? env))
 
                             :else
                             orig-body-forms))]
@@ -1224,10 +1246,11 @@
     (let [cfg   (merge-config (meta expr))
           color (resolve-trace-color (::trace-color cfg))
           trace (let [trace (::trace cfg)]
-                  (if (= trace 0) 5 trace))]
-      (cond-> (trace-threading-macros expr trace)
+                  (if (= trace 0) 5 trace))
+          cljs? (cljs-env? env)]
+      (cond-> (trace-threading-macros expr trace cljs?)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
-              (cljs-env? env) (clairvoyant-trace trace color env)))
+              cljs? (clairvoyant-trace trace color env)))
     (let [style {::l/background (:base01 l/ghostwheel-colors)}]
       (if ((some-fn string? number? nil? boolean? keyword?) expr)
         `(l/log ~expr ~style)
