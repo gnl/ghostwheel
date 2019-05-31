@@ -125,22 +125,38 @@ NOTE: This is additional information on how and/or why something works the way i
 
 . *Install*
 +
+.Main artifact
 image:https://img.shields.io/clojars/v/gnl/ghostwheel.svg[link=https://clojars.org/gnl/ghostwheel]
 +
-.ClojureScript only – optional tracing:
-image:https://img.shields.io/clojars/v/gnl/ghostwheel.tracer.svg[link=https://clojars.org/gnl/ghostwheel.tracer]
+.Production stubs
+image:https://img.shields.io/clojars/v/gnl/ghostwheel.stubs.svg[link=https://clojars.org/gnl/ghostwheel.stubs]
++
+Both provide the same public namespaces and API, but the stubs don't do anything other than strip any Ghostwheel-specific code.
 +
 .ClojureScript only:
 link:https://github.com/binaryage/cljs-devtools[Setup CLJS DevTools]
 +
-WARNING: Make sure you use Clojure 1.9.0 or higher and don't override Ghostwheel's dependencies with lower versions or you might get link:https://github.com/gnl/ghostwheel/issues/9[strange behaviour].
+WARNING: Make sure you use Clojure `1.10.0`/ClojureScript `1.10.520` or higher; if you're using figwheel-main, use `0.2.1-SNAPSHOT` or higher; don't override Ghostwheel's dependencies with lower versions or you might get link:https://github.com/gnl/ghostwheel/issues/9[strange behaviour].
++
+[TIP]
+--
+To set up the stubs, you can use link:https://clojure.org/reference/deps_and_cli#_aliases[deps.edn aliases] with the `:extra-deps` clause or link:https://github.com/technomancy/leiningen/blob/master/doc/PROFILES.md[Leiningen profiles], depending on your build setup, in order to depend on `gnl/ghostwheel` in your dev / testing builds, and on `gnl/ghostwheel.stubs` in your production builds.
+--
++
+[NOTE]
+--
+You can disable Ghostwheel manually:
+- Clojure – launch the REPL / build with the JVM system property `-Dghostwheel.enabled=false`
+- ClojureScript – either set `-Dghostwheel.enabled=false` or add `:external-config {:ghostwheel {:enabled false}}` to the compiler options in your build config.
+That being said, it's recommended to use the stubs artifact in production as it ensures that no tracing or testing code can be generated and it's significantly more reliable in reducing dependencies and build size than relying on dead code elimination alone.
+--
++
+[NOTE]
+--
+When disabled, Ghostwheel doesn't generate any extra code whatsoever other than simply passing through the plain, unchanged `defn` s.
 
-. *Enable*
-+
-.. On Clojure – launch the REPL / build with the JVM system property `-Dghostwheel.enabled=true`
-.. On ClojureScript – either set `-Dghostwheel.enabled=true` or add `:external-config {:ghostwheel {}}` to the compiler options in your development build config.
-+
-CAUTION: Do not enable Ghostwheel in your production build config or you might end up with tracing, testing or instrumentation code in production. When disabled, Ghostwheel doesn't generate any extra code whatsoever other than simply passing through the plain, unchanged `defn`.
+When `gnl/ghostwheel.stubs` is used, any configuration is ignored and Ghostwheel simply cannot be enabled.
+--
 
 . *Configure*
 +
@@ -149,8 +165,6 @@ Ghostwheel's behaviour is determined individually for each function by merging t
 `ghostwheel.utils/ghostwheel-default-config` -> `ghostwheel.edn` config file in the project root -> `{:external-config {:ghostwheel {...}}` compiler options (ClojureScript only) -> namespace metadata -> function metadata.
 +
 See the link:https://github.com/gnl/ghostwheel/blob/master/src/ghostwheel/utils.cljc#L29[default configuration map] for a description of the options – unless explicitly stated otherwise, each one can be overridden on any level.
-+
-NOTE: Most of the functionality is disabled by default to avoid any nasty surprises.
 +
 [TIP]
 --
@@ -167,15 +181,17 @@ There's no need for this in the function metadata – if you alias Ghostwheel wi
 . *Use*
 +
 ```clojure
-(:require [ghostwheel.core :as g
-            :refer [>defn >defn- >fdef => | <- ?]])
+(:require [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]])
 ```
 +
-.ClojureScript tracing only – require once, somewhere in your project:
-```clojure
-(:require [ghostwheel.tracer])
-```
-NOTE: `\=>`, `|`, `\<-` and `?` <<gspec-syntax, are optional>>
+[NOTE]
+--
+Depending on how you intend to use Ghostwheel only some of these will be required:
+
+`>defn`, `>defn-`, `>fdef` – main Ghostwheel macros, described in detail in the next section
+`=>`, `|`, `<-`, `?` – optional shortcuts to help write function specs using the <<gspec-syntax, gspec syntax>>.
+`|>`, `tr` – `println` on steroids – wrappers for easy <<adhoc-tracing, ad-hoc code evaluation tracing>>.
+--
 
 
 ### Staying Sane with Function Specs and Generative Testing
@@ -523,9 +539,27 @@ Specs are all nice and good, but often enough we want to take a peek at what's g
 |5
 |Anonymous functions
 |Noisy debugging
+
+|6
+|Named anonymous functions are expanded by default
+|Possibly very noisy debugging
 |===
 
 TIP: `::g/trace true` is equivalent to `::g/trace 4`, so you can just add the `^::g/trace` metadata to the function name.
+
+[TIP]
+--
+Add the following devtools config to your compiler options to improve data structure readability when tracing:
+```clojure
+:external-config
+{:devtools/config {:max-print-level 4
+                   :min-expandable-sequable-count-for-well-known-types 2}}
+```
+
+--
+
+[[adhoc-tracing]]
+TIP: Use `|>` or `tr` (they are aliases) to wrap any expression for more granular tracing or if you are only interested in Ghostwheel's tracing functionality. They work standalone, default to trace level `6` and will generally do the right thing depending on the type of wrapped form – functions and threading macros get proper in-depth tracing, while other expressions are pretty-printed and returned.
 
 [TIP]
 --
@@ -539,7 +573,8 @@ A great workflow for working on a function is enabling the trace and passing a c
         d (-> a (* 2) (- 20))]
     [(+ a b) (+ c d)]))
 
-(g/check #(foo 2 4))
+(g/after-check #(foo 2 4))
+(g/check `foo)
 ```
 
 For this to work you'll also have to <<shadow-hooks,set your build system hooks>> correctly.
@@ -547,7 +582,7 @@ For this to work you'll also have to <<shadow-hooks,set your build system hooks>
 This way you immediately see <<tracing-screenshot,data flowing through the function>> on file save after every change (or the check results, if you messed up). Take a moment to zen out and revel in the intoxicating sense of power.
 --
 
-TIP: If you don't like the painstakingly selected default shade of blue-violet, you can change it with the `::g/trace-color` option. Philistine.
+NOTE: If you don't like the painstakingly selected default shade of blue-violet, you can change it with the `::g/trace-color` option. Philistine.
 
 ## Contributions and Roadmap
 
@@ -626,7 +661,7 @@ Some other projects and people without which/whom it likely wouldn't exist in it
 
 https://github.com/plumatic/schema[plumatic's schema] for offering a glimpse into the future of generative testing for quite some time before spec was introduced;
 
-https://github.com/thheller/shadow-cljs[Thomas Heller's Shadow CLJS] and https://github.com/bhauman/lein-figwheel[Bruce Hauman's Figwheel] – for providing robust hot-reloading which is essential to ClojureScript development and to the Ghostwheel experience in particular;
+https://figwheel.org/[Bruce Hauman's Figwheel] and http://shadow-cljs.org/[Thomas Heller's Shadow CLJS] – for providing robust hot-reloading which is essential to ClojureScript development and to the Ghostwheel experience in particular;
 
 https://github.com/binaryage/cljs-devtools[BinaryAge's CLJS DevTools], without which ClojureScript tracing and data inspection would be a lot less fun;
 
