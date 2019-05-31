@@ -973,8 +973,10 @@
                                  (when var-arg ['& (unform-arg var-arg)])))
         body-forms  (if (and fspec (every? nil? orig-body-forms))
                       ;; TODO error handling when specs too fancy for stub auto-generation
-                      [`(apply (-> ~fspec s/gen gen/generate)
-                               ~@(map extract-arg reg-args) ~(extract-arg var-arg))]
+                      [`(do
+                          (println ~(str fn-name " – Function body is nil => Generating random spec-based output."))
+                          (apply (-> ~fspec s/gen gen/generate)
+                             ~@(map extract-arg reg-args) ~(extract-arg var-arg)))]
 
                       (cond unexpected-fx
                             [`(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
