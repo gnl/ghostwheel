@@ -25,9 +25,9 @@
            {::l/background (:black ghostwheel-colors)}))
 
 
-(defn log-threading-diff
+(defn gen-log-threading-diff
   ([old new label]
-   (log-threading-diff old new label nil))
+   (gen-log-threading-diff old new label nil))
   ([old new label style]
    `(let [old-x# ~old
           new-x# ~new
@@ -74,7 +74,7 @@
                      threaded       (if (seq? form)
                                       (with-meta `(~(first form) ~x ~@(next form)) (meta form))
                                       (list form x))
-                     threaded-print (log-threading-diff x-print threaded (str form))]
+                     threaded-print (gen-log-threading-diff x-print threaded (str form))]
                  (recur threaded threaded-print (next forms)))
                `(do
                   (log-threading-header "->" ~(str orig-x))
@@ -102,7 +102,7 @@
                        threaded       (if (seq? form)
                                         (with-meta `(~(first form) ~@(next form) ~x) (meta form))
                                         (list form x))
-                       threaded-print (log-threading-diff x-print threaded (str form))]
+                       threaded-print (gen-log-threading-diff x-print threaded (str form))]
                    (recur threaded threaded-print (next forms)))
                  `(do
                     (log-threading-header "->>" ~(str orig-x))
@@ -118,7 +118,7 @@
   "Traced version of as->"
   [expr name & forms]
   (let [untraced `(~'as-> ~expr ~name ~@forms)
-        log-step (fn [form] (log-threading-diff name form (str form)))]
+        log-step (fn [form] (gen-log-threading-diff name form (str form)))]
     (cond->
      (if-not (u/get-env-config)
        untraced
@@ -149,7 +149,7 @@
                  pstep (fn [[test step]]
                          (let [label (str test " " step)]
                            `(if ~test
-                              ~(log-threading-diff g `(-> ~g ~step) label {::l/weight :bold})
+                              ~(gen-log-threading-diff g `(-> ~g ~step) label {::l/weight :bold})
                               (do (group ~label ~{::l/foreground (:base0 ghostwheel-colors)})
                                   (group-end)
                                   ~g))))]
@@ -178,7 +178,7 @@
                  pstep (fn [[test step]]
                          (let [label (str test " " step)]
                            `(if ~test
-                              ~(log-threading-diff g `(->> ~g ~step) label {::l/weight :bold})
+                              ~(gen-log-threading-diff g `(->> ~g ~step) label {::l/weight :bold})
                               (do (group ~label ~{::l/foreground (:base0 ghostwheel-colors)})
                                   (group-end)
                                   ~g))))]
@@ -206,7 +206,7 @@
                  log-pstep (fn [step]
                              `(if (nil? ~g)
                                 nil
-                                ~(log-threading-diff g `(-> ~g ~step) (str step))))]
+                                ~(gen-log-threading-diff g `(-> ~g ~step) (str step))))]
              `(do
                 (log-threading-header "some->" ~(str expr))
                 (pr-clog ~(str expr) ~expr)
@@ -231,7 +231,7 @@
                  log-pstep (fn [step]
                              `(if (nil? ~g)
                                 nil
-                                ~(log-threading-diff g `(->> ~g ~step) (str step))))]
+                                ~(gen-log-threading-diff g `(->> ~g ~step) (str step))))]
              `(do
                 (log-threading-header "some->>" ~(str expr))
                 (pr-clog ~(str expr) ~expr)
