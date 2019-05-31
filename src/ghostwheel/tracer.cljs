@@ -17,8 +17,8 @@
   Example: #{'defn 'let :bindings}"
   [& {:keys [color background tag expand] :as options}]
   (let [binding-group (if (contains? expand :bindings)
-                        l/multi-label-group
-                        l/multi-label-group-collapsed)
+                        l/group
+                        l/group-collapsed)
         log-exit      (fn [exit] (l/log-raw nil "=>" exit))
         has-bindings? l/ops-with-bindings
         fn-like?      (disj has-bindings? 'let `let)]
@@ -28,7 +28,7 @@
         [_ {:keys [anonymous? arglist args dispatch-val form init name ns op protocol]}]
         (let [init  (if (and (seq? init)
                              (symbol? (first init)))
-                      (let [f (str (first init))
+                      (let [f      (str (first init))
                             prefix "ghostwheel.threading-macros/*"]
                         (if (string/starts-with? f prefix)
                           (cons (-> f (string/replace prefix "") symbol)
@@ -58,7 +58,7 @@
               (l/group "bindings"))
 
             (#{'binding} op)
-            (binding-group [form init]))))
+            (binding-group form nil nil init))))
 
       ITraceExit
       (-trace-exit [_ {:keys [op exit]}]

@@ -862,30 +862,30 @@
 
 
 (defn- clairvoyant-trace [forms trace color env]
-  (let [clairvoyant   'clairvoyant.core/trace-forms
-        tracer        'ghostwheel.tracer/tracer
-        exclude       (case trace
-                        2 '#{'fn 'fn* 'let}
-                        3 '#{'fn 'fn*}
-                        4 '#{'fn 'fn*}
-                        nil)
+  (let [clairvoyant 'clairvoyant.core/trace-forms
+        tracer      'ghostwheel.tracer/tracer
+        exclude     (case trace
+                      2 '#{'fn 'fn* 'let}
+                      3 '#{'fn 'fn*}
+                      4 '#{'fn 'fn*}
+                      nil)
         ;; Uncommenting the block below will strip nested `|>` or `tr` traces
         #_(comment
-            inline-trace? (fn [form]
-                            (and (seq? form)
-                                 (symbol? (first form))
-                                 (let [sym (first form)
+           inline-trace? (fn [form]
+                           (and (seq? form)
+                                (symbol? (first form))
+                                (let [sym (first form)
 
-                                       qualified-sym
-                                       (if (cljs-env? env)
-                                         (:name (ana-api/resolve env sym))
-                                         ;; REVIEW: Clairvoyant doesn't work on
-                                         ;; Clojure yet – check this when it does
-                                         #?(:clj (name (resolve sym))))]
-                                   (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
-            forms (walk/postwalk
-                   #(if (inline-trace? %) (second %) %)
-                   forms))]
+                                      qualified-sym
+                                          (if (cljs-env? env)
+                                            (:name (ana-api/resolve env sym))
+                                            ;; REVIEW: Clairvoyant doesn't work on
+                                            ;; Clojure yet – check this when it does
+                                            #?(:clj (name (resolve sym))))]
+                                  (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
+           forms (walk/postwalk
+                  #(if (inline-trace? %) (second %) %)
+                  forms))]
     ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
     (comment
      #?(:clj (if cljs?
@@ -1228,7 +1228,10 @@
       (cond-> (trace-threading-macros expr trace)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
               (cljs-env? env) (clairvoyant-trace trace color env)))
-    `(l/pr-clog (quote ~expr) ~expr {::l/background (:base01 l/ghostwheel-colors)} 100)))
+    (let [style {::l/background (:base01 l/ghostwheel-colors)}]
+      (if ((some-fn string? number? nil? boolean? keyword?) expr)
+        `(l/log ~expr ~style)
+        `(l/pr-clog (quote ~expr) ~expr ~style 100)))))
 
 
 ;;;; Main macros and public API

@@ -93,23 +93,26 @@
     long-string))
 
 
-(defn get-styled-label
-  [labels {:keys [::foreground ::background ::weight] :as style} output & [length]]
-  (let [label (as-> labels labels
-                    (apply str labels)
-                    (if length
-                      (truncate-string labels length)
-                      labels)
-                    (if (= output :js-console) (str "%c" labels) labels))
-        style (when (= output :js-console)
-                (str "color: " (cond foreground foreground
-                                     background "white"
-                                     :else (:black ghostwheel-colors)) ";"
-                     "background: " (if background background "white") ";"
-                     "font-weight: " (if weight weight "500") ";"
-                     (when background "text-shadow: 0.5px 0.5px black;")
-                     (when background "padding: 2px 6px; border-radius: 2px;")))]
-    (vec (remove nil? [label style]))))
+(defn get-styled-data
+  [[label & data] {:keys [::foreground ::background ::weight] :as style} output & [length]]
+  (let [label        (if style
+                       (as-> (str label) label
+                             (if length
+                               (truncate-string label length)
+                               label)
+                             (if (= output :js-console) (str "%c" label) label))
+                       label)
+        style-string (when (and style (= output :js-console))
+                       (str "color: " (cond foreground foreground
+                                            background "white"
+                                            :else (:black ghostwheel-colors)) ";"
+                            "background: " (if background background "white") ";"
+                            "font-weight: " (if weight weight "500") ";"
+                            (when background "text-shadow: 0.5px 0.5px black;")
+                            (when background "padding: 2px 6px; border-radius: 2px;")))]
+    (->> (concat [label style-string] data)
+         (remove nil?)
+         vec)))
 
 
 (defn- plain-log [msg]
@@ -126,13 +129,11 @@
    (log "" nil))
   ([msg]
    (log msg nil))
-  ([msg style]
-   (let [styled-msg (if style
-                      (get-styled-label [msg] style *report-output*)
-                      [msg])]
+  ([msg style & data]
+   (let [styled-data (get-styled-data (concat [msg] data) style *report-output*)]
      (case *report-output*
-       :repl (apply plain-log styled-msg)
-       :js-console #?(:cljs (.apply js/console.log js/console (to-array styled-msg))
+       :repl (apply plain-log styled-data)
+       :js-console #?(:cljs (.apply js/console.log js/console (to-array styled-data))
                       :clj  nil)))))
 
 
@@ -175,9 +176,7 @@
   ([open? labels style]
    (group* open? labels style nil))
   ([open? labels style length]
-   (let [styled-label (if style
-                        (get-styled-label labels style *report-output* length)
-                        labels)]
+   (let [styled-label (get-styled-data labels style *report-output* length)]
      (case *report-output*
        :repl (apply plain-group styled-label)
        :js-console #?(:cljs (.apply (if open?
@@ -193,8 +192,8 @@
    (group label nil nil))
   ([label style]
    (group label style nil))
-  ([label style length]
-   (group* true [label] style length)))
+  ([label style length & data]
+   (group* true (concat [label] data) style length)))
 
 
 (defn group-collapsed
@@ -202,8 +201,8 @@
    (group-collapsed label nil nil))
   ([label style]
    (group-collapsed label style nil))
-  ([label style length]
-   (group* false [label] style length)))
+  ([label style length & data]
+   (group* false (concat [label] data) style length)))
 
 (defn multi-label-group
   [labels]
