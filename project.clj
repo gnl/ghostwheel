@@ -1,4 +1,4 @@
-(defproject gnl/ghostwheel "0.3.10"
+(defproject gnl/ghostwheel "0.4.0"
   :description "Hassle-free and concise clojure.spec, automatic generative testing, side effect detection, and evaluation tracing for Clojure(-Script)"
   :url "https://github.com/gnl/ghostwheel"
   :scm {:name "git"
@@ -7,7 +7,7 @@
             :url  "https://choosealicense.com/licenses/epl-2.0/"}
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
-  :dependencies [[gnl/ghostwheel.unghost "0.3.10"]
+  :dependencies [[gnl/ghostwheel.unghost "0.4.0"]
                  [org.clojure/spec.alpha "0.2.176"]
                  [org.clojure/test.check "0.10.0-alpha4"]
                  [orchestra "2019.02.06-1"]
