@@ -83,6 +83,7 @@
                     x#))))))
      (cljs-env? &env) clj->cljs)))
 
+
 (defmacro *->>
   "Traced version of ->>"
   [orig-x & orig-forms]
@@ -93,24 +94,23 @@
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
           (do
-            ~(loop [x orig-x, forms orig-forms]
+            ~(loop [x orig-x, x-print orig-x, forms orig-forms]
                (if forms
-                 (let [form     (first forms)
-                       threaded (if (seq? form)
-                                  (with-meta `(pr-clog ~(str form)
-                                                       (~(first form) ~@(next form) ~x))
-                                             (meta form))
-                                  `(pr-clog ~(str form)
-                                            ~(list form x)))]
-                   (recur threaded (next forms)))
+                 (let [form           (first forms)
+                       threaded       (if (seq? form)
+                                        (with-meta `(~(first form) ~@(next form) ~x) (meta form))
+                                        (list form x))
+                       threaded-print (log-threading-diff (str form) x-print threaded)]
+                   (recur threaded threaded-print (next forms)))
                  `(do
                     (log-threading-header "->>" ~(str orig-x))
                     (pr-clog ~(str orig-x) ~orig-x)
-                    (let [x# ~x]
-                      ~(when (cljs-env? &env)
-                         `(l/group-end))
+                    (let [x# ~x-print]
+                      (log "=>" nil x#)
+                      (group-end)
                       x#)))))))
      (cljs-env? &env) clj->cljs)))
+
 
 (defmacro *as->
   "Traced version of as->"
