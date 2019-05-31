@@ -31,7 +31,8 @@
                        [orchestra.spec.test :as ost]]
                 :cljs [;[cljs.core.specs.alpha :include-macros true]
                        [cljs.analyzer.api :as ana-api]
-                       [orchestra-cljs.spec.test :as ost]])))
+                       [orchestra-cljs.spec.test :as ost]
+                       ghostwheel.tracer])))
 
 
 ;; REVIEW: Replace this pattern:
