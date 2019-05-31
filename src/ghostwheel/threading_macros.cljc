@@ -80,7 +80,7 @@
                   (log-threading-header "->" ~(str orig-x))
                   (pr-clog ~(str orig-x) ~orig-x)
                   (let [x# ~x-print]
-                    (log "=>" nil x#)
+                    (log (:symbol l/arrow) (:style l/arrow) x#)
                     (group-end)
                     x#))))))
      (cljs-env? &env) clj->cljs)))
@@ -108,7 +108,7 @@
                     (log-threading-header "->>" ~(str orig-x))
                     (pr-clog ~(str orig-x) ~orig-x)
                     (let [x# ~x-print]
-                      (log "=>" nil x#)
+                      (log (:symbol l/arrow) (:style l/arrow) x#)
                       (group-end)
                       x#)))))))
      (cljs-env? &env) clj->cljs)))
@@ -129,7 +129,7 @@
             (pr-clog ~(str name) ~expr)
             (let [~name ~expr
                   ~@(interleave (repeat name) (map log-step forms))]
-              (log "=>" nil ~name)
+              (log (:symbol l/arrow) (:style l/arrow) ~name)
               (group-end)
               ~name))))
      (cljs-env? &env) clj->cljs)))

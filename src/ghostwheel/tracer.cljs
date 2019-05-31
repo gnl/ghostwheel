@@ -19,7 +19,7 @@
   (let [binding-group (if (contains? expand :bindings)
                         l/group
                         l/group-collapsed)
-        log-exit      (fn [exit] (l/log-raw nil "=>" exit))
+        log-exit      (fn [exit] (l/log (:symbol l/arrow) (:style l/arrow) exit))
         has-bindings? l/ops-with-bindings
         fn-like?      (disj has-bindings? 'let `let)]
     (reify

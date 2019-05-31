@@ -22,6 +22,9 @@
 (def ^:dynamic *report-output* #?(:clj  :repl
                                   :cljs :js-console))
 
+(def arrow {:symbol "=>"
+            :style  {::weight "bold"}})
+
 
 (def ghostwheel-colors
   {:purple0 "#967a93"
@@ -94,7 +97,7 @@
 
 
 (defn get-styled-data
-  [[label & data] {:keys [::foreground ::background ::weight] :as style} output & [length]]
+  [[label & data] {:keys [::foreground ::background ::weight ::css] :as style} output & [length]]
   (let [label        (if style
                        (as-> (str label) label
                              (if length
@@ -109,7 +112,8 @@
                             "background: " (if background background "white") ";"
                             "font-weight: " (if weight weight "500") ";"
                             (when background "text-shadow: 0.5px 0.5px black;")
-                            (when background "padding: 2px 6px; border-radius: 2px;")))]
+                            (when background "padding: 2px 6px; border-radius: 2px;")
+                            css))]
     (->> (concat [label style-string] data)
          (remove nil?)
          vec)))
