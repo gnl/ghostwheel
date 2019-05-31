@@ -1226,7 +1226,7 @@
       (cond-> (trace-threading-macros expr trace)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
               (cljs-env? env) (clairvoyant-trace trace color env)))
-    `(l/clog ~expr)))
+    `(l/pr-clog (quote ~expr) ~expr)))
 
 
 ;;;; Main macros and public API

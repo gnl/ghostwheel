@@ -16,7 +16,9 @@
   :expand - set of op symbols to display expanded by default. Use :bindings to expand all bindings.
   Example: #{'defn 'let :bindings}"
   [& {:keys [color background tag expand] :as options}]
-  (let [binding-group (if (contains? expand :bindings) l/group l/group-collapsed)
+  (let [binding-group (if (contains? expand :bindings)
+                        l/multi-label-group
+                        l/multi-label-group-collapsed)
         log-exit      (fn [exit] (l/log-raw nil "=>" exit))
         has-bindings? l/ops-with-bindings
         fn-like?      (disj has-bindings? 'let `let)]

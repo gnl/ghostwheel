@@ -94,24 +94,22 @@
 
 
 (defn get-styled-label
-  [label {:keys [::foreground ::background ::weight] :as style} output & [length]]
-  (if-not style
-    (if (sequential? label) label [label])
-    (let [label (as-> label label
-                  (if (sequential? label) (apply str label) (str label))
-                  (if length
-                    (truncate-string label length)
-                    label)
-                  (if (= output :js-console) (str "%c" label) label))
-          style (when (= output :js-console)
-                  (str "color: " (cond foreground foreground
-                                       background "white"
-                                       :else (:black ghostwheel-colors)) ";"
-                       "background: " (if background background "white") ";"
-                       "font-weight: " (if weight weight "500") ";"
-                       (when background "text-shadow: 0.5px 0.5px black;")
-                       (when background "padding: 2px 6px; border-radius: 2px;")))]
-      (vec (remove nil? [label style])))))
+  [labels {:keys [::foreground ::background ::weight] :as style} output & [length]]
+  (let [label (as-> labels labels
+                    (apply str labels)
+                    (if length
+                      (truncate-string labels length)
+                      labels)
+                    (if (= output :js-console) (str "%c" labels) labels))
+        style (when (= output :js-console)
+                (str "color: " (cond foreground foreground
+                                     background "white"
+                                     :else (:black ghostwheel-colors)) ";"
+                     "background: " (if background background "white") ";"
+                     "font-weight: " (if weight weight "500") ";"
+                     (when background "text-shadow: 0.5px 0.5px black;")
+                     (when background "padding: 2px 6px; border-radius: 2px;")))]
+    (vec (remove nil? [label style]))))
 
 
 (defn- plain-log [msg]
@@ -129,7 +127,9 @@
   ([msg]
    (log msg nil))
   ([msg style]
-   (let [styled-msg (get-styled-label msg style *report-output*)]
+   (let [styled-msg (if style
+                      (get-styled-label [msg] style *report-output*)
+                      [msg])]
      (case *report-output*
        :repl (apply plain-log styled-msg)
        :js-console #?(:cljs (.apply js/console.log js/console (to-array styled-msg))
@@ -170,10 +170,14 @@
 
 
 (defn- group*
-  ([open? label]
-   (group* open? label nil))
-  ([open? label style]
-   (let [styled-label (get-styled-label label style *report-output*)]
+  ([open? labels]
+   (group* open? labels nil nil))
+  ([open? labels style]
+   (group* open? labels style nil))
+  ([open? labels style length]
+   (let [styled-label (if style
+                        (get-styled-label labels style *report-output* length)
+                        labels)]
      (case *report-output*
        :repl (apply plain-group styled-label)
        :js-console #?(:cljs (.apply (if open?
@@ -186,16 +190,28 @@
 
 (defn group
   ([label]
-   (group label nil))
+   (group label nil nil))
   ([label style]
-   (group* true label style)))
+   (group label style nil))
+  ([label style length]
+   (group* true [label] style length)))
 
 
 (defn group-collapsed
   ([label]
-   (group label nil))
+   (group-collapsed label nil nil))
   ([label style]
-   (group* false label style)))
+   (group-collapsed label style nil))
+  ([label style length]
+   (group* false [label] style length)))
+
+(defn multi-label-group
+  [labels]
+  (group* true labels nil))
+
+(defn multi-label-group-collapsed
+  [labels]
+  (group* false labels nil))
 
 
 (let [plain-group-end
@@ -224,11 +240,13 @@
      (log data)
      data))
   ([label data]
-   (pr-clog label data nil))
+   (pr-clog label data nil nil))
   ([label data style]
+   (pr-clog label data style nil))
+  ([label data style label-length]
    (if data
      (do
-       (group label style)
+       (group label style label-length)
        (log data)
        (group-end))
      (log label style))
