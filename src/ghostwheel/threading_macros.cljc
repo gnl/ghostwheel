@@ -135,15 +135,6 @@
      (cljs-env? &env) clj->cljs)))
 
 
-(defn- log-cond-step
-  [test step data & [style]]
-  `(pr-clog
-    ~(str test
-          " "
-          step)
-    ~data
-    ~style))
-
 (defmacro *cond->
   "Traced version of cond->"
   [expr & clauses]
@@ -156,18 +147,22 @@
           ~untraced
           ~(let [g     (gensym)
                  pstep (fn [[test step]]
-                         `(if ~test
-                            ~(log-cond-step test step `(-> ~g ~step) {::l/weight :bold})
-                            ~(log-cond-step test step g {::l/foreground (:base0 ghostwheel-colors)})))]
+                         (let [label (str test " " step)]
+                           `(if ~test
+                              ~(log-threading-diff g `(-> ~g ~step) label {::l/weight :bold})
+                              (do (group ~label ~{::l/foreground (:base0 ghostwheel-colors)})
+                                  (group-end)
+                                  ~g))))]
              `(do
                 (log-threading-header "cond->" ~(str expr))
                 (pr-clog ~(str expr) ~expr)
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
-                  ~(when (cljs-env? &env)
-                     `(l/group-end))
+                  (log (:symbol l/arrow) (:style l/arrow) ~g)
+                  (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
+
 
 (defmacro *cond->>
   "Traced version of cond->>"
@@ -181,18 +176,22 @@
           ~untraced
           ~(let [g     (gensym)
                  pstep (fn [[test step]]
-                         `(if ~test
-                            ~(log-cond-step test step `(->> ~g ~step) {::l/weight :bold})
-                            ~(log-cond-step test step g {::l/foreground (:base0 ghostwheel-colors)})))]
+                         (let [label (str test " " step)]
+                           `(if ~test
+                              ~(log-threading-diff g `(->> ~g ~step) label {::l/weight :bold})
+                              (do (group ~label ~{::l/foreground (:base0 ghostwheel-colors)})
+                                  (group-end)
+                                  ~g))))]
              `(do
                 (log-threading-header "cond->>" ~(str expr))
                 (pr-clog ~(str expr) ~expr)
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
-                  ~(when (cljs-env? &env)
-                     `(l/group-end))
+                  (log (:symbol l/arrow) (:style l/arrow) ~g)
+                  (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
+
 
 (defn- log-some-step
   [some-step]
