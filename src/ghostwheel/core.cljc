@@ -971,7 +971,7 @@
                             `[(do
                                 (l/pr-clog ~(str (list fn-name arg-list))
                                            nil
-                                           {::r/background ~color})
+                                           {::l/background ~color})
                                 ~@orig-body-forms)]
 
                             (>= trace 4)
