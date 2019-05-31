@@ -8,8 +8,10 @@
 
 (ns ghostwheel.threading-macros
   #?(:cljs (:require-macros ghostwheel.threading-macros))
-  (:require [ghostwheel.logging :as l :refer [ghostwheel-colors pr-clog]]
-            [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]))
+  (:require [ghostwheel.logging :as l
+             :refer [ghostwheel-colors pr-clog group group-collapsed group-end log]]
+            [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
+            [clojure.data :as data]))
 
 
 ;;;; Traced threading macros
@@ -31,22 +33,46 @@
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
-          ~(loop [x orig-x, forms orig-forms]
+          ~(loop [x orig-x, x-print orig-x, forms orig-forms]
              (if forms
-               (let [form     (first forms)
-                     threaded (if (seq? form)
-                                (with-meta `(pr-clog ~(str form)
-                                                     (~(first form) ~x ~@(next form)))
-                                           (meta form))
-                                `(pr-clog ~(str form)
-                                          ~(list form x)))]
-                 (recur threaded (next forms)))
+               (let [form           (first forms)
+                     threaded       (if (seq? form)
+                                      (with-meta `(~(first form) ~x ~@(next form)) (meta form))
+                                      (list form x))
+                     threaded-print `(let [new-x# ~threaded
+                                           old-x# ~x-print
+                                           [before# after# common#] (clojure.data/diff old-x# new-x#)]
+                                       (log old-x#)
+                                       (group-end)
+                                       (group ~(str form))
+                                       (cond
+                                         (nil? common#)
+                                         (log new-x#)
+
+                                         (and (nil? before#) (nil? after#))
+                                         (log "Value unchanged.")
+
+                                         :else
+                                         (do
+                                           (when before#
+                                             (log "---"
+                                                  {::l/background (:red ghostwheel-colors)
+                                                   ::l/weight "bold"}
+                                                  before#))
+                                           (when after#
+                                             (log "+++"
+                                                  {::l/background (:green ghostwheel-colors)
+                                                   ::l/weight "bold"}
+                                                  after#))))
+                                       new-x#)]
+                 (recur threaded threaded-print (next forms)))
                `(do
                   (log-threading-header "->" ~(str orig-x))
-                  (pr-clog ~(str orig-x) ~orig-x)
-                  (let [x# ~x]
-                    ~(when (cljs-env? &env)
-                       `(l/group-end))
+                  (group ~(str orig-x))
+                  (let [x# ~x-print]
+                    (group-end)
+                    (log "=>" nil x#)
+                    (group-end)
                     x#))))))
      (cljs-env? &env) clj->cljs)))
 
