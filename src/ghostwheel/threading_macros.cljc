@@ -24,6 +24,39 @@
   (l/group (str threading-type " " expr (when name " ") name)
            {::l/background (:black ghostwheel-colors)}))
 
+
+(defn log-threading-diff
+  [label old new]
+  `(let [old-x# ~old
+         new-x# ~new
+         [before# after# common#] (clojure.data/diff old-x# new-x#)]
+     (group ~label)
+     (cond
+       (nil? common#)
+       (log new-x#)
+
+       (and (nil? before#) (nil? after#))
+       (log "==="
+            {::l/background (:base00 ghostwheel-colors)
+             ::l/weight     "bold"}
+            "No change.")
+
+       :else
+       (do
+         (when before#
+           (log "---"
+                {::l/background (:red ghostwheel-colors)
+                 ::l/weight     "bold"}
+                before#))
+         (when after#
+           (log "+++"
+                {::l/background (:green ghostwheel-colors)
+                 ::l/weight     "bold"}
+                after#))))
+     (group-end)
+     new-x#))
+
+
 (defmacro *->
   "Traced version of ->"
   [orig-x & orig-forms]
@@ -39,34 +72,7 @@
                      threaded       (if (seq? form)
                                       (with-meta `(~(first form) ~x ~@(next form)) (meta form))
                                       (list form x))
-                     threaded-print `(let [new-x# ~threaded
-                                           old-x# ~x-print
-                                           [before# after# common#] (clojure.data/diff old-x# new-x#)]
-                                       (group ~(str form))
-                                       (cond
-                                         (nil? common#)
-                                         (log new-x#)
-
-                                         (and (nil? before#) (nil? after#))
-                                         (log "==="
-                                              {::l/background (:base00 ghostwheel-colors)
-                                               ::l/weight "bold"}
-                                              "No change.")
-
-                                         :else
-                                         (do
-                                           (when before#
-                                             (log "---"
-                                                  {::l/background (:red ghostwheel-colors)
-                                                   ::l/weight "bold"}
-                                                  before#))
-                                           (when after#
-                                             (log "+++"
-                                                  {::l/background (:green ghostwheel-colors)
-                                                   ::l/weight "bold"}
-                                                  after#))))
-                                       (group-end)
-                                       new-x#)]
+                     threaded-print (log-threading-diff (str form) x-print threaded)]
                  (recur threaded threaded-print (next forms)))
                `(do
                   (log-threading-header "->" ~(str orig-x))
