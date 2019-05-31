@@ -48,7 +48,10 @@
                                          (log new-x#)
 
                                          (and (nil? before#) (nil? after#))
-                                         (log "Value unchanged.")
+                                         (log "==="
+                                              {::l/background (:base00 ghostwheel-colors)
+                                               ::l/weight "bold"}
+                                              "No change.")
 
                                          :else
                                          (do
