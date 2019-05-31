@@ -874,7 +874,7 @@
                              (symbol? (first form))
                              (let [sym (first form)
 
-                                   qualified-sym
+                                       qualified-sym
                                        (if (cljs-env? env)
                                          (:name (ana-api/resolve env sym))
                                          ;; REVIEW: Clairvoyant doesn't work on
@@ -1226,7 +1226,7 @@
       (cond-> (trace-threading-macros expr trace)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
               (cljs-env? env) (clairvoyant-trace trace color env)))
-    `(l/pr-clog (quote ~expr) ~expr)))
+    `(l/pr-clog (quote ~expr) ~expr {::l/background (:base01 l/ghostwheel-colors)} 100)))
 
 
 ;;;; Main macros and public API
