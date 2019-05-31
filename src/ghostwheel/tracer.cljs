@@ -42,8 +42,8 @@
             (fn-like? op)
             (let [title   (if protocol
                             (str protocol " " name " " arglist)
-                            (str ns "/" name
-                                 (when tag (str " " tag))
+                            (str (when tag (str tag " – "))
+                                 ns "/" name
                                  (when dispatch-val
                                    (str " " (pr-str dispatch-val)))
                                  (str " " arglist)

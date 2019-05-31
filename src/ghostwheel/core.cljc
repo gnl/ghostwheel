@@ -883,7 +883,7 @@
                     form)))))))
 
 
-(defn- clairvoyant-trace [forms trace color env]
+(defn- clairvoyant-trace [forms trace color env label]
   (let [clairvoyant 'clairvoyant.core/trace-forms
         tracer      'ghostwheel.tracer/tracer
         exclude     (case trace
@@ -922,6 +922,7 @@
          :tracer  (~tracer
                    :color "#fff"
                    :background ~color
+                   :tag ~label
                    :expand ~(cond (= trace 6) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
                                   (>= trace 3) '#{:bindings 'let 'defn 'defn-}
                                   :else '#{'defn 'defn-}))
@@ -976,7 +977,7 @@
                       [`(do
                           (println ~(str fn-name " – Function body is nil => Generating random spec-based output."))
                           (apply (-> ~fspec s/gen gen/generate)
-                             ~@(map extract-arg reg-args) ~(extract-arg var-arg)))]
+                                 ~@(map extract-arg reg-args) ~(extract-arg var-arg)))]
 
                       (cond unexpected-fx
                             [`(throw (~(if (cljs-env? env) 'js/Error. 'Exception.)
@@ -1079,7 +1080,7 @@
                                                              ~@(process-fn-bodies trace)))]
                               (if (= trace 1)
                                 traced-defn
-                                (clairvoyant-trace traced-defn trace color env))))]
+                                (clairvoyant-trace traced-defn trace color env nil))))]
     `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test)))
 
 
@@ -1240,23 +1241,41 @@
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
 
 
+(defn- gen-wrap-label
+  [label color & forms]
+  (if-not label
+    `(do ~@forms)
+    `(do
+       (l/group ~(str label) ~{::l/weight     "bold"
+                               ::l/background color})
+       ~@forms
+       (l/group-end))))
+
+
 (defn- generate-traced-expr
-  [expr env]
-  (if (and (seq? expr)
-           (or (contains? l/ops-with-bindings (first expr))
-               (contains? threading-macro-syms (first expr))))
-    (let [cfg   (merge-config (meta expr))
-          color (resolve-trace-color (::trace-color cfg))
-          trace (let [trace (::trace cfg)]
-                  (if (= trace 0) 5 trace))
-          cljs? (cljs-env? env)]
+  [expr label env]
+  (let [cfg   (merge-config (meta expr))
+        color (resolve-trace-color (::trace-color cfg))
+        trace (let [trace (::trace cfg)]
+                (if (= trace 0) 5 trace))
+        cljs? (cljs-env? env)]
+    (cond
+      (and (seq? expr)
+           (contains? l/ops-with-bindings (first expr)))
       (cond-> (trace-threading-macros expr trace cljs?)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
-              cljs? (clairvoyant-trace trace color env)))
-    (let [style {::l/background (:base01 l/ghostwheel-colors)}]
-      (if ((some-fn string? number? nil? boolean? keyword?) expr)
-        `(l/log ~expr ~style)
-        `(l/pr-clog (quote ~expr) ~expr ~style 100)))))
+              cljs? (clairvoyant-trace trace color env label))
+
+      (and (seq? expr)
+           (contains? threading-macro-syms (first expr)))
+      (->> (trace-threading-macros expr trace cljs?)
+           (gen-wrap-label label color))
+
+      :else
+      (let [style {::l/background (:black l/ghostwheel-colors)}]
+        (gen-wrap-label label color (if ((some-fn string? number? nil? boolean? keyword?) expr)
+                                      `(l/log ~expr ~style)
+                                      `(l/pr-clog (quote ~expr) ~expr ~style 100)))))))
 
 
 ;;;; Main macros and public API
@@ -1383,11 +1402,16 @@
 
 (defmacro |>
   "Traces or logs+returns the wrapped expression, depending on its type"
-  [expr]
-  (if (u/get-env-config)
-    (cond-> (generate-traced-expr expr &env)
-            (cljs-env? &env) clj->cljs)
-    expr))
+  ([expr]
+   `(|> nil ~expr))
+  ([label expr]
+   (if (u/get-env-config)
+     (cond-> (generate-traced-expr expr label &env)
+             (cljs-env? &env) clj->cljs)
+     expr)))
 
-(defmacro tr "Alias for |>" [expr] `(|> ~expr))
+
+(defmacro tr "Alias for |>"
+  ([expr] `(|> ~expr))
+  ([label expr] `(|> ~label ~expr)))
 
