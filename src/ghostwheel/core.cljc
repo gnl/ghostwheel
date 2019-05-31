@@ -869,10 +869,12 @@
                         3 '#{'fn 'fn*}
                         4 '#{'fn 'fn*}
                         nil)
-        inline-trace? (fn [form]
-                        (and (seq? form)
-                             (symbol? (first form))
-                             (let [sym (first form)
+        ;; Uncommenting the block below will strip nested `|>` or `tr` traces
+        #_(comment
+            inline-trace? (fn [form]
+                            (and (seq? form)
+                                 (symbol? (first form))
+                                 (let [sym (first form)
 
                                        qualified-sym
                                        (if (cljs-env? env)
@@ -880,10 +882,10 @@
                                          ;; REVIEW: Clairvoyant doesn't work on
                                          ;; Clojure yet – check this when it does
                                          #?(:clj (name (resolve sym))))]
-                               (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
-        forms         (walk/postwalk
-                       #(if (inline-trace? %) (second %) %)
-                       forms)]
+                                   (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
+            forms (walk/postwalk
+                   #(if (inline-trace? %) (second %) %)
+                   forms))]
     ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
     (comment
      #?(:clj (if cljs?
