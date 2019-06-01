@@ -1263,7 +1263,7 @@
   (let [cfg      (merge-config (meta expr))
         color    (resolve-trace-color (::trace-color cfg))
         trace    (let [trace (::trace cfg)]
-                   (if (= trace 0) 5 trace))
+                   (if (= trace 0) 6 trace))
         cljs?    (cljs-env? env)
         position (str (-> env :line) ":" (-> env :column))
         context  (str (when label (str label " – "))

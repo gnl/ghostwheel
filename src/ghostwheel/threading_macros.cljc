@@ -11,7 +11,8 @@
   (:require [ghostwheel.logging :as l
              :refer [ghostwheel-colors dlog group group-collapsed group-end log]]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
-            [clojure.data :as data]))
+            [clojure.data :as data]
+            [clojure.pprint :as pprint]))
 
 
 ;;;; Traced threading macros
@@ -21,18 +22,24 @@
 ;; between Clojure and -Script
 (defn log-threading-header
   [threading-type expr & [name]]
-  (l/group (str "(" threading-type " " expr (when name " ") name " ...)")
-           {::l/background (:black ghostwheel-colors)}))
+  (group (str "(" threading-type " " expr (when name " ") name " ...)")
+         {::l/background (:black ghostwheel-colors)}
+         80))
 
 
 (defn gen-log-threading-diff
-  ([old new label]
-   (gen-log-threading-diff old new label nil))
-  ([old new label style]
+  ([old new form]
+   (gen-log-threading-diff old new form {}))
+  ([old new form style]
    `(let [old-x# ~old
           new-x# ~new
-          [before# after# common#] (clojure.data/diff old-x# new-x#)]
-      (group ~label ~style)
+          [before# after# common#] (data/diff old-x# new-x#)]
+      (group ~(str form) ~style 80)
+      ~(when (> (-> form str count) 80)
+         `(do
+            (group-collapsed "...")
+            (l/log ~(-> form pprint/pprint with-out-str))
+            (group-end)))
       (cond
         (nil? common#)
         (log new-x#)
@@ -74,7 +81,7 @@
                      threaded       (if (seq? form)
                                       (with-meta `(~(first form) ~x ~@(next form)) (meta form))
                                       (list form x))
-                     threaded-print (gen-log-threading-diff x-print threaded (str form))]
+                     threaded-print (gen-log-threading-diff x-print threaded form)]
                  (recur threaded threaded-print (next forms)))
                `(do
                   (log-threading-header "->" ~(str orig-x))
@@ -102,7 +109,7 @@
                        threaded       (if (seq? form)
                                         (with-meta `(~(first form) ~@(next form) ~x) (meta form))
                                         (list form x))
-                       threaded-print (gen-log-threading-diff x-print threaded (str form))]
+                       threaded-print (gen-log-threading-diff x-print threaded form)]
                    (recur threaded threaded-print (next forms)))
                  `(do
                     (log-threading-header "->>" ~(str orig-x))
@@ -118,7 +125,7 @@
   "Traced version of as->"
   [expr name & forms]
   (let [untraced `(~'as-> ~expr ~name ~@forms)
-        log-step (fn [form] (gen-log-threading-diff name form (str form)))]
+        log-step (fn [form] (gen-log-threading-diff name form form))]
     (cond->
      (if-not (u/get-env-config)
        untraced
@@ -206,7 +213,7 @@
                  log-pstep (fn [step]
                              `(if (nil? ~g)
                                 nil
-                                ~(gen-log-threading-diff g `(-> ~g ~step) (str step))))]
+                                ~(gen-log-threading-diff g `(-> ~g ~step) step)))]
              `(do
                 (log-threading-header "some->" ~(str expr))
                 (dlog ~expr ~(str expr))
@@ -231,7 +238,7 @@
                  log-pstep (fn [step]
                              `(if (nil? ~g)
                                 nil
-                                ~(gen-log-threading-diff g `(->> ~g ~step) (str step))))]
+                                ~(gen-log-threading-diff g `(->> ~g ~step) step)))]
              `(do
                 (log-threading-header "some->>" ~(str expr))
                 (dlog ~expr ~(str expr))
