@@ -76,8 +76,8 @@
                                instrumentable-sym
                                           `(quote ~(symbol (str nspace) (str fn-sym)))
                                defn-forms `(~op ~fn-sym
-                                            {:ghostwheel.core/ignore-fx true
-                                             :ghostwheel.core/trace     ~trace-level}
+                                            {:ghostwheel.core/check-fx false
+                                             :ghostwheel.core/trace    ~trace-level}
                                             ~@bodies)]]
                      `(do
                         ~defn-forms

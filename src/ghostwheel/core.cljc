@@ -141,7 +141,7 @@
                                                 (= (count %) 4)))))
 (s/def ::check boolean?)
 (s/def ::check-coverage boolean?)
-(s/def ::ignore-fx boolean?)
+(s/def ::check-fx boolean?)
 (s/def ::num-tests nat-int?)
 (s/def ::num-tests-ext nat-int?)
 (s/def ::extensive-tests boolean?)
@@ -154,7 +154,7 @@
 
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
-  (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::ignore-fx
+  (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::check-fx
                        ::num-tests ::num-tests-ext ::extensive-tests ::defn-macro
                        ::instrument ::outstrument ::extrument ::expound ::report-output])))
 
@@ -488,12 +488,12 @@
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config cljs?]
     (let [{:keys [::num-tests ::num-tests-ext ::extensive-tests
-                  ::check-coverage ::ignore-fx]}
+                  ::check-coverage ::check-fx]}
           config
 
           num-tests         (if extensive-tests num-tests-ext num-tests)
           marked-unsafe     (s/valid? ::bang-suffix fn-name)
-          found-fx          (if ignore-fx
+          found-fx          (if-not check-fx
                               []
                               (->> (case (key body-forms)
                                      :arity-1 [(val body-forms)]
@@ -502,10 +502,10 @@
                                    (mapcat check-arity-fx)
                                    distinct
                                    vec))
-          unexpected-fx     (boolean (and (not ignore-fx)
+          unexpected-fx     (boolean (and check-fx
                                           (not marked-unsafe)
                                           (seq found-fx)))
-          unexpected-safety (boolean (and (not ignore-fx)
+          unexpected-safety (boolean (and check-fx
                                           marked-unsafe
                                           (empty? found-fx)))
           spec-keyword-ns   (if cljs? 'clojure.test.check 'clojure.spec.test.check)

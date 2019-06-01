@@ -41,8 +41,8 @@
                     ;; `declare`s by setting it to false in their respective metadata
                     :check-coverage  false
 
-                    ;; Disable side effect detection
-                    :ignore-fx       false
+                    ;; Enable side effect detection checks
+                    :check-fx        true
 
                     ;; Number of generative tests performed when quick-checking (on hot-reload)
                     :num-tests       0
