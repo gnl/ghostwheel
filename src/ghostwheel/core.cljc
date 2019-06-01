@@ -1217,28 +1217,30 @@
              (remove nil?))]
     (if (not-empty errors)
       (u/gen-exception env (str "\n" (string/join "\n" errors)))
-      `(when *global-check-allowed?*
-         (binding [*global-trace-allowed?* false
-                   *gen-tests-or-profile*  ~gen-tests-or-profile
-                   l/*report-output*       ~(if cljs? report-output :repl)]
-           (do
-             ~@(remove nil?
-                       `[~(when extrument
-                            `(st/instrument (quote ~extrument)))
-                         ~@(for [target processed-targets
-                                 :let [[type sym] target]]
-                             (case type
-                               :fn `(binding [t/report r/report]
-                                      (~(symbol (str sym test-suffix))))
-                               :ns `(binding [t/report r/report]
-                                      (t/run-tests (quote ~sym)))))
-                         ~@(->> (for [target processed-targets
-                                      :let [[type sym] target]
-                                      :when (= type :ns)]
-                                  (generate-coverage-check env sym))
-                                (remove nil?))
-                         ~(when extrument
-                            `(st/unstrument (quote ~extrument)))])))))))
+      (gen-cleanup-console-on-exception
+       cljs?
+       `(when *global-check-allowed?*
+          (binding [*global-trace-allowed?* false
+                    *gen-tests-or-profile*  ~gen-tests-or-profile
+                    l/*report-output*       ~(if cljs? report-output :repl)]
+            (do
+              ~@(remove nil?
+                        `[~(when extrument
+                             `(st/instrument (quote ~extrument)))
+                          ~@(for [target processed-targets
+                                  :let [[type sym] target]]
+                              (case type
+                                :fn `(binding [t/report r/report]
+                                       (~(symbol (str sym test-suffix))))
+                                :ns `(binding [t/report r/report]
+                                       (t/run-tests (quote ~sym)))))
+                          ~@(->> (for [target processed-targets
+                                       :let [[type sym] target]
+                                       :when (= type :ns)]
+                                   (generate-coverage-check env sym))
+                                 (remove nil?))
+                          ~(when extrument
+                             `(st/unstrument (quote ~extrument)))]))))))))
 
 
 (defn- generate-after-check [callbacks]
@@ -1366,13 +1368,20 @@
         :regex #?(:clj  #(instance? java.util.regex.Pattern %)
                   :cljs regexp?)))
 
+
 (s/def ::check-targets
   (s/or :single ::check-target
         :multi (s/spec (s/+ ::check-target))))
 
 
-(s/fdef check
-  :args (s/spec (s/? ::check-targets)))
+;; TODO: Get this to work again after recent rewrite
+#_(s/fdef check
+    :args (s/or
+           :arity0 (s/cat)
+           :arity1 (s/cat :things ::check-targets)
+           :arity2 (s/cat :tests (some-fn int? keyword?)
+                          :things ::check-targets)))
+
 
 (defmacro check
   "Runs Ghostwheel checks on the given namespaces and/or functions.
@@ -1383,7 +1392,7 @@
                [num-tests-or-gen-test-profile ns-regex-or-quoted-ns-or-fn]
                [num-tests-or-gen-test-profile [ns-regex-or-quoted-ns-or-fn+]])}
   ([]
-   `(check nil (quote ~(.-name *ns*))))
+   `(check nil (quote ~(u/get-ns-name &env))))
   ([things]
    `(check nil ~things))
   ([gen-tests-or-profile things]
