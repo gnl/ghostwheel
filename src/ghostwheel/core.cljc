@@ -487,7 +487,7 @@
                       vec)])
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config cljs?]
-    (let [{:keys [::check ::num-tests ::num-tests-ext ::extensive-tests
+    (let [{:keys [::num-tests ::num-tests-ext ::extensive-tests
                   ::check-coverage ::ignore-fx]}
           config
 
@@ -836,17 +836,17 @@
                        {:jsdoc [(str "@return {" (string/join "|" ret-types) "}")]}))))
 
 
-(defn- merge-config [metadata]
+(defn- merge-config [env metadata]
   (s/assert ::ghostwheel-config
             (->> (merge (u/get-base-config)
-                        (meta *ns*)
+                        (u/get-ns-meta env)
                         metadata)
                  (filter #(= (-> % key namespace) (name `ghostwheel.core)))
                  (into {}))))
 
 
-(defn- get-quoted-qualified-fn-name [fn-name]
-  `(quote ~(symbol (str (.-name *ns*)) (str fn-name))))
+(defn- get-quoted-qualified-fn-name [fn-name env]
+  `(quote ~(symbol (str (u/get-ns-name env)) (str fn-name))))
 
 
 (defn- trace-threading-macros [forms trace cljs?]
@@ -934,11 +934,11 @@
 
 
 (defn- generate-fdef
-  [forms]
+  [env forms]
   (let [{[type fn-name] :name bs :bs} (s/conform ::>fdef-args forms)]
     (case type
-      :sym (let [quoted-qualified-fn-name (get-quoted-qualified-fn-name fn-name)
-                 {:keys [::instrument ::outstrument]} (merge-config (meta fn-name))
+      :sym (let [quoted-qualified-fn-name (get-quoted-qualified-fn-name fn-name env)
+                 {:keys [::instrument ::outstrument]} (merge-config env (meta fn-name))
                  instrumentation          (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
                                                 instrument `(st/instrument ~quoted-qualified-fn-name)
                                                 :else nil)
@@ -1025,14 +1025,14 @@
         arity             (key fn-bodies)
         fn-name           (:name conformed-gdefn)
         quoted-qualified-fn-name
-                          (get-quoted-qualified-fn-name fn-name)
+                          (get-quoted-qualified-fn-name fn-name env)
         traced-fn-name    (gensym (str fn-name "__"))
         docstring         (:docstring conformed-gdefn)
         meta-map          (merge (:meta conformed-gdefn)
                                  (generate-type-annotations env fn-bodies)
                                  {::ghostwheel true})
         ;;; Assemble the config
-        config            (merge-config (merge (meta fn-name) meta-map))
+        config            (merge-config env (merge (meta fn-name) meta-map))
         color             (resolve-trace-color (::trace-color config))
         {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
         defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
@@ -1246,7 +1246,7 @@
 
 (defn- generate-traced-expr
   [expr label env]
-  (let [cfg      (merge-config (meta expr))
+  (let [cfg      (merge-config env (meta expr))
         color    (resolve-trace-color (::trace-color cfg))
         trace    (let [trace (::trace cfg)]
                    (if (= trace 0) 6 trace))
@@ -1408,7 +1408,7 @@
                [name ([params*] gspec) +])}
   [& forms]
   (when (u/get-env-config)
-    (cond-> (remove nil? (generate-fdef forms))
+    (cond-> (remove nil? (generate-fdef &env forms))
             (cljs-env? &env) clj->cljs)))
 
 

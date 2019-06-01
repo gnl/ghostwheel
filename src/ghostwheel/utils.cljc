@@ -148,6 +148,15 @@
   ([cache?]
    (merge ghostwheel-default-config (get-env-config cache?))))
 
+(defn get-ns-meta [env]
+  (if (cljs-env? env)
+    (or (meta *ns*) (some-> env :ns :meta))
+    (meta *ns*)))
+
+(defn get-ns-name [env]
+  (if (cljs-env? env)
+    (or (.-name *ns*) (some-> env :ns :name))
+    (.-name *ns*)))
 
 (defn clj->cljs
   ([form]
