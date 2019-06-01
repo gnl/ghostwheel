@@ -135,7 +135,8 @@
   ([msg]
    (log msg nil))
   ([msg style & data]
-   (let [styled-data (get-styled-data (concat [msg] data) style *report-output*)]
+   (let [all-data    (concat [msg] data)
+         styled-data (get-styled-data all-data style *report-output*)]
      (case *report-output*
        :repl (apply plain-log styled-data)
        :js-console #?(:cljs (.apply js/console.log js/console (to-array styled-data))
@@ -231,23 +232,17 @@
   (log msg {::weight "bold"}))
 
 
-(defn clog [data]
-  (do
-    (log data)
-    data))
-
-
-(defn pr-clog
-  "Pretty console log"
+(defn dlog
+  "Data log – logs data and returns it."
   ([data]
    (do
      (log data)
      data))
-  ([label data]
-   (pr-clog label data nil nil))
-  ([label data style]
-   (pr-clog label data style nil))
-  ([label data style label-length]
+  ([data label]
+   (dlog data label nil nil))
+  ([data label style]
+   (dlog data label style nil))
+  ([data label style label-length]
    (if data
      (do
        (group label style label-length)

@@ -9,7 +9,7 @@
 (ns ghostwheel.threading-macros
   #?(:cljs (:require-macros ghostwheel.threading-macros))
   (:require [ghostwheel.logging :as l
-             :refer [ghostwheel-colors pr-clog group group-collapsed group-end log]]
+             :refer [ghostwheel-colors dlog group group-collapsed group-end log]]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
             [clojure.data :as data]))
 
@@ -78,7 +78,7 @@
                  (recur threaded threaded-print (next forms)))
                `(do
                   (log-threading-header "->" ~(str orig-x))
-                  (pr-clog ~(str orig-x) ~orig-x)
+                  (dlog ~orig-x ~(str orig-x))
                   (let [x# ~x-print]
                     (log (:symbol l/arrow) (:style l/arrow) x#)
                     (group-end)
@@ -106,7 +106,7 @@
                    (recur threaded threaded-print (next forms)))
                  `(do
                     (log-threading-header "->>" ~(str orig-x))
-                    (pr-clog ~(str orig-x) ~orig-x)
+                    (dlog ~orig-x ~(str orig-x))
                     (let [x# ~x-print]
                       (log (:symbol l/arrow) (:style l/arrow) x#)
                       (group-end)
@@ -126,7 +126,7 @@
           ~untraced
           (do
             (log-threading-header "as->" ~(str expr) ~(str name))
-            (pr-clog ~(str name) ~expr)
+            (dlog ~expr ~(str name))
             (let [~name ~expr
                   ~@(interleave (repeat name) (map log-step forms))]
               (log (:symbol l/arrow) (:style l/arrow) ~name)
@@ -155,7 +155,7 @@
                                   ~g))))]
              `(do
                 (log-threading-header "cond->" ~(str expr))
-                (pr-clog ~(str expr) ~expr)
+                (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
                   (log (:symbol l/arrow) (:style l/arrow) ~g)
@@ -184,7 +184,7 @@
                                   ~g))))]
              `(do
                 (log-threading-header "cond->>" ~(str expr))
-                (pr-clog ~(str expr) ~expr)
+                (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
                   (log (:symbol l/arrow) (:style l/arrow) ~g)
@@ -209,7 +209,7 @@
                                 ~(gen-log-threading-diff g `(-> ~g ~step) (str step))))]
              `(do
                 (log-threading-header "some->" ~(str expr))
-                (pr-clog ~(str expr) ~expr)
+                (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-pstep forms))]
                   (log (:symbol l/arrow) (:style l/arrow) (if (nil? ~g) "nil" ~g))
@@ -234,7 +234,7 @@
                                 ~(gen-log-threading-diff g `(->> ~g ~step) (str step))))]
              `(do
                 (log-threading-header "some->>" ~(str expr))
-                (pr-clog ~(str expr) ~expr)
+                (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-pstep forms))]
                   (log (:symbol l/arrow) (:style l/arrow) (if (nil? ~g) "nil" ~g))

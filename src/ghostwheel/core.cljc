@@ -997,9 +997,9 @@
 
                             (= trace 1)
                             `[(do
-                                (l/pr-clog ~(str (list fn-name arg-list))
-                                           nil
-                                           {::l/background ~color})
+                                (l/dlog nil
+                                        ~(str (list fn-name arg-list))
+                                        {::l/background ~color})
                                 ~@orig-body-forms)]
 
                             (>= trace 4)
