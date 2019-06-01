@@ -115,6 +115,13 @@
             (throw e#)))))
 
 
+(defn- get-file-position [env]
+  (let [{:keys [line column]} env]
+    (if (> line 1)
+      (str line ":" column)
+      "REPL")))
+
+
 ;;;; Operators
 
 
@@ -1088,7 +1095,7 @@
                                                              ~@(process-fn-bodies trace)))]
                               (if (= trace 1)
                                 traced-defn
-                                (clairvoyant-trace traced-defn trace color env nil nil))))]
+                                (clairvoyant-trace traced-defn trace color env nil (get-file-position env)))))]
     `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test)))
 
 
@@ -1259,10 +1266,7 @@
         trace    (let [trace (::trace cfg)]
                    (if (= trace 0) 6 trace))
         cljs?    (cljs-env? env)
-        position (let [{:keys [line column]} env]
-                   (if (> line 1)
-                     (str line ":" column)
-                     "REPL"))
+        position (get-file-position env)
         context  (str (when label (str label " – "))
                       (-> env :ns :name) ":" position)]
     (cond
