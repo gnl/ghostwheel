@@ -108,11 +108,9 @@
         (let [plain-config                            ;; TODO validation
               (let [cljs-compiler-config
                     (when cljs-env/*compiler*
-                      (or (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel])
-                          ;; Deprecated.
-                          (get-in @cljs-env/*compiler* [:options :ghostwheel])))]
-                (when (or #?(:clj (= (System/getProperty "ghostwheel.enabled") "true"))
-                          cljs-compiler-config)
+                      (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel]))]
+                (when (and (not #?(:clj (= (System/getProperty "ghostwheel.enabled") "false") :cljs false))
+                           (not (false? (get cljs-compiler-config :enabled))))
                   (merge {}
                          (read-config-file)
                          cljs-compiler-config)))]

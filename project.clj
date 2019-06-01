@@ -16,11 +16,12 @@
   :plugins [[lein-doo "0.1.10"]]
   :source-paths ["src"]
   :clean-targets ^{:protect false} ["target" "resources"]
-  :profiles {:dev          {:dependencies [[org.clojure/clojurescript "1.10.520"]
-                                           [org.clojure/clojure "1.10.0"]
-                                           [com.rpl/specter "1.1.2"]]
-                            :jvm-opts     ["-Dghostwheel.cache=false"]}
-             :clj-dev-test {:jvm-opts ["-Dghostwheel.enabled=true"]}}
+  :profiles {:dev           {:dependencies [[org.clojure/clojurescript "1.10.520"]
+                                            [org.clojure/clojure "1.10.0"]
+                                            [com.rpl/specter "1.1.2"]]
+                             :jvm-opts     ["-Dghostwheel.cache=false"]}
+             :clj-prod-test {:jvm-opts ["-Dghostwheel.enabled=false"]}
+             :clj-dev-test  {:jvm-opts ["-Dghostwheel.enabled=true"]}}
   :cljsbuild {:builds [{:id           "dev-test"
                         :source-paths ["src" "test"]
                         :compiler     {:main            ghostwheel.dev-test-runner
@@ -32,12 +33,13 @@
                                        :external-config {:ghostwheel {}}}}
                        {:id           "prod-test"
                         :source-paths ["src" "test"]
-                        :compiler     {:main          ghostwheel.prod-test-runner
-                                       :asset-path    "base/resources/test/prod"
-                                       :output-dir    "resources/test/prod"
-                                       :output-to     "resources/test/prod.js"
-                                       :pretty-print  true
-                                       :optimizations :none}}
+                        :compiler     {:main            ghostwheel.prod-test-runner
+                                       :asset-path      "base/resources/test/prod"
+                                       :output-dir      "resources/test/prod"
+                                       :output-to       "resources/test/prod.js"
+                                       :pretty-print    true
+                                       :optimizations   :none
+                                       :external-config {:ghostwheel {:enabled false}}}}
                        {:id           "dev-test-node"
                         :source-paths ["src" "test"]
                         :compiler     {:main            ghostwheel.dev-test-runner
@@ -50,11 +52,12 @@
                                        :external-config {:ghostwheel {}}}}
                        {:id           "prod-test-node"
                         :source-paths ["src" "test"]
-                        :compiler     {:main          ghostwheel.prod-test-runner
-                                       :asset-path    "base/resources/test/prod_node"
-                                       :output-dir    "resources/test/prod_node"
-                                       :output-to     "resources/test/prod_node.js"
-                                       :pretty-print  true
-                                       :optimizations :simple
-                                       :target        :nodejs}}]})
+                        :compiler     {:main            ghostwheel.prod-test-runner
+                                       :asset-path      "base/resources/test/prod_node"
+                                       :output-dir      "resources/test/prod_node"
+                                       :output-to       "resources/test/prod_node.js"
+                                       :pretty-print    true
+                                       :optimizations   :simple
+                                       :target          :nodejs
+                                       :external-config {:ghostwheel {:enabled false}}}}]})
 
