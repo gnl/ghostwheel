@@ -67,6 +67,7 @@
 (def ^:dynamic *global-trace-allowed?* true)
 (def ^:dynamic *global-check-allowed?* true)          ; REVIEW: Is anyone using this?
 
+(def ^:dynamic *gen-tests-or-profile* nil)
 
 ;;;; Misc helper functions
 
@@ -142,9 +143,8 @@
 (s/def ::check boolean?)
 (s/def ::check-coverage boolean?)
 (s/def ::check-fx boolean?)
-(s/def ::num-tests nat-int?)
-(s/def ::num-tests-ext nat-int?)
-(s/def ::extensive-tests boolean?)
+(s/def ::gen-tests nat-int?)
+(s/def ::gen-test-profiles (s/map-of keyword? int?))
 (s/def ::defn-macro (s/nilable string?))
 (s/def ::instrument boolean?)
 (s/def ::outstrument boolean?)
@@ -155,7 +155,7 @@
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
   (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::check-fx
-                       ::num-tests ::num-tests-ext ::extensive-tests ::defn-macro
+                       ::gen-tests ::gen-test-profiles ::defn-macro
                        ::instrument ::outstrument ::extrument ::expound ::report-output])))
 
 (s/assert ::ghostwheel-config u/ghostwheel-default-config)
@@ -487,11 +487,8 @@
                       vec)])
               (cond->> (next unformed-args-gspec-body) (cons [:multiple-body-forms])))))]
   (defn- generate-test [fn-name fspecs body-forms config cljs?]
-    (let [{:keys [::num-tests ::num-tests-ext ::extensive-tests
-                  ::check-coverage ::check-fx]}
+    (let [{:keys [::gen-tests ::gen-test-profiles ::check-coverage ::check-fx]}
           config
-
-          num-tests         (if extensive-tests num-tests-ext num-tests)
           marked-unsafe     (s/valid? ::bang-suffix fn-name)
           found-fx          (if-not check-fx
                               []
@@ -512,14 +509,17 @@
           spec-checks       (let [defined-fspecs (->> fspecs (remove nil?) vec)]
                               (when (and (seq defined-fspecs)
                                          (not marked-unsafe)
-                                         (empty? found-fx)
-                                         (> num-tests 0))
-                                `(for [spec# ~defined-fspecs]
-                                   (st/check-fn
-                                    ~fn-name
-                                    spec#
-                                    {~(keyword (str spec-keyword-ns) "opts")
-                                     {:num-tests ~num-tests}}))))]
+                                         (empty? found-fx))
+                                `(let [num-tests# (if (int? *gen-tests-or-profile*)
+                                                    *gen-tests-or-profile*
+                                                    (get ~gen-test-profiles *gen-tests-or-profile* ~gen-tests))]
+                                   (when (> num-tests# 0)
+                                     (for [spec# ~defined-fspecs]
+                                       (st/check-fn
+                                        ~fn-name
+                                        spec#
+                                        {~(keyword (str spec-keyword-ns) "opts")
+                                         {:num-tests num-tests#}}))))))]
       [unexpected-fx
        `(t/deftest ~(symbol (str fn-name test-suffix))
           (let [spec-checks# ~spec-checks]
@@ -836,11 +836,16 @@
                        {:jsdoc [(str "@return {" (string/join "|" ret-types) "}")]}))))
 
 
-(defn- merge-config [env metadata]
+(defn- merge-config [env & meta-maps]
   (s/assert ::ghostwheel-config
-            (->> (merge (u/get-base-config)
+            (->> (apply merge-with
+                        (fn [a b]
+                          (if (every? map? [a b])
+                            (merge a b)
+                            b))
+                        (u/get-base-config)
                         (u/get-ns-meta env)
-                        metadata)
+                        meta-maps)
                  (filter #(= (-> % key namespace) (name `ghostwheel.core)))
                  (into {}))))
 
@@ -1032,7 +1037,7 @@
                                  (generate-type-annotations env fn-bodies)
                                  {::ghostwheel true})
         ;;; Assemble the config
-        config            (merge-config env (merge (meta fn-name) meta-map))
+        config            (merge-config env (meta fn-name) meta-map)
         color             (resolve-trace-color (::trace-color config))
         {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
         defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
@@ -1148,7 +1153,7 @@
              (l/group-end))))))
 
 
-(defn- generate-check [env targets]
+(defn- generate-check [env gen-tests-or-profile targets]
   (let [base-config
         (u/get-base-config)
 
@@ -1214,6 +1219,7 @@
       (u/gen-exception env (str "\n" (string/join "\n" errors)))
       `(when *global-check-allowed?*
          (binding [*global-trace-allowed?* false
+                   *gen-tests-or-profile*  ~gen-tests-or-profile
                    l/*report-output*       ~(if cljs? report-output :repl)]
            (do
              ~@(remove nil?
@@ -1373,12 +1379,16 @@
   Checks the current namespace if called without arguments."
   {:arglists '([]
                [ns-regex-or-quoted-ns-or-fn]
-               [[ns-regex-or-quoted-ns-or-fn+]])}
+               [[ns-regex-or-quoted-ns-or-fn+]]
+               [num-tests-or-gen-test-profile ns-regex-or-quoted-ns-or-fn]
+               [num-tests-or-gen-test-profile [ns-regex-or-quoted-ns-or-fn+]])}
   ([]
-   `(check (quote ~(.-name *ns*))))
+   `(check nil (quote ~(.-name *ns*))))
   ([things]
+   `(check nil ~things))
+  ([gen-tests-or-profile things]
    (if (u/get-env-config)
-     (cond-> (generate-check &env things)
+     (cond-> (generate-check &env gen-tests-or-profile things)
              (cljs-env? &env) (clj->cljs false))
      (str "Ghostwheel disabled => "
           (if (cljs-env? &env)

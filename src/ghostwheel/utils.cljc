@@ -26,47 +26,42 @@
 
 (def ghostwheel-default-config
   #:ghostwheel.core{;; Evaluation trace verbosity level. 0 disables all tracing code generation.
-                    :trace           0
+                    :trace             0
 
                     ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
-                    :trace-color     :violet
+                    :trace-color       :violet
 
                     ;; When disabled no checks of any kind are
                     ;; performed and no test code is generated.
-                    :check           false
+                    :check             false
 
                     ;; Determines whether Ghostwheel should warn on missing fspecs
                     ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
                     ;; namespace or higher level, you can exclude individual `defn`s or
                     ;; `declare`s by setting it to false in their respective metadata
-                    :check-coverage  false
+                    :check-coverage    false
 
                     ;; Enable side effect detection checks
-                    :check-fx        true
+                    :check-fx          true
 
-                    ;; Number of generative tests performed when quick-checking (on hot-reload)
-                    :num-tests       0
+                    ;; Number of generative tests performed when quick-checking (hot-reload/repl)
+                    :gen-tests         0
 
-                    ;; Number of generative tests performed when checking extensively (test suite)
-                    :num-tests-ext   100
-
-                    ;; Determines which of the above two options should take
-                    ;; precedence. Set to true in your test build configuration.
-                    :extensive-tests false
+                    :gen-test-profiles {:extensive 100}
 
                     ;; Ghostwheel generates standard `defn` function definitions
                     ;; by default. If you require composability with other
                     ;; `defn`-like macros, you can have Ghostwheel desugar to
                     ;; them instead by setting the macro name as a string here.
-                    :defn-macro      nil
+                    :defn-macro        nil
 
                     ;; Spec-instrument functions on namespace reload.
-                    :instrument      false
+                    :instrument        false
 
                     ;; Spec-instrument functions on namespace reload using
                     ;; orchestra, which spec-checks the output in addition to
                     ;; the input. Use either this or `::instrument`, not both.
-                    :outstrument     false
+                    :outstrument       false
 
                     ;; The following options can only be set in
                     ;; the global Ghostwheel configuration layer
@@ -78,19 +73,19 @@
                     ;; performance impact. Fspecs must be defined for
                     ;; the relevant functions in a `require`d namespace
                     ;; using either `s/fdef` or Ghostwheel's `>fdef`.
-                    :extrument       nil
+                    :extrument         nil
 
                     ;; Nilable map of Expound configuration options.
                     ;; If not nil, the spec printer will be set to
                     ;; expound's with the given configuration options.
-                    :expound         {:show-valid-values? true
-                                      :print-specs?       true}
+                    :expound           {:show-valid-values? true
+                                        :print-specs?       true}
 
                     ;; Output channel for tracing and check
                     ;; reports. Only `:repl` and `:js-console`
                     ;; are supported at the moment. The option is
                     ;; ignored on Clojure where only `:repl` is used.
-                    :report-output   :js-console})
+                    :report-output     :js-console})
 
 
 (defn cljs-env? [env] (boolean (:ns env)))
