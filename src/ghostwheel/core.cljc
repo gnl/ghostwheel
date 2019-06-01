@@ -901,10 +901,10 @@
 
                                       qualified-sym
                                           (if (cljs-env? env)
-                                            (:name (ana-api/resolve env sym))
-                                            ;; REVIEW: Clairvoyant doesn't work on
-                                            ;; Clojure yet – check this when it does
-                                            #?(:clj (name (resolve sym))))]
+                                            (:name (ana-api/resolve env sym)
+                                             ;; REVIEW: Clairvoyant doesn't work on
+                                             ;; Clojure yet – check this when it does
+                                             #?(:clj (name (resolve sym)))))]
                                   (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
            forms (walk/postwalk
                   #(if (inline-trace? %) (second %) %)
