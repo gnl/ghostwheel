@@ -169,10 +169,10 @@
                    :clj  nil)))
 
 
-(defn- plain-group [label]
+(defn- plain-group [& labels]
   (do
     (log)
-    (log (str "|> " label))
+    (log (str "|> " (string/join " – " labels)))
     (swap! *nesting #(str % "| "))))
 
 

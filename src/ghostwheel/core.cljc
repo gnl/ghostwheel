@@ -902,10 +902,10 @@
 
                                       qualified-sym
                                           (if (cljs-env? env)
-                                            (:name (ana-api/resolve env sym)
-                                             ;; REVIEW: Clairvoyant doesn't work on
-                                             ;; Clojure yet – check this when it does
-                                             #?(:clj (name (resolve sym)))))]
+                                            (:name (ana-api/resolve env sym))
+                                            ;; REVIEW: Clairvoyant doesn't work on
+                                            ;; Clojure yet – check this when it does
+                                            #?(:clj (name (resolve sym))))]
                                   (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
            forms (walk/postwalk
                   #(if (inline-trace? %) (second %) %)
@@ -1244,20 +1244,6 @@
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
 
 
-(defn- gen-wrap-group
-  [label color cljs? form]
-  (if-not label
-    form
-    (gen-cleanup-console-on-exception
-     cljs?
-     `(do
-        (l/group ~(str label) ~{::l/weight     "bold"
-                                ::l/background color})
-        (let [ret# ~form]
-          (l/group-end)
-          ret#)))))
-
-
 (defn- generate-traced-expr
   [expr label env]
   (let [cfg      (merge-config (meta expr))
@@ -1265,9 +1251,12 @@
         trace    (let [trace (::trace cfg)]
                    (if (= trace 0) 6 trace))
         cljs?    (cljs-env? env)
-        position (str (-> env :line) ":" (-> env :column))
+        position (let [{:keys [line column]} env]
+                   (if (> line 1)
+                     (str line ":" column)
+                     "REPL"))
         context  (str (when label (str label " – "))
-                      (-> env :ns :name) " – " position)]
+                      (-> env :ns :name) ":" position)]
     (cond
       (and (seq? expr)
            (contains? l/ops-with-bindings (first expr)))
@@ -1277,29 +1266,28 @@
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
-      (->> (trace-threading-macros expr trace cljs?)
-           (gen-wrap-group context color cljs?))
+      (trace-threading-macros expr trace cljs?)
 
       :else
       (let [style {::l/background (:black l/ghostwheel-colors)}]
-        (gen-wrap-group context
-                        color
-                        cljs?
-                        (if ((some-fn string? number? nil? boolean? keyword?) expr)
-                          `(l/log ~expr ~style)
-                          `(let [code# ~(str expr)]
-                             (l/group code# ~style 55)
-                             ~(when (coll? expr) #_(> (-> expr str count) 60)
-                                `(do
-                                   #_(l/group-collapsed "...")
-                                   (~(if (list? expr) `l/group `l/group-collapsed)
-                                    "...")
-                                   (l/log ~(-> expr pprint/pprint with-out-str))
-                                   (l/group-end)))
-                             (let [ret# ~expr]
-                               (l/log (:symbol l/arrow) (:style l/arrow) ret#)
-                               (l/group-end)
-                               ret#))))))))
+        (gen-cleanup-console-on-exception
+         cljs?
+         (if ((some-fn string? number? nil? boolean? keyword?) expr)
+           `(l/log ~expr ~style)
+           `(let [code# ~(str expr)]
+              (l/group code# ~style 55 ~context)
+              ~(when (and (coll? expr)
+                          (> (-> expr str count) 55))
+                 `(do
+                    (l/group-collapsed "...")
+                    #_(~(if (list? expr) `l/group `l/group-collapsed)
+                       "...")
+                    (l/log ~(-> expr pprint/pprint with-out-str))
+                    (l/group-end)))
+              (let [ret# ~expr]
+                (l/log (:symbol l/arrow) (:style l/arrow) ret#)
+                (l/group-end)
+                ret#))))))))
 
 
 ;;;; Main macros and public API

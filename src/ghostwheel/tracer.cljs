@@ -48,14 +48,16 @@
             (let [title (if protocol
                           (str protocol " " name " " arglist)
                           (str (when prefix (str prefix " – "))
-
-                               ns "/" name
+                               ns "/" (when anonymous? "__anon__") name
                                (when dispatch-val
                                  (str " " (pr-str dispatch-val)))
-                               (str " " arglist)
-                               (when anonymous? " – (anonymous)")
-                               (when suffix (str " – " suffix))))]
-              (group title {::l/background background ::l/foreground color ::l/weight "bold"})
+                               (str " " arglist)))]
+              (group title
+                     {::l/background background
+                      ::l/foreground color
+                      ::l/weight     "bold"}
+                     80
+                     suffix)
               (l/group "bindings"))
 
             (#{'let `let} op)
