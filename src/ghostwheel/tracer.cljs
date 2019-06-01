@@ -12,10 +12,11 @@
   Parameters:
   :color - string, Example: \"#aabbcc\"
   :background - same as color
-  :tag - string tag to display before the traced op heading
+  :prefix - string tag to display before the traced op heading
+  :suffix - ...
   :expand - set of op symbols to display expanded by default. Use :bindings to expand all bindings.
   Example: #{'defn 'let :bindings}"
-  [& {:keys [color background tag expand] :as options}]
+  [& {:keys [color background prefix suffix expand] :as options}]
   (let [binding-group (if (contains? expand :bindings)
                         l/group
                         l/group-collapsed)
@@ -40,15 +41,17 @@
                       l/group-collapsed)]
           (cond
             (fn-like? op)
-            (let [title   (if protocol
-                            (str protocol " " name " " arglist)
-                            (str (when tag (str tag " – "))
-                                 ns "/" name
-                                 (when dispatch-val
-                                   (str " " (pr-str dispatch-val)))
-                                 (str " " arglist)
-                                 (when anonymous? " (anonymous)")))]
-              (group title {::l/background background ::l/foreground color})
+            (let [title (if protocol
+                          (str protocol " " name " " arglist)
+                          (str (when prefix (str prefix " – "))
+
+                               ns "/" name
+                               (when dispatch-val
+                                 (str " " (pr-str dispatch-val)))
+                               (str " " arglist)
+                               (when anonymous? " – (anonymous)")
+                               (when suffix (str " – " suffix))))]
+              (group title {::l/background background ::l/foreground color ::l/weight "bold"})
               (l/group "bindings"))
 
             (#{'let `let} op)

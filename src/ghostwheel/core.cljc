@@ -883,7 +883,8 @@
                     form)))))))
 
 
-(defn- clairvoyant-trace [forms trace color env label]
+;; REVIEW – refactor/keywordify args, it's getting unwieldy
+(defn- clairvoyant-trace [forms trace color env label position]
   (let [clairvoyant 'clairvoyant.core/trace-forms
         tracer      'ghostwheel.tracer/tracer
         exclude     (case trace
@@ -922,7 +923,8 @@
          :tracer  (~tracer
                    :color "#fff"
                    :background ~color
-                   :tag ~label
+                   :prefix ~label
+                   :suffix ~position
                    :expand ~(cond (= trace 6) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
                                   (>= trace 3) '#{:bindings 'let 'defn 'defn-}
                                   :else '#{'defn 'defn-}))
@@ -1080,7 +1082,7 @@
                                                              ~@(process-fn-bodies trace)))]
                               (if (= trace 1)
                                 traced-defn
-                                (clairvoyant-trace traced-defn trace color env nil))))]
+                                (clairvoyant-trace traced-defn trace color env nil nil))))]
     `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test)))
 
 
@@ -1242,40 +1244,46 @@
 
 
 (defn- gen-wrap-label
-  [label color & forms]
+  [label color form]
   (if-not label
-    `(do ~@forms)
+    form
     `(do
        (l/group ~(str label) ~{::l/weight     "bold"
                                ::l/background color})
-       ~@forms
-       (l/group-end))))
+       (let [ret# ~form]
+         (l/group-end)
+         ret#))))
 
 
 (defn- generate-traced-expr
   [expr label env]
-  (let [cfg   (merge-config (meta expr))
-        color (resolve-trace-color (::trace-color cfg))
-        trace (let [trace (::trace cfg)]
-                (if (= trace 0) 5 trace))
-        cljs? (cljs-env? env)]
+  (let [cfg      (merge-config (meta expr))
+        color    (resolve-trace-color (::trace-color cfg))
+        trace    (let [trace (::trace cfg)]
+                   (if (= trace 0) 5 trace))
+        cljs?    (cljs-env? env)
+        position (str (-> env :line) ":" (-> env :column))
+        context  (str (when label (str label " – "))
+                      (-> env :ns :name) " – " position)]
     (cond
       (and (seq? expr)
            (contains? l/ops-with-bindings (first expr)))
       (cond-> (trace-threading-macros expr trace cljs?)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
-              cljs? (clairvoyant-trace trace color env label))
+              cljs? (clairvoyant-trace trace color env label position))
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
       (->> (trace-threading-macros expr trace cljs?)
-           (gen-wrap-label label color))
+           (gen-wrap-label context color))
 
       :else
       (let [style {::l/background (:black l/ghostwheel-colors)}]
-        (gen-wrap-label label color (if ((some-fn string? number? nil? boolean? keyword?) expr)
-                                      `(l/log ~expr ~style)
-                                      `(l/pr-clog (quote ~expr) ~expr ~style 100)))))))
+        (gen-wrap-label context
+                        color
+                        (if ((some-fn string? number? nil? boolean? keyword?) expr)
+                          `(l/log ~expr ~style)
+                          `(l/pr-clog (quote ~expr) ~expr ~style 100)))))))
 
 
 ;;;; Main macros and public API
