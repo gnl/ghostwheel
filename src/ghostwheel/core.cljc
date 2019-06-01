@@ -9,6 +9,7 @@
 (ns ghostwheel.core
   #?(:cljs (:require-macros ghostwheel.core))
   (:require [clojure.string :as string]
+            [clojure.pprint :as pprint]
             [clojure.set :refer [union difference map-invert]]
             [clojure.walk :as walk]
             [clojure.test :as t]
@@ -104,8 +105,8 @@
                  (:black l/ghostwheel-colors)))))
 
 
-(defn cleanup-console-on-exception
-  [form cljs?]
+(defn gen-cleanup-console-on-exception
+  [cljs? form]
   `(try ~form
         (catch ~(if cljs? :default 'Throwable) e#
           (do
@@ -879,7 +880,7 @@
                            (-> (keys traced-macros->untraced)
                                set
                                (contains? (first form))))
-                    (cleanup-console-on-exception form cljs?)
+                    (gen-cleanup-console-on-exception cljs? form)
                     form)))))))
 
 
@@ -1243,16 +1244,18 @@
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
 
 
-(defn- gen-wrap-label
-  [label color form]
+(defn- gen-wrap-group
+  [label color cljs? form]
   (if-not label
     form
-    `(do
-       (l/group ~(str label) ~{::l/weight     "bold"
-                               ::l/background color})
-       (let [ret# ~form]
-         (l/group-end)
-         ret#))))
+    (gen-cleanup-console-on-exception
+     cljs?
+     `(do
+        (l/group ~(str label) ~{::l/weight     "bold"
+                                ::l/background color})
+        (let [ret# ~form]
+          (l/group-end)
+          ret#)))))
 
 
 (defn- generate-traced-expr
@@ -1275,15 +1278,28 @@
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
       (->> (trace-threading-macros expr trace cljs?)
-           (gen-wrap-label context color))
+           (gen-wrap-group context color cljs?))
 
       :else
       (let [style {::l/background (:black l/ghostwheel-colors)}]
-        (gen-wrap-label context
+        (gen-wrap-group context
                         color
+                        cljs?
                         (if ((some-fn string? number? nil? boolean? keyword?) expr)
                           `(l/log ~expr ~style)
-                          `(l/pr-clog (quote ~expr) ~expr ~style 100)))))))
+                          `(let [code# ~(str expr)]
+                             (l/group code# ~style 55)
+                             ~(when (coll? expr) #_(> (-> expr str count) 60)
+                                `(do
+                                   #_(l/group-collapsed "...")
+                                   (~(if (list? expr) `l/group `l/group-collapsed)
+                                    "...")
+                                   (l/log ~(-> expr pprint/pprint with-out-str))
+                                   (l/group-end)))
+                             (let [ret# ~expr]
+                               (l/log (:symbol l/arrow) (:style l/arrow) ret#)
+                               (l/group-end)
+                               ret#))))))))
 
 
 ;;;; Main macros and public API
