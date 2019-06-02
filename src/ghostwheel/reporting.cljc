@@ -25,7 +25,7 @@
 (def inc-report-counter! #?(:clj  t/inc-report-counter
                             :cljs t/inc-report-counter!))
 
-(def warning-style {::l/background (:orange0 l/ghostwheel-colors)})
+(def warning-style {::l/background (:orange l/ghostwheel-colors)})
 
 
 (def snippets

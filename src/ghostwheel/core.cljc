@@ -1305,7 +1305,7 @@
       (trace-threading-macros expr trace cljs?)
 
       :else
-      (let [style {::l/background (:black l/ghostwheel-colors)}]
+      (let [style {::l/background (:cyan l/ghostwheel-colors)}]
         (gen-cleanup-console-on-exception
          cljs?
          (if ((some-fn string? number? nil? boolean? keyword?) expr)
