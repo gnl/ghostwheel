@@ -33,7 +33,7 @@
 
                     ;; When disabled no checks of any kind are
                     ;; performed and no test code is generated.
-                    :check             false
+                    :check             true
 
                     ;; Determines whether Ghostwheel should warn on missing fspecs
                     ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
@@ -178,16 +178,18 @@
 
 
 (defmacro set-devtools-config!
-  []
+  [error-formatter]
   `(let [external-cfg# ~(get-in @cljs-env/*compiler*
                                 [:options :external-config :devtools/config])
-         default-cfg#  @devtools.defaults/config
-         override#     {:max-print-level                                    4
-                        :min-expandable-sequable-count-for-well-known-types 2}
-         left-adjust#  (str "margin-left: -17px;")]
+         default-cfg# @devtools.defaults/config
+         override# {:max-print-level 4
+                    :min-expandable-sequable-count-for-well-known-types 2}
+         left-adjust# (str "margin-left: -17px;")]
      (doseq [[k# v#] override#
              :when (not (contains? external-cfg# k#))]
        (devtools.core/set-pref! k# v#))
      (doseq [key# [:header-style]
              :let [val# (get default-cfg# key#)]]
-       (devtools.core/set-pref! key# (str val# left-adjust#)))))
+       (devtools.core/set-pref! key# (str val# left-adjust#)))
+     (some-> js/window.devtoolsFormatters
+             (.unshift ~error-formatter))))

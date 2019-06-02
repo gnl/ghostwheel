@@ -1,6 +1,6 @@
 (ns ghostwheel.tracer
   (:require [clojure.walk :refer [prewalk walk]]
-            [clojure.pprint :as pprint]
+            [clojure.pprint :as ppr :refer [pprint]]
             [clairvoyant.core
              :refer [ITraceEnter ITraceError ITraceExit]
              :include-macros true]
@@ -8,11 +8,27 @@
             [devtools.core]
             [devtools.defaults]
             [ghostwheel.utils :as u]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [cljs.repl :as repl]))
 
 (def *inside-let (atom false))
 
-(u/set-devtools-config!)
+
+(defonce _
+  (u/set-devtools-config!
+   ;; Borrowed from https://github.com/bhb/expound/issues/152#issuecomment-475621181
+   ;; Uses cljs.repl utilities to format ExceptionInfo objects in Chrome devtools console.
+   #js{:header (fn [object config]
+                 (when (instance? ExceptionInfo object)
+                   (let [err (repl/error->str object)
+                         message (some->> err
+                                          (re-find #"[^\n]+"))]
+                     (println err)
+                     #js["span" message])))
+       :hasBody (constantly true)
+       :body (fn [object config]
+               #js["div" (repl/error->str object)])}))
+
 
 (defn tracer
   "Custom tracer for Clairvoyant used by Ghostwheel but not dependent on it.
