@@ -18,7 +18,8 @@
   :clean-targets ^{:protect false} ["target" "resources"]
   :profiles {:dev           {:dependencies [[org.clojure/clojurescript "1.10.520"]
                                             [org.clojure/clojure "1.10.0"]
-                                            [com.rpl/specter "1.1.2"]]
+                                            [com.rpl/specter "1.1.2"]
+                                            [binaryage/devtools "0.9.10"]]
                              :jvm-opts     ["-Dghostwheel.cache=false"]}
              :clj-prod-test {:jvm-opts ["-Dghostwheel.enabled=false"]}
              :clj-dev-test  {:jvm-opts ["-Dghostwheel.enabled=true"]}}
