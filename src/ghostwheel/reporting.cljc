@@ -75,44 +75,43 @@
 
 (defmethod report :pass [m]
   (let [{:keys [::fn-name ::fspec ::spec-checks ::check-coverage
-                ::marked-unsafe ::report-output]} (:message m)]
+                ::marked-unsafe ::report-output ::num-tests]} (:message m)]
     (inc-report-counter! :pass)
-    ;; REVIEW : We don't expect
-    (when check-coverage
-      (cond marked-unsafe
-            (do
-              (inc-report-counter! :warn)
-              (group (str "WARNING: "
-                          fn-name
-                          " – Function marked as unsafe."
-                          (::no-gen-testing snippets)
-                          (::incomplete-coverage snippets))
-                     warning-style)
-              (group-end))
+    #_(when check-coverage)
+    (cond marked-unsafe
+          (do
+            (inc-report-counter! :warn)
+            (group (str "WARNING: "
+                        fn-name
+                        " – Function marked as unsafe."
+                        (::no-gen-testing snippets)
+                        (::incomplete-coverage snippets))
+                   warning-style)
+            (group-end))
 
-            (not fspec)
-            (do
-              (inc-report-counter! :warn)
-              (group (str "WARNING: "
-                          fn-name
-                          " – Missing fspec(s)"
-                          (::no-gen-testing snippets)
-                          (::incomplete-coverage snippets))
-                     warning-style)
-              (group-end))
+          (not fspec)
+          (do
+            (inc-report-counter! :warn)
+            (group (str "WARNING: "
+                        fn-name
+                        " – Missing fspec(s)"
+                        (::no-gen-testing snippets)
+                        (::incomplete-coverage snippets))
+                   warning-style)
+            (group-end))
 
-            (not spec-checks)
-            (do
-              (inc-report-counter! :warn)
-              (group (str "WARNING: "
-                          fn-name
-                          " – Number of tests set to 0"
-                          (::no-gen-testing snippets)
-                          (::incomplete-coverage snippets))
-                     warning-style)
-              (group-end))
+          (<= num-tests 0)
+          (do
+            (inc-report-counter! :warn)
+            (group (str "WARNING: "
+                        fn-name
+                        " – `::g/gen-tests` set to 0"
+                        (::no-gen-testing snippets)
+                        (::incomplete-coverage snippets))
+                   warning-style)
+            (group-end))
 
-            :else nil))
+          :else nil)
     (l/log (str "PASSED: " fn-name) {::l/background (:green l/ghostwheel-colors)})))
 
 

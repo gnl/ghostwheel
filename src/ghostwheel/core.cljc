@@ -513,23 +513,23 @@
                                           marked-unsafe
                                           (empty? found-fx)))
           spec-keyword-ns   (if cljs? 'clojure.test.check 'clojure.spec.test.check)
-          spec-checks       (let [defined-fspecs (->> fspecs (remove nil?) vec)]
-                              (when (and (seq defined-fspecs)
-                                         (not marked-unsafe)
-                                         (empty? found-fx))
-                                `(let [num-tests# (if (int? *gen-tests-or-profile*)
-                                                    *gen-tests-or-profile*
-                                                    (get ~gen-test-profiles *gen-tests-or-profile* ~gen-tests))]
-                                   (when (> num-tests# 0)
+          num-tests-sym     (gensym "num-tests_")]
+      [unexpected-fx
+       `(t/deftest ~(symbol (str fn-name test-suffix))
+          (let [~num-tests-sym (if (int? *gen-tests-or-profile*)
+                                 *gen-tests-or-profile*
+                                 (get ~gen-test-profiles *gen-tests-or-profile* ~gen-tests))
+                spec-checks# ~(let [defined-fspecs (->> fspecs (remove nil?) vec)]
+                                (when (and (seq defined-fspecs)
+                                           (not marked-unsafe)
+                                           (empty? found-fx))
+                                  `(when (> ~num-tests-sym 0)
                                      (for [spec# ~defined-fspecs]
                                        (st/check-fn
                                         ~fn-name
                                         spec#
                                         {~(keyword (str spec-keyword-ns) "opts")
-                                         {:num-tests num-tests#}}))))))]
-      [unexpected-fx
-       `(t/deftest ~(symbol (str fn-name test-suffix))
-          (let [spec-checks# ~spec-checks]
+                                         {:num-tests ~num-tests-sym}})))))]
             ;; TODO The `spec-checks#` thing trips up clairvoyant
             ;; and prevents tracing during ghostwheel development
             (t/is (and (every? #(-> %
@@ -542,6 +542,7 @@
                    ::r/fspec          ~(every? some? fspecs)
                    ::r/spec-checks    spec-checks#
                    ::r/check-coverage ~check-coverage
+                   ::r/num-tests      ~num-tests-sym
                    ::r/failure        ~(cond unexpected-fx ::r/unexpected-fx
                                              unexpected-safety ::r/unexpected-safety
                                              :else ::r/spec-failure)
