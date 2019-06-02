@@ -47,7 +47,8 @@
                     ;; Number of generative tests performed when quick-checking (hot-reload/repl)
                     :gen-tests         0
 
-                    :gen-test-profiles {:extensive 100}
+                    ;; p.ex. {:default 10 :extensive 1000}
+                    :gen-test-profiles nil
 
                     ;; Ghostwheel generates standard `defn` function definitions
                     ;; by default. If you require composability with other

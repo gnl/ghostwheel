@@ -1046,7 +1046,8 @@
         ;;; Assemble the config
         config            (merge-config env (meta fn-name) meta-map)
         color             (resolve-trace-color (::trace-color config))
-        {:keys [::defn-macro ::instrument ::outstrument ::trace ::check]} config
+        {:keys [::defn-macro ::instrument ::outstrument ::trace
+                ::check ::gen-tests ::gen-test-profiles]} config
         defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
                                 private 'defn-
                                 :else 'defn)
@@ -1067,7 +1068,8 @@
                                  (when gspec
                                    (gspec->fspec* args gspec true false false)))
                                (val fn-bodies))
-        [unexpected-fx generated-test] (when (and check (not empty-bodies))
+        [unexpected-fx generated-test] (when (and (not empty-bodies)
+                                                  (or check (> gen-tests 0) gen-test-profiles))
                                          (let [fspecs (case arity
                                                         :arity-1 [(when fdef-body `(s/fspec ~@fdef-body))]
                                                         :arity-n individual-arity-fspecs)]
