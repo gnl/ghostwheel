@@ -1,10 +1,13 @@
 (ns ghostwheel.tracer
   (:require [clojure.walk :refer [prewalk walk]]
+            [clojure.pprint :as pprint]
             [clairvoyant.core
              :refer [ITraceEnter ITraceError ITraceExit]
              :include-macros true]
             [ghostwheel.logging :as l]
             [clojure.string :as string]))
+
+(def *inside-let (atom false))
 
 (defn tracer
   "Custom tracer for Clairvoyant used by Ghostwheel but not dependent on it.
@@ -20,7 +23,8 @@
   (let [binding-group (if (contains? expand :bindings)
                         l/group
                         l/group-collapsed)
-        log-exit      (fn [exit] (l/log (:symbol l/arrow) (:style l/arrow) exit))
+        ;log-exit      (fn [exit] (l/log (:symbol l/arrow) (:style l/arrow) exit))
+        log-exit      (fn [exit] (l/log exit))
         has-bindings? l/ops-with-bindings
         fn-like?      (disj has-bindings? 'let `let)]
     (reify
@@ -28,13 +32,13 @@
       (-trace-enter
         [_ {:keys [anonymous? arglist args dispatch-val form init name ns op protocol]}]
         (let [init        (if (and (seq? init)
-                                   (symbol? (first init)))
-                            (let [f      (str (first init))
-                                  prefix "ghostwheel.threading-macros/*"]
-                              (if (string/starts-with? f prefix)
-                                (cons (-> f (string/replace prefix "") symbol)
-                                      (rest init))
-                                init))
+                                   (= (first init) 'try)
+                                   (seq? (second init))
+                                   (-> (second init)
+                                       first
+                                       str
+                                       (string/starts-with? "ghostwheel.threading-macros/*")))
+                            nil
                             init)
               op-sym      (symbol (cljs.core/name op))
               unnamed-fn? (and (#{'fn 'fn*} op-sym)
@@ -43,13 +47,18 @@
                             (if unnamed-fn?
                               l/group-collapsed
                               l/group)
-                            l/group-collapsed)]
+                            l/group-collapsed)
+              anon-prefix "__anon_"]
           (cond
             (fn-like? op)
             (let [title (if protocol
                           (str protocol " " name " " arglist)
                           (str (when prefix (str prefix " – "))
-                               ns "/" (when (and anonymous? unnamed-fn?) "__anon_") name
+                               ns "/" (when (and anonymous?
+                                                 (or unnamed-fn?
+                                                     (not (string/starts-with? (str name) anon-prefix))))
+                                        anon-prefix)
+                               name
                                (when dispatch-val
                                  (str " " (pr-str dispatch-val)))
                                (str " " arglist)))]
@@ -62,12 +71,21 @@
               (l/group "bindings"))
 
             (#{'let `let} op)
-            (let [title (str op)]
-              (group title)
+            (do
+              (reset! *inside-let true)
+              (group (str op))
               (l/group "bindings"))
 
             (#{'binding} op)
-            (binding-group form nil nil init))))
+            #_(binding-group (str form) nil nil init)
+            (let [max-length 80
+                  init       (when @*inside-let
+                               (l/truncate-string (str init) max-length))]
+              (binding-group (str form) nil nil init)
+              #_(when (> (count label) max-length)
+                  (l/group-collapsed "...")
+                  (l/log (with-out-str (pprint/pprint label)))
+                  (l/group-end))))))
 
       ITraceExit
       (-trace-exit [_ {:keys [op exit]}]
@@ -77,9 +95,12 @@
               (l/group-end))
 
           (has-bindings? op)
-          (do (l/group-end)
-              (log-exit exit)
-              (l/group-end))))
+          (do
+            (when (#{'let `let} op)
+              (reset! *inside-let false))
+            (l/group-end)
+            (log-exit exit)
+            (l/group-end))))
 
       ITraceError
       (-trace-error [_ {:keys [op form error ex-data]}]

@@ -22,8 +22,8 @@
 (def ^:dynamic *report-output* #?(:clj  :repl
                                   :cljs :js-console))
 
-(def arrow {:symbol "=>"
-            :style  {::weight "bold"}})
+(def arrow {:symbol #_"=>" ""
+            :style         {::weight "bold"}})
 
 
 (def ghostwheel-colors
@@ -97,24 +97,29 @@
 
 
 (defn get-styled-data
-  [[label & data] {:keys [::foreground ::background ::weight ::css] :as style} output & [length]]
-  (let [label        (if style
-                       (as-> (str label) label
-                             (if length
-                               (truncate-string label length)
-                               label)
-                             (if (= output :js-console) (str "%c" label) label))
-                       label)
-        style-string (when (and style (= output :js-console))
-                       (str "color: " (cond foreground foreground
-                                            background "white"
-                                            :else (:black ghostwheel-colors)) ";"
-                            "background: " (if background background "white") ";"
-                            "font-weight: " (if weight weight "500") ";"
-                            (when background "text-shadow: 0.5px 0.5px black;")
-                            (when background "padding: 2px 6px; border-radius: 2px;")
-                            css))]
-    (->> (concat [label style-string] data)
+  [[main & extra] {:keys [::foreground ::background ::weight ::css] :as style} output & [length]]
+  (let [main       (as-> main main
+                         (if length
+                           (truncate-string (str main) length)
+                           main)
+                         (if (and style (= output :js-console))
+                           (str "%c" main)
+                           main))
+        style-main (when (and style (= output :js-console))
+                     (str "color: " (cond foreground foreground
+                                          background "white"
+                                          :else (:black ghostwheel-colors)) ";"
+                          "background: " (if background background "white") ";"
+                          "font-weight: " (if weight weight "500") ";"
+                          (when background "text-shadow: 0.5px 0.5px black;")
+                          (when background "padding: 2px 6px; border-radius: 2px;")
+                          css))
+        [main extra-style extra] (if (and (string? main)
+                                          (not-empty extra)
+                                          ((some-fn string? number?) (first extra)))
+                                   [(str main "%c " (first extra)) "font-weight: 500;" (rest extra)]
+                                   [main nil extra])]
+    (->> (concat [main style-main extra-style] extra)
          (remove nil?)
          vec)))
 

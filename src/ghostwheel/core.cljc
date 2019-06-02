@@ -865,14 +865,16 @@
   (if (< trace 4)
     forms
     (let [untraced-macros->traced
-                                  {'->      'ghostwheel.threading-macros/*->
-                                   '->>     'ghostwheel.threading-macros/*->>
-                                   'as->    'ghostwheel.threading-macros/*as->
-                                   'cond->  'ghostwheel.threading-macros/*cond->
-                                   'cond->> 'ghostwheel.threading-macros/*cond->>
-                                   'some->  'ghostwheel.threading-macros/*some->
-                                   'some->> 'ghostwheel.threading-macros/*some->>}
-          traced-macros->untraced (map-invert untraced-macros->traced)]
+          {'->      'ghostwheel.threading-macros/*->
+           '->>     'ghostwheel.threading-macros/*->>
+           'as->    'ghostwheel.threading-macros/*as->
+           'cond->  'ghostwheel.threading-macros/*cond->
+           'cond->> 'ghostwheel.threading-macros/*cond->>
+           'some->  'ghostwheel.threading-macros/*some->
+           'some->> 'ghostwheel.threading-macros/*some->>}
+
+          traced-macros->untraced
+          (map-invert untraced-macros->traced)]
       (cond->> (walk/postwalk-replace untraced-macros->traced forms)
 
                ;; Make sure we don't trace threading macros in anon-fns
