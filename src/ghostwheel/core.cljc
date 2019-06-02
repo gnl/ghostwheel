@@ -1273,6 +1273,13 @@
                       (-> env :ns :name) ":" position)]
     (cond
       (and (seq? expr)
+           (contains? #{'>defn '>defn-} (first expr)))
+      `(~(first expr)
+        ~(with-meta (second expr) {::trace       trace
+                                   ::trace-color color})
+        ~@(drop 2 expr))
+
+      (and (seq? expr)
            (contains? l/ops-with-bindings (first expr)))
       (cond-> (trace-threading-macros expr trace cljs?)
               ;; REVIEW: Clairvoyant doesn't work on Clojure yet
