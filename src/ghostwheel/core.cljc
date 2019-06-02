@@ -1278,8 +1278,14 @@
       (and (seq? expr)
            (contains? #{'>defn '>defn-} (first expr)))
       `(~(first expr)
-        ~(with-meta (second expr) {::trace       trace
-                                   ::trace-color color})
+        ~(let [fname (second expr)
+               fmeta (meta fname)]
+           (->> fmeta
+                (merge
+                 {::trace       trace
+                  ::trace-color color})
+                (with-meta fname)))
+
         ~@(drop 2 expr))
 
       (and (seq? expr)
