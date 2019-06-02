@@ -70,17 +70,14 @@
                       ::l/foreground color
                       ::l/weight     "bold"}
                      80
-                     suffix)
-              (l/group "bindings"))
+                     suffix))
 
             (#{'let `let} op)
             (do
               (reset! *inside-let true)
-              (group (str op))
-              (l/group "bindings"))
+              (group (str op)))
 
             (#{'binding} op)
-            #_(binding-group (str form) nil nil init)
             (let [max-length 80
                   init       (when @*inside-let
                                (l/truncate-string (str init) max-length))]
@@ -101,7 +98,6 @@
           (do
             (when (#{'let `let} op)
               (reset! *inside-let false))
-            (l/group-end)
             (l/log-exit exit)
             (l/group-end))))
 
