@@ -27,28 +27,29 @@
       ITraceEnter
       (-trace-enter
         [_ {:keys [anonymous? arglist args dispatch-val form init name ns op protocol]}]
-        (let [init   (if (and (seq? init)
-                              (symbol? (first init)))
-                       (let [f      (str (first init))
-                             prefix "ghostwheel.threading-macros/*"]
-                         (if (string/starts-with? f prefix)
-                           (cons (-> f (string/replace prefix "") symbol)
-                                 (rest init))
-                           init))
-                       init)
-              op-sym (symbol (cljs.core/name op))
-              group  (if (contains? expand op-sym)
-                       (if (and (#{'fn 'fn*} op-sym)
-                                (string/starts-with? (str name) "fn_"))
-                         l/group-collapsed
-                         l/group)
-                       l/group-collapsed)]
+        (let [init        (if (and (seq? init)
+                                   (symbol? (first init)))
+                            (let [f      (str (first init))
+                                  prefix "ghostwheel.threading-macros/*"]
+                              (if (string/starts-with? f prefix)
+                                (cons (-> f (string/replace prefix "") symbol)
+                                      (rest init))
+                                init))
+                            init)
+              op-sym      (symbol (cljs.core/name op))
+              unnamed-fn? (and (#{'fn 'fn*} op-sym)
+                               (string/starts-with? (str name) "fn_"))
+              group       (if (contains? expand op-sym)
+                            (if unnamed-fn?
+                              l/group-collapsed
+                              l/group)
+                            l/group-collapsed)]
           (cond
             (fn-like? op)
             (let [title (if protocol
                           (str protocol " " name " " arglist)
                           (str (when prefix (str prefix " – "))
-                               ns "/" (when anonymous? "__anon__") name
+                               ns "/" (when (and anonymous? unnamed-fn?) "__anon_") name
                                (when dispatch-val
                                  (str " " (pr-str dispatch-val)))
                                (str " " arglist)))]

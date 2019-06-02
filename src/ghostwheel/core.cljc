@@ -896,7 +896,7 @@
                     form)))))))
 
 
-;; REVIEW – refactor/keywordify args, it's getting unwieldy
+;; REVIEW – refactor/keywordify args, this is getting unwieldy
 (defn- clairvoyant-trace [forms trace color env label position]
   (let [clairvoyant 'clairvoyant.core/trace-forms
         tracer      'ghostwheel.tracer/tracer
@@ -1281,9 +1281,15 @@
 
       (and (seq? expr)
            (contains? l/ops-with-bindings (first expr)))
-      (cond-> (trace-threading-macros expr trace cljs?)
-              ;; REVIEW: Clairvoyant doesn't work on Clojure yet
-              cljs? (clairvoyant-trace trace color env label position))
+      (as-> (trace-threading-macros expr trace cljs?) expr
+            (if (and (#{'fn 'fn*} (first expr))
+                     (not (symbol? (second expr))))
+              `(~(first expr) ~(gensym "__anon_fn_") ~@(rest expr))
+              expr)
+            ;; REVIEW: Clairvoyant doesn't work on Clojure yet
+            (if cljs?
+              (clairvoyant-trace expr trace color env label position)
+              expr))
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
