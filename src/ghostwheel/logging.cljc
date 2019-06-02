@@ -97,29 +97,51 @@
 
 
 (defn get-styled-data
-  [[main & extra] {:keys [::foreground ::background ::weight ::css] :as style} output & [length]]
-  (let [main       (as-> main main
-                         (if length
-                           (truncate-string (str main) length)
-                           main)
-                         (if (and style (= output :js-console))
-                           (str "%c" main)
-                           main))
-        style-main (when (and style (= output :js-console))
-                     (str "color: " (cond foreground foreground
-                                          background "white"
-                                          :else (:black ghostwheel-colors)) ";"
-                          "background: " (if background background "white") ";"
-                          "font-weight: " (if weight weight "500") ";"
-                          (when background "text-shadow: 0.5px 0.5px black;")
-                          (when background "padding: 2px 6px; border-radius: 2px;")
-                          css))
-        [main extra-style extra] (if (and (string? main)
-                                          (not-empty extra)
-                                          ((some-fn string? number?) (first extra)))
+  [[main & extra] nested? {:keys [::foreground ::background ::weight ::css] :as style} output & [length]]
+  (let [jscon?                (= output :js-console)
+        main                  (as-> main main
+                                    (if length
+                                      (truncate-string (str main) length)
+                                      main)
+                                    (if (and style jscon?)
+                                      (str "%c" main)
+                                      main))
+        left-shift-text       "margin-left: -11px;"
+        left-shift-text-plain "margin-left: -15px;"
+        style-main            (when (and style jscon?)
+                                (str "color: " (cond foreground foreground
+                                                     background "white"
+                                                     :else (:black ghostwheel-colors)) ";"
+                                     "background: " (if background background "white") ";"
+                                     "font-weight: " (if weight weight "500") ";"
+                                     (when background (str "text-shadow: 0.5px 0.5px black;"
+                                                           "padding: 2px 6px; border-radius: 2px;"))
+                                     (when nested? left-shift-text)
+                                     css))
+        [main style-extra extra] (cond
+                                   (not jscon?)
+                                   [main nil extra]
+
+                                   (and (not nested?)
+                                        (string? main)
+                                        (not-empty extra)
+                                        ((some-fn string? number?) (first extra)))
                                    [(str main "%c " (first extra)) "font-weight: 500;" (rest extra)]
+
+                                   (and (empty? extra)
+                                        (not (coll? main))
+                                        (not style)
+                                        nested?)
+                                   [(str "%c" main) left-shift-text-plain nil]
+
+                                   :else
                                    [main nil extra])]
-    (->> (concat [main style-main extra-style] extra)
+    (->> (concat [main style-main style-extra
+                  (when (and nested? (not-empty extra))
+                    (if (string? (first extra))
+                      ""
+                      "  "))]
+                 extra)
          (remove nil?)
          vec)))
 
@@ -141,7 +163,7 @@
    (log msg nil))
   ([msg style & data]
    (let [all-data    (concat [msg] data)
-         styled-data (get-styled-data all-data style *report-output*)]
+         styled-data (get-styled-data all-data true style *report-output*)]
      (case *report-output*
        :repl (apply plain-log styled-data)
        :js-console #?(:cljs (.apply js/console.log js/console (to-array styled-data))
@@ -191,7 +213,7 @@
   ([open? labels style]
    (group* open? labels style nil))
   ([open? labels style length]
-   (let [styled-label (get-styled-data labels style *report-output* length)]
+   (let [styled-label (get-styled-data labels false style *report-output* length)]
      (case *report-output*
        :repl (apply plain-group styled-label)
        :js-console #?(:cljs (.apply (if open?

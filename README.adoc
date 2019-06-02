@@ -130,7 +130,7 @@ image:https://img.shields.io/clojars/v/gnl/ghostwheel.svg[link=https://clojars.o
 .ClojureScript only – optional tracing:
 image:https://img.shields.io/clojars/v/gnl/ghostwheel.tracer.svg[link=https://clojars.org/gnl/ghostwheel.tracer]
 +
-.ClojureScript only – optional, but highly recommended:
+.ClojureScript only:
 link:https://github.com/binaryage/cljs-devtools[Setup CLJS DevTools]
 +
 WARNING: Make sure you use Clojure 1.9.0 or higher and don't override Ghostwheel's dependencies with lower versions or you might get link:https://github.com/gnl/ghostwheel/issues/9[strange behaviour].

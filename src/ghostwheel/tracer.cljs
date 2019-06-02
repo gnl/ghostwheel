@@ -5,9 +5,14 @@
              :refer [ITraceEnter ITraceError ITraceExit]
              :include-macros true]
             [ghostwheel.logging :as l]
+            [devtools.core]
+            [devtools.defaults]
+            [ghostwheel.utils :as u]
             [clojure.string :as string]))
 
 (def *inside-let (atom false))
+
+(u/set-devtools-config!)
 
 (defn tracer
   "Custom tracer for Clairvoyant used by Ghostwheel but not dependent on it.
