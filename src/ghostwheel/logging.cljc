@@ -98,17 +98,17 @@
 
 (defn get-styled-data
   [[main & extra] nested? {:keys [::foreground ::background ::weight ::css] :as style} output & [length]]
-  (let [jscon?                (= output :js-console)
+  (let [browser?              (= output :js-console)
         main                  (as-> main main
                                     (if length
                                       (truncate-string (str main) length)
                                       main)
-                                    (if (and style jscon?)
+                                    (if (and style browser?)
                                       (str "%c" main)
                                       main))
         left-shift-text       "margin-left: -11px;"
         left-shift-text-plain "margin-left: -15px;"
-        style-main            (when (and style jscon?)
+        style-main            (when (and style browser?)
                                 (str "color: " (cond foreground foreground
                                                      background "white"
                                                      :else (:black ghostwheel-colors)) ";"
@@ -119,7 +119,7 @@
                                      (when nested? left-shift-text)
                                      css))
         [main style-extra extra] (cond
-                                   (not jscon?)
+                                   (not browser?)
                                    [main nil extra]
 
                                    (and (not nested?)
@@ -240,14 +240,6 @@
    (group-collapsed label style nil))
   ([label style length & data]
    (group* false (concat [label] data) style length)))
-
-(defn multi-label-group
-  [labels]
-  (group* true labels nil))
-
-(defn multi-label-group-collapsed
-  [labels]
-  (group* false labels nil))
 
 
 (let [plain-group-end
