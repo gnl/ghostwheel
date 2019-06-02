@@ -41,6 +41,10 @@
          {::l/background (:base01 l/ghostwheel-colors)}))
 
 
+(defmethod report :begin-test-var [m]
+  (log-bold (str "Checking " (symbol (:var m)) " ...")))
+
+
 (defmethod report :end-test-ns [m]
   (group-end))
 
@@ -66,10 +70,7 @@
       (log label {::l/background color})
       (when warnings?
         (log (str warn " warning(s)")
-             {::l/background (:orange0 l/ghostwheel-colors)}))
-      ;; Might be overkill, but we want to make sure we reset the group nesting
-      ;; in DevTools if anything should blow up above
-      (dorun (repeatedly 5 l/group-end)))))
+             {::l/background (:orange0 l/ghostwheel-colors)})))))
 
 
 (defmethod report :pass [m]
@@ -111,7 +112,8 @@
                      warning-style)
               (group-end))
 
-            :else nil))))
+            :else nil))
+    (l/log (str "PASSED: " fn-name) {::l/background (:green l/ghostwheel-colors)})))
 
 
 ;; REVIEW: We don't seem to be needing this anymore.
