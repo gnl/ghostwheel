@@ -1294,7 +1294,9 @@
         (gen-cleanup-console-on-exception
          cljs?
          (if ((some-fn string? number? nil? boolean? keyword?) expr)
-           `(l/log ~expr ~style)
+           `(let [ret# ~expr]
+              (l/log ret# ~style)
+              ret#)
            `(let [code# ~(str expr)]
               (l/group code# ~style 55 ~context)
               ~(when (and (coll? expr)
