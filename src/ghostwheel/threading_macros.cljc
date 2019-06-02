@@ -9,7 +9,7 @@
 (ns ghostwheel.threading-macros
   #?(:cljs (:require-macros ghostwheel.threading-macros))
   (:require [ghostwheel.logging :as l
-             :refer [ghostwheel-colors dlog group group-collapsed group-end log]]
+             :refer [ghostwheel-colors dlog group group-collapsed group-end log log-exit]]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
             [clojure.data :as data]
             [clojure.pprint :as pprint]))
@@ -87,7 +87,7 @@
                   ~(gen-log-threading-header "->" (str orig-x) &env)
                   (dlog ~orig-x ~(str orig-x))
                   (let [x# ~x-print]
-                    (log (:symbol l/arrow) (:style l/arrow) x#)
+                    (log-exit x#)
                     (group-end)
                     x#))))))
      (cljs-env? &env) clj->cljs)))
@@ -115,7 +115,7 @@
                     ~(gen-log-threading-header "->>" (str orig-x) &env)
                     (dlog ~orig-x ~(str orig-x))
                     (let [x# ~x-print]
-                      (log (:symbol l/arrow) (:style l/arrow) x#)
+                      (log-exit x#)
                       (group-end)
                       x#)))))))
      (cljs-env? &env) clj->cljs)))
@@ -136,7 +136,7 @@
             (dlog ~expr ~(str name))
             (let [~name ~expr
                   ~@(interleave (repeat name) (map log-step forms))]
-              (log (:symbol l/arrow) (:style l/arrow) ~name)
+              (log-exit ~name)
               (group-end)
               ~name))))
      (cljs-env? &env) clj->cljs)))
@@ -165,7 +165,7 @@
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
-                  (log (:symbol l/arrow) (:style l/arrow) ~g)
+                  (log-exit ~g)
                   (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
@@ -194,7 +194,7 @@
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
-                  (log (:symbol l/arrow) (:style l/arrow) ~g)
+                  (log-exit ~g)
                   (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
@@ -219,7 +219,7 @@
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-pstep forms))]
-                  (log (:symbol l/arrow) (:style l/arrow) (if (nil? ~g) "nil" ~g))
+                  (log-exit (if (nil? ~g) "nil" ~g))
                   (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))
@@ -244,7 +244,7 @@
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-pstep forms))]
-                  (log (:symbol l/arrow) (:style l/arrow) (if (nil? ~g) "nil" ~g))
+                  (log-exit (if (nil? ~g) "nil" ~g))
                   (group-end)
                   ~g)))))
      (cljs-env? &env) clj->cljs)))

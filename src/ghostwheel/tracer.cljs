@@ -23,8 +23,6 @@
   (let [binding-group (if (contains? expand :bindings)
                         l/group
                         l/group-collapsed)
-        ;log-exit      (fn [exit] (l/log (:symbol l/arrow) (:style l/arrow) exit))
-        log-exit      (fn [exit] (l/log exit))
         has-bindings? l/ops-with-bindings
         fn-like?      (disj has-bindings? 'let `let)]
     (reify
@@ -91,7 +89,7 @@
       (-trace-exit [_ {:keys [op exit]}]
         (cond
           (#{'binding} op)
-          (do (log-exit exit)
+          (do (l/log-exit exit)
               (l/group-end))
 
           (has-bindings? op)
@@ -99,7 +97,7 @@
             (when (#{'let `let} op)
               (reset! *inside-let false))
             (l/group-end)
-            (log-exit exit)
+            (l/log-exit exit)
             (l/group-end))))
 
       ITraceError

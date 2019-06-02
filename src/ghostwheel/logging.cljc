@@ -148,6 +148,10 @@
                       :clj  nil)))))
 
 
+(defn log-exit [data]
+  (log data))
+
+
 (defn DBG
   ([]
    (log "#> MARK"))
