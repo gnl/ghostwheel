@@ -4,6 +4,7 @@
             [clairvoyant.core
              :refer [ITraceEnter ITraceError ITraceExit]
              :include-macros true]
+            [devtools.prefs]
             [ghostwheel.logging :as logging
              :refer [log group group-collapsed group-end log-exit]]
             [clojure.string :as string]))
