@@ -22,7 +22,8 @@
                                             [binaryage/devtools "0.9.10"]]
                              :jvm-opts     ["-Dghostwheel.cache=false"]}
              :clj-prod-test {:jvm-opts ["-Dghostwheel.enabled=false"]}
-             :clj-dev-test  {:jvm-opts ["-Dghostwheel.enabled=true"]}}
+             :clj-dev-test  {}}
+             ;:clj-dev-test  {:jvm-opts ["-Dghostwheel.enabled=true"]}}
   :cljsbuild {:builds [{:id           "dev-test"
                         :source-paths ["src" "test"]
                         :compiler     {:main            ghostwheel.dev-test-runner
@@ -30,8 +31,7 @@
                                        :output-dir      "resources/test/dev"
                                        :output-to       "resources/test/dev.js"
                                        :pretty-print    true
-                                       :optimizations   :none
-                                       :external-config {:ghostwheel {}}}}
+                                       :optimizations   :none}}
                        {:id           "prod-test"
                         :source-paths ["src" "test"]
                         :compiler     {:main            ghostwheel.prod-test-runner
@@ -49,8 +49,7 @@
                                        :output-to       "resources/test/dev_node.js"
                                        :pretty-print    true
                                        :optimizations   :simple
-                                       :target          :nodejs
-                                       :external-config {:ghostwheel {}}}}
+                                       :target          :nodejs}}
                        {:id           "prod-test-node"
                         :source-paths ["src" "test"]
                         :compiler     {:main            ghostwheel.prod-test-runner
