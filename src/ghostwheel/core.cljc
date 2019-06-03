@@ -1458,10 +1458,10 @@
   "Runs Ghostwheel checks on the given namespaces and/or functions.
   Checks the current namespace if called without arguments."
   {:arglists '([]
-               [ns-regex-or-quoted-ns-or-fn]
-               [[ns-regex-or-quoted-ns-or-fn+]]
-               [num-tests-or-gen-test-profile ns-regex-or-quoted-ns-or-fn]
-               [num-tests-or-gen-test-profile [ns-regex-or-quoted-ns-or-fn+]])}
+               [quoted-sym-or-ns-regex]
+               [[quoted-sym-or-ns-regex+]]
+               [gen-tests-or-profile quoted-sym-or-ns-regex]
+               [gen-tests-or-profile [quoted-sym-or-ns-regex+]])}
   ([]
    `(check nil (quote ~(u/get-ns-name &env))))
   ([things]
