@@ -511,55 +511,39 @@ In fact, the mere act of opening the box will determine the state of the cat, al
 
 Specs are all nice and good, but often enough we want to take a peek at what's going on under the hood while it's going. Set the `::g/trace` option to anything from 0 to 5 to determine the trace verbosity and performance impact, and you're good to go.
 
-[cols="2,5,5"]
+[cols="1,6"]
 .Ghostwheel trace levels
 |===
-|Trace level |What gets traced (additive) |What it's good for
+|Trace level |What gets traced (additive)
 
 |0
 |Nothing
-|Production
 
 |1
-|The function call is logged without any data
-|Render functions
+|Function call without any data
 
 |2
 |Function I/O
-|Event handlers
 
 |3
 |Local bindings
-|General debugging
 
 |4
 |Threading macros
-|Better debugging
 
 |5
-|Anonymous functions
-|Noisy debugging
+|Named anonymous functions
 
 |6
-|Named anonymous functions are expanded by default
-|Possibly very noisy debugging
+|All anonymous functions
 |===
-
-TIP: `::g/trace true` is equivalent to `::g/trace 4`, so you can just add the `^::g/trace` metadata to the function name.
-
-[TIP]
---
-Add the following devtools config to your compiler options to improve data structure readability when tracing:
-```clojure
-:external-config
-{:devtools/config {:max-print-level 4
-                   :min-expandable-sequable-count-for-well-known-types 2}}
-```
 
 --
 
 [[adhoc-tracing]]
-TIP: Use `|>` or `tr` (they are aliases) to wrap any expression for more granular tracing or if you are only interested in Ghostwheel's tracing functionality. They work standalone, default to trace level `6` and will generally do the right thing depending on the type of wrapped form – functions and threading macros get proper in-depth tracing, while other expressions are pretty-printed and returned.
+TIP: Use `|>` or `tr` (they are aliases) to wrap any expression for more granular tracing or if you are only interested in Ghostwheel's tracing functionality. They work standalone, default to trace level `5` and will generally do the right thing depending on the type of wrapped form – functions and threading macros get proper in-depth tracing, while other expressions are pretty-printed and returned.
+
+TIP: `::g/trace true` is equivalent to `::g/trace 5`, so you can just add the `^::g/trace` metadata to the function name.
 
 [TIP]
 --
