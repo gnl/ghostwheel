@@ -2,8 +2,8 @@
   #?(:cljs (:require-macros ghostwheel.config))
   (:require [ghostwheel.utils :as util]
             [clojure.spec.alpha :as s]
-   #?@(:clj  [[clojure.edn :as edn]]
-       :cljs [[cljs.env :as cljs-env]])))
+            #?@(:clj  [[clojure.edn :as edn]]
+                :cljs [[cljs.env :as cljs-env]])))
 
 ;; This isn't particularly pretty, but it's how we avoid
 ;; having ClojureScript as a required dependency on Clojure
@@ -21,18 +21,18 @@
                     ;; #RRGGBB, #RGB, or keyword from the `ghostwheel-colors` map.
                     :trace-color       :violet
 
-                    ;; When disabled no checks of any kind are
+                    ;; When `true` no checks of any kind are
                     ;; performed and no test code is generated.
-                    :check             true
+                    :no-check          false
+
+                    ;; Disables side effect detection
+                    :no-check-fx       false
 
                     ;; Determines whether Ghostwheel should warn on missing fspecs
                     ;; and plain (non-Ghostwheel) `defn` usage. When enabled on a
                     ;; namespace or higher level, you can exclude individual `defn`s or
                     ;; `declare`s by setting it to false in their respective metadata
                     :check-coverage    false
-
-                    ;; Enable side effect detection checks
-                    :check-fx          true
 
                     ;; Number of generative tests performed when quick-checking (hot-reload/repl)
                     :gen-tests         0

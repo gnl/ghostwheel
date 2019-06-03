@@ -172,9 +172,9 @@
                                            #(re-matches #"#[a-fA-F0-9]+" %)
                                            #(or (= (count %) 7)
                                                 (= (count %) 4)))))
-(s/def ::check boolean?)
+(s/def ::no-check boolean?)
 (s/def ::check-coverage boolean?)
-(s/def ::check-fx boolean?)
+(s/def ::no-check-fx boolean?)
 (s/def ::gen-tests nat-int?)
 (s/def ::gen-test-profiles (s/map-of keyword? int?))
 (s/def ::defn-macro (s/nilable string?))
@@ -186,7 +186,7 @@
 
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config
-  (s/and (s/keys :req [::trace ::trace-color ::check ::check-coverage ::check-fx
+  (s/and (s/keys :req [::trace ::trace-color ::no-check ::no-check-fx ::check-coverage
                        ::gen-tests ::gen-test-profiles ::defn-macro
                        ::instrument ::outstrument ::extrument ::expound ::report-output])))
 
@@ -1064,7 +1064,7 @@
         config            (cfg/merge-config env (meta fn-name) meta-map)
         color             (resolve-trace-color (::trace-color config))
         {:keys [::defn-macro ::instrument ::outstrument ::trace
-                ::check ::gen-tests ::gen-test-profiles]} config
+                ::no-check ::gen-tests ::gen-test-profiles]} config
         defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
                                 private 'defn-
                                 :else 'defn)
@@ -1086,7 +1086,7 @@
                                    (gspec->fspec* args gspec true false false)))
                                (val fn-bodies))
         [unexpected-fx generated-test] (when (and (not empty-bodies)
-                                                  (or check (> gen-tests 0) gen-test-profiles))
+                                                  (not no-check))
                                          (let [fspecs (case arity
                                                         :arity-1 [(when fdef-body `(s/fspec ~@fdef-body))]
                                                         :arity-n individual-arity-fspecs)]
@@ -1128,10 +1128,10 @@
 
 (defn- generate-coverage-check [env nspace]
   (let [cljs?           (cljs-env? env)
-        {:keys [::check-coverage ::check]} (merge (cfg/get-base-config)
-                                                  (if cljs?
-                                                    (:meta (ana-api/find-ns nspace))
-                                                    #?(:clj (meta nspace))))
+        {:keys [::check-coverage ::no-check]} (merge (cfg/get-base-config)
+                                                     (if cljs?
+                                                       (:meta (ana-api/find-ns nspace))
+                                                       #?(:clj (meta nspace))))
         get-intern-meta (comp meta (if cljs? key val))
         all-checked-fns (when check-coverage
                           (some->> (if cljs? (ana-api/ns-interns nspace) #?(:clj (ns-interns nspace)))
@@ -1146,11 +1146,11 @@
         unchecked-defns (when check-coverage
                           (some->> all-checked-fns
                                    (filter #(-> % get-intern-meta ::ghostwheel))
-                                   (filter #(-> % get-intern-meta ::check false?))
+                                   (filter #(-> % get-intern-meta ::no-check))
                                    (map (comp str key))
                                    vec))]
     `(do
-       ~(when (not check)
+       ~(when no-check
           `(do
              (l/group ~(str "WARNING: "
                             "`::g/check` disabled for "
@@ -1211,7 +1211,7 @@
                  :fn (let [fn-data  (if cljs? (ana-api/resolve env sym) #?(:clj (resolve sym)))
                            metadata (if cljs? (:meta fn-data) #?(:clj (meta fn-data)))
 
-                           {:keys [::check-coverage ::check]}
+                           {:keys [::check-coverage ::no-check]}
                            (merge (cfg/get-base-config)
                                   (meta (:ns fn-data))
                                   metadata)]
@@ -1224,18 +1224,18 @@
                              (not (::ghostwheel metadata))
                              (str "`" sym "` is not a Ghostwheel function => Use `>defn` to define it.")
 
-                             (not check)
+                             no-check
                              (str "Checking disabled for `" sym "` => Set `{:ghostwheel.core/check true}` to enable.")
 
                              :else
                              nil))
                  :ns (let [ns-data  (if cljs? (ana-api/find-ns sym) #?(:clj sym))
                            metadata (if cljs? (:meta ns-data) #?(:clj (meta ns-data)))
-                           {:keys [::check]} (merge base-config metadata)]
+                           {:keys [::no-check]} (merge base-config metadata)]
                        (cond (not ns-data)
                              (str "Cannot resolve `" (str sym) "`")
 
-                             (not check)
+                             no-check
                              (str "Checking disabled for `" sym "` => Set `{:ghostwheel.core/check true}` to enable.")
 
                              :else
@@ -1270,11 +1270,11 @@
 
 
 (defn- generate-after-check [callbacks]
-  (let [{:keys [::check]}
+  (let [{:keys [::no-check]}
         (merge (cfg/get-base-config)
                (meta *ns*))]
     ;; TODO implement for clj
-    (when (and check (seq callbacks))
+    (when (and (not no-check) (seq callbacks))
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
 
 
