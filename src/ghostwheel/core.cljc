@@ -1350,7 +1350,7 @@
       (as-> (trace-threading-macros expr trace cljs?) expr
             (if (and (#{'fn 'fn*} (first expr))
                      (not (symbol? (second expr))))
-              `(~(first expr) ~(gensym "__anon_fn_") ~@(rest expr))
+              `(~(first expr) ~(gensym "fn_") ~@(rest expr))
               expr)
             ;; REVIEW: Clairvoyant doesn't work on Clojure yet
             (if cljs?

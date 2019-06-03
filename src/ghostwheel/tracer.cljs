@@ -33,7 +33,7 @@
     (reify
       ITraceEnter
       (-trace-enter
-        [_ {:keys [anonymous? arglist args dispatch-val form init name ns op protocol]}]
+        [_ {:keys [anonymous? named? arglist args dispatch-val form init name ns op protocol]}]
         (let [init        (if (and (seq? init)
                                    (= (first init) 'try)
                                    (seq? (second init))
@@ -45,23 +45,18 @@
                             init)
               op-sym      (symbol (cljs.core/name op))
               unnamed-fn? (and (#{'fn 'fn*} op-sym)
-                               (string/starts-with? (str name) "fn_"))
+                               (not named?))
               group       (if (contains? expand op-sym)
                             (if unnamed-fn?
                               l/group-collapsed
                               l/group)
-                            l/group-collapsed)
-              anon-prefix "__anon_"]
+                            l/group-collapsed)]
           (cond
             (fn-like? op)
             (let [title (if protocol
                           (str protocol " " name " " arglist)
                           (str (when prefix (str prefix " – "))
-                               ns "/" (when (and anonymous?
-                                                 (or unnamed-fn?
-                                                     (not (string/starts-with? (str name) anon-prefix))))
-                                        anon-prefix)
-                               name
+                               ns "/" (when anonymous? "__anon_") name
                                (when dispatch-val
                                  (str " " (pr-str dispatch-val)))
                                (str " " arglist)))]
