@@ -12,7 +12,7 @@
                  [org.clojure/test.check "0.10.0-alpha4"]
                  [orchestra "2019.02.06-1"]
                  [expound "0.7.2"]
-                 [org.clojars.stumitchell/clairvoyant "0.2.1"]]
+                 [gnl/clairvoyant "0.2.3"]]
   :plugins [[lein-doo "0.1.10"]]
   :source-paths ["src"]
   :clean-targets ^{:protect false} ["target" "resources"]
