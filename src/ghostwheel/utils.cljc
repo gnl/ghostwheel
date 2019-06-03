@@ -52,12 +52,11 @@
 (defn devtools-config-override
   []
   `(let [current-config# (~'devtools.prefs/get-prefs)
-         overrides#   {:max-print-level                                    4
-                       :min-expandable-sequable-count-for-well-known-types 2}
-         left-adjust# (str "margin-left: -17px;")]
+         overrides#      {:max-print-level                                    4
+                          :min-expandable-sequable-count-for-well-known-types 2}
+         left-adjust#    (str "margin-left: -17px;")]
      (merge current-config#
             (into overrides# (for [k# [:header-style]
                                    :let [v# (get current-config# k#)]]
                                [k# (str v# left-adjust#)])))))
-
 

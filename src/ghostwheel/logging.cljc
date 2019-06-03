@@ -97,12 +97,12 @@
   [[main & extra] nested? {:keys [::foreground ::background ::weight ::css] :as style} output & [length]]
   (let [browser?              (= output :js-console)
         main                  (as-> main main
-                                    (if length
-                                      (truncate-string (str main) length)
-                                      main)
-                                    (if (and style browser?)
-                                      (str "%c" main)
-                                      main))
+                                (if length
+                                  (truncate-string (str main) length)
+                                  main)
+                                (if (and style browser?)
+                                  (str "%c" main)
+                                  main))
         left-shift-text       "margin-left: -11px;"
         left-shift-text-plain "margin-left: -15px;"
         style-main            (when (and style browser?)
