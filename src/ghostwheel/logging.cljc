@@ -180,9 +180,12 @@
   ([& msgs]
    (do
      (doseq [msg msgs]
-       #?(:clj  (.println System/err (pprint/pprint msg))
-          :cljs (if (nil? msg) (log "nil") (log msg))))
-     (last msgs))))
+       #?(:clj  (let [msg (if (string? msg)
+                            msg
+                            (with-out-str (pprint/pprint msg)))]
+                  (.println *err* msg))
+          :cljs (if (nil? msg) (log "nil") (log msg)))
+       (last msgs)))))
 
 
 (defn log-raw

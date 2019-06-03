@@ -1,6 +1,8 @@
 (ns ^:no-doc ghostwheel.config
   #?(:cljs (:require-macros ghostwheel.config))
   (:require [ghostwheel.utils :as util]
+            [ghostwheel.logging :as l]
+            [clojure.data :as data]
             [clojure.spec.alpha :as s]
             #?@(:clj  [[clojure.edn :as edn]]
                 :cljs [[cljs.env :as cljs-env]])))
@@ -125,22 +127,54 @@
                                            ::value     (reload-config)}))))))))
 
 
+(defn migrate-deprecated-config
+  [config]
+  (cond-> config
+
+          (contains? config :ghostwheel.core/check)
+          (-> (assoc :ghostwheel.core/no-check (not (:ghostwheel.core/check config)))
+              (dissoc :ghostwheel.core/check))
+
+          (contains? config :ghostwheel.core/ignore-fx)
+          (-> (assoc :ghostwheel.core/no-check-fx (:ghostwheel.core/ignore-fx config))
+              (dissoc :ghostwheel.core/ignore-fx))
+
+          (contains? config :ghostwheel.core/num-tests)
+          (-> (assoc :ghostwheel.core/gen-tests (:ghostwheel.core/num-tests config))
+              (dissoc :ghostwheel.core/num-tests))
+
+          (contains? config :ghostwheel.core/num-tests-ext)
+          (-> (update :ghostwheel.core/gen-test-profiles assoc :extensive (:ghostwheel.core/num-tests-ext config))
+              (dissoc :ghostwheel.core/num-tests-ext))
+
+          (contains? config :ghostwheel.core/extensive-tests)
+          (dissoc :ghostwheel.core/extensive-tests)))
+
+
 (defn get-base-config
   ([]
    (get-base-config true))
   ([cache?]
-   (merge ghostwheel-default-config (get-env-config cache?))))
+   (->> (get-env-config cache?)
+        (merge ghostwheel-default-config)
+        migrate-deprecated-config)))
 
 
 (defn merge-config [env & meta-maps]
-  (s/assert ::ghostwheel-config
-            (->> (apply merge-with
-                        (fn [a b]
-                          (if (every? map? [a b])
-                            (merge a b)
-                            b))
-                        (get-base-config)
-                        (util/get-ns-meta env)
-                        meta-maps)
-                 (filter #(= (-> % key namespace) (name `ghostwheel.core)))
-                 (into {}))))
+  (let [config          (->> (apply merge-with
+                                    (fn [a b]
+                                      (if (every? map? [a b])
+                                        (merge a b)
+                                        b))
+                                    (get-base-config)
+                                    (util/get-ns-meta env)
+                                    meta-maps)
+                             (filter #(= (-> % key namespace) (name `ghostwheel.core)))
+                             (into {}))
+        migrated-config (s/assert ::ghostwheel-config
+                                  (migrate-deprecated-config config))]
+    (when-not (= config migrated-config)
+      (let [[old-param _ _] (data/diff config migrated-config)]
+        (l/DBG "\nWARNING: Deprecated Ghostwheel configuration options found. To suppress this warning, see `ghostwheel.config/default-config` and `migrate-deprecated-config`, and update your configuration accordingly as it will become invalid in a future release."
+               (-> old-param keys vec))))
+    migrated-config))
