@@ -178,7 +178,7 @@
 
 
 (defmacro set-devtools-config!
-  [error-formatter]
+  []
   `(let [external-cfg# ~(get-in @cljs-env/*compiler*
                                 [:options :external-config :devtools/config])
          default-cfg#  @devtools.defaults/config
@@ -190,9 +190,6 @@
        (devtools.core/set-pref! k# v#))
      (doseq [key# [:header-style]
              :let [val# (get default-cfg# key#)]]
-       (devtools.core/set-pref! key# (str val# left-adjust#)))
-     (try (do js/window
-              (some-> js/window.devtoolsFormatters
-                      (.unshift ~error-formatter)))
-          (catch :default _# nil))))
+       (devtools.core/set-pref! key# (str val# left-adjust#)))))
+
 
