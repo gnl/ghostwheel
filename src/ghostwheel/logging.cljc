@@ -200,6 +200,13 @@
                    :clj  nil)))
 
 
+(defn warning [msg]
+  (case *report-output*
+    :repl (do (plain-log "WARNING:") (plain-log msg))
+    :js-console #?(:cljs (js/console.warn msg)
+                   :clj  nil)))
+
+
 (defn- plain-group [& labels]
   (do
     (log)
