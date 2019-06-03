@@ -11,6 +11,7 @@
   (:require [clojure.test :as t]
             [clojure.walk :as walk]
             [clojure.string :as string]
+            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
             [ghostwheel.test-utils-cljs :as ucljs]
             #?@(:clj  [[com.rpl.specter
@@ -26,7 +27,9 @@
 (defmacro threading-test
   [threading-a threading-b & expr]
   (cond-> `(= (~threading-a ~@expr)
-              (~threading-b ~@expr))
+              (~threading-b ~@expr)
+              (tr (~threading-a ~@expr))
+              (|> (~threading-a ~@expr)))
           (cljs-env? &env) clj->cljs))
 
 (defmacro threading-expansion-test
@@ -68,7 +71,7 @@
                        (t/deftest ~test-sym
                          ~@(for [[args ret] args-ret-mappings]
                              `(t/is (= (~fn-sym ~@args) ~ret))))))
-                 ~@(for [trace-level (range 0 6)
+                 ~@(for [trace-level (range 0 7)
                          op          ['>defn '>defn-]
                          :let [fn-sym     (symbol (str base-name "-trace-" trace-level "-" op))
                                test-sym   (symbol (str fn-sym "-test"))
@@ -76,8 +79,8 @@
                                instrumentable-sym
                                           `(quote ~(symbol (str nspace) (str fn-sym)))
                                defn-forms `(~op ~fn-sym
-                                            {:ghostwheel.core/check-fx false
-                                             :ghostwheel.core/trace    ~trace-level}
+                                            {:ghostwheel.core/no-check-fx true
+                                             :ghostwheel.core/trace       ~trace-level}
                                             ~@bodies)]]
                      `(do
                         ~defn-forms

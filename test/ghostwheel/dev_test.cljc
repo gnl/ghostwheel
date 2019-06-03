@@ -10,7 +10,7 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as st]
             [clojure.spec.gen.alpha :as gen]
-            [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]
+            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]]
             [ghostwheel.test-utils :as tu
              :refer [process-fdef extract-fdef threading-test deftest-permutations]]
             [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
@@ -333,29 +333,35 @@
 
 (deftest *->-test
   (is (threading-test -> *->
+                      {:a [1 2 3] :b 456}
+                      (assoc :c 234)
+                      (dissoc :b)
+                      (get :a)
+                      (concat [4 5 6])
+                      (get 3)
                       (+ 1 2)
                       inc
-                      inc
-                      dec
                       (+ 2)
                       (/ 4))))
 
 (deftest *->>-test
   (is (threading-test ->> *->>
+                      [1 2 3 5 6]
+                      (map inc)
+                      (drop 1)
+                      second
                       (+ 1 2)
                       inc
-                      inc
-                      dec
                       (+ 2)
                       (/ 4))))
 
 (deftest *as->-test
   (is (threading-test as-> *as->
-                      (+ 1 2) x
+                      {:a [1 2 3]} x
+                      (get x :a)
+                      (apply * x)
+                      (* 3 x)
                       (inc x)
-                      (inc x)
-                      (dec x)
-                      (+ 2 x)
                       (/ x 4))))
 
 (deftest *cond->-test
