@@ -1178,7 +1178,7 @@
              (l/group-end))))))
 
 
-(defn- generate-check [env gen-tests-or-profile targets]
+(defn- generate-check [targets gen-tests-or-profile env]
   (let [base-config
         (cfg/get-base-config)
 
@@ -1188,11 +1188,21 @@
         {:keys [::extrument ::report-output]}
         base-config
 
+        quotify-thing
+        (fn [thing]
+          (if (symbol? thing)
+            `(quote ~thing)
+            thing))
+
         conformed-targets
-        (let [conformed-targets (s/conform ::check-targets targets)]
-          (if (= (key conformed-targets) :multi)
-            (val conformed-targets)
-            [(val conformed-targets)]))
+        (as-> targets targets
+          (if (vector? targets)
+            (map quotify-thing targets)
+            (quotify-thing targets))
+          (s/conform ::check-targets targets)
+          (if (= (key targets) :multi)
+            (val targets)
+            [(val targets)]))
 
         processed-targets
         (mapcat (fn [[type target]]
@@ -1454,7 +1464,7 @@
    `(check ~things nil))
   ([things gen-tests-or-profile]
    (if (cfg/get-env-config)
-     (cond-> (generate-check &env gen-tests-or-profile things)
+     (cond-> (generate-check things gen-tests-or-profile &env)
              (cljs-env? &env) (clj->cljs false))
      ;; TODO: Fix message
      (str "Ghostwheel disabled => "
