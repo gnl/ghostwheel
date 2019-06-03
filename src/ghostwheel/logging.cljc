@@ -184,8 +184,8 @@
                             msg
                             (with-out-str (pprint/pprint msg)))]
                   (.println *err* msg))
-          :cljs (if (nil? msg) (log "nil") (log msg)))
-       (last msgs)))))
+          :cljs (if (nil? msg) (log "nil") (log msg))))
+     (last msgs))))
 
 
 (defn log-raw
