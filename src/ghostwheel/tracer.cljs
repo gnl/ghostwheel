@@ -4,10 +4,8 @@
             [clairvoyant.core
              :refer [ITraceEnter ITraceError ITraceExit]
              :include-macros true]
-            [ghostwheel.logging :as l]
-            [devtools.core]
-            [devtools.defaults]
-            [ghostwheel.utils :as u]
+            [ghostwheel.logging :as logging
+             :refer [log group group-collapsed group-end log-exit]]
             [clojure.string :as string]))
 
 
@@ -26,9 +24,9 @@
   Example: #{'defn 'let :bindings}"
   [& {:keys [color background prefix suffix expand] :as options}]
   (let [binding-group (if (contains? expand :bindings)
-                        l/group
-                        l/group-collapsed)
-        has-bindings? l/ops-with-bindings
+                        group
+                        group-collapsed)
+        has-bindings? logging/ops-with-bindings
         fn-like?      (disj has-bindings? 'let `let)]
     (reify
       ITraceEnter
@@ -48,9 +46,9 @@
                                (not named?))
               group       (if (contains? expand op-sym)
                             (if unnamed-fn?
-                              l/group-collapsed
-                              l/group)
-                            l/group-collapsed)]
+                              group-collapsed
+                              group)
+                            group-collapsed)]
           (cond
             (fn-like? op)
             (let [title (if protocol
@@ -61,9 +59,9 @@
                                  (str " " (pr-str dispatch-val)))
                                (str " " arglist)))]
               (group title
-                     {::l/background background
-                      ::l/foreground color
-                      ::l/weight     "bold"}
+                     {::logging/background background
+                      ::logging/foreground color
+                      ::logging/weight     "bold"}
                      80
                      suffix))
 
@@ -75,46 +73,46 @@
             (#{'binding} op)
             (let [max-length 80
                   init       (when @*inside-let
-                               (l/truncate-string (str init) max-length))]
+                               (logging/truncate-string (str init) max-length))]
               (binding-group (str form) nil nil init)
               #_(when (> (count label) max-length)
-                  (l/group-collapsed "...")
-                  (l/log (with-out-str (pprint/pprint label)))
-                  (l/group-end))))))
+                  (group-collapsed "...")
+                  (log (with-out-str (pprint/pprint label)))
+                  (group-end))))))
 
       ITraceExit
       (-trace-exit [_ {:keys [op exit]}]
         (cond
           (#{'binding} op)
-          (do (l/log-exit exit)
-              (l/group-end))
+          (do (log-exit exit)
+              (group-end))
 
           (has-bindings? op)
           (do
             (when (#{'let `let} op)
               (reset! *inside-let false))
-            (l/log-exit exit)
-            (l/group-end))))
+            (log-exit exit)
+            (group-end))))
 
       ITraceError
       (-trace-error [_ {:keys [op form error ex-data]}]
         (cond
           (#{'binding} op)
           (do
-            (l/error (.-stack error))
+            (error (.-stack error))
             (when ex-data
-              (l/group-collapsed "ex-data")
-              (l/group-collapsed ex-data)
-              (l/group-end)
-              (l/group-end)))
+              (group-collapsed "ex-data")
+              (group-collapsed ex-data)
+              (group-end)
+              (group-end)))
 
           (has-bindings? op)
-          (do (l/group-end)
+          (do (group-end)
               (do
-                (l/error (.-stack error))
+                (error (.-stack error))
                 (when ex-data
-                  (l/group-collapsed "ex-data")
-                  (l/group-collapsed ex-data)
-                  (l/group-end)
-                  (l/group-end)))
-              (l/group-end)))))))
+                  (group-collapsed "ex-data")
+                  (group-collapsed ex-data)
+                  (group-end)
+                  (group-end)))
+              (group-end)))))))
