@@ -1064,7 +1064,7 @@
         config            (cfg/merge-config env (meta fn-name) meta-map)
         color             (resolve-trace-color (::trace-color config))
         {:keys [::defn-macro ::instrument ::outstrument ::trace
-                ::no-check ::gen-tests ::gen-test-profiles]} config
+                ::no-check ::gen-tests]} config
         defn-sym          (cond defn-macro (with-meta (symbol defn-macro) {:private private})
                                 private 'defn-
                                 :else 'defn)

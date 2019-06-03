@@ -34,11 +34,13 @@
                     ;; `declare`s by setting it to false in their respective metadata
                     :check-coverage    false
 
-                    ;; Number of generative tests performed when quick-checking (hot-reload/repl)
+                    ;; Number of generative tests performed by default
                     :gen-tests         0
 
-                    ;; p.ex. {:default 10 :extensive 1000}
-                    :gen-test-profiles nil
+                    ;; Map of gen-testing profile names to number of
+                    ;; tests. You can use the keyword as an argument
+                    ;; to `g/check`.
+                    :gen-test-profiles {:extensive 300}
 
                     ;; Ghostwheel generates standard `defn` function definitions
                     ;; by default. If you require composability with other
