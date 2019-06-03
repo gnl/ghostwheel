@@ -18,16 +18,16 @@
   (u/set-devtools-config!
    ;; Borrowed from https://github.com/bhb/expound/issues/152#issuecomment-475621181
    ;; Uses cljs.repl utilities to format ExceptionInfo objects in Chrome devtools console.
-   #js{:header (fn [object config]
-                 (when (instance? ExceptionInfo object)
-                   (let [err (repl/error->str object)
-                         message (some->> err
-                                          (re-find #"[^\n]+"))]
-                     (println err)
-                     #js["span" message])))
+   #js{:header  (fn [object config]
+                  (when (instance? ExceptionInfo object)
+                    (let [err     (repl/error->str object)
+                          message (some->> err
+                                           (re-find #"[^\n]+"))]
+                      (println err)
+                      #js["span" message])))
        :hasBody (constantly true)
-       :body (fn [object config]
-               #js["div" (repl/error->str object)])}))
+       :body    (fn [object config]
+                  #js["div" (repl/error->str object)])}))
 
 
 (defn tracer

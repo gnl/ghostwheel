@@ -181,10 +181,10 @@
   [error-formatter]
   `(let [external-cfg# ~(get-in @cljs-env/*compiler*
                                 [:options :external-config :devtools/config])
-         default-cfg# @devtools.defaults/config
-         override# {:max-print-level 4
-                    :min-expandable-sequable-count-for-well-known-types 2}
-         left-adjust# (str "margin-left: -17px;")]
+         default-cfg#  @devtools.defaults/config
+         override#     {:max-print-level                                    4
+                        :min-expandable-sequable-count-for-well-known-types 2}
+         left-adjust#  (str "margin-left: -17px;")]
      (doseq [[k# v#] override#
              :when (not (contains? external-cfg# k#))]
        (devtools.core/set-pref! k# v#))
