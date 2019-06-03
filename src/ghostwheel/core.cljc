@@ -961,8 +961,8 @@
       forms
       `(~clairvoyant
         {:enabled  true
-         :bindings [~'devtools.prefs/*current-config*
-                    ~(u/devtools-config-override)]
+         :binding [~'devtools.prefs/*current-config*
+                   ~(u/devtools-config-override)]
          :tracer   (~tracer
                     :color "#fff"
                     :background ~color
