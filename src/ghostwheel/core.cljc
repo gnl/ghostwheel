@@ -1299,7 +1299,9 @@
                    (let [ret# ~expr]
                      ~(when nested
                         `(do
-                           ~@(for [x nested]
+                           ~@(for [x nested
+                                   :when (not (and (seq? x)
+                                                   (#{'tr '|>} (-> x first name symbol))))]
                                (generic-trace x true))))
                      (l/log-exit ret#)
                      (l/group-end)
