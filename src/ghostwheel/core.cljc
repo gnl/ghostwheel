@@ -76,7 +76,6 @@
                  :body    (fn [object config]
                             #js["div" (repl/error->str object)])})
 
-
            (defonce _
              (try (do js/window
                       (some-> js/window.devtoolsFormatters
@@ -837,8 +836,8 @@
       (if-let [js-type (spec-op->type (first spec-op))]
         (let [modifiers (set (rest spec-op))]
           (as-> js-type t
-                (str (if (::nilable modifiers) "?" "!") t)
-                (str (when (::variadic modifiers) "...") t)))
+            (str (if (::nilable modifiers) "?" "!") t)
+            (str (when (::variadic modifiers) "...") t)))
         "*"))))
 
 
@@ -863,9 +862,9 @@
       ;; as well. It wasn't possible to put together an annotation which was both
       ;; considered valid and resulted in a successful type check.
       :arity-n nil #_(when-let [ret-types (as-> (val conformed-bs) x
-                                                (map #(get-type false (-> % :gspec :ret)) x)
-                                                (distinct x)
-                                                (when (not-any? #{"*" "?"} x) x))]
+                                            (map #(get-type false (-> % :gspec :ret)) x)
+                                            (distinct x)
+                                            (when (not-any? #{"*" "?"} x) x))]
                        {:jsdoc [(str "@return {" (string/join "|" ret-types) "}")]}))))
 
 
@@ -947,18 +946,18 @@
     (if (< trace 2)
       forms
       `(~clairvoyant
-        {:enabled  true
+        {:enabled true
          :binding [~'devtools.prefs/*current-config*
                    ~(u/devtools-config-override)]
-         :tracer   (~tracer
-                    :color "#fff"
-                    :background ~color
-                    :prefix ~label
-                    :suffix ~position
-                    :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
-                                   (>= trace 3) '#{:bindings 'let 'defn 'defn-}
-                                   :else '#{'defn 'defn-}))
-         :exclude  ~exclude}
+         :tracer  (~tracer
+                   :color "#fff"
+                   :background ~color
+                   :prefix ~label
+                   :suffix ~position
+                   :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
+                                  (>= trace 3) '#{:bindings 'let 'defn 'defn-}
+                                  :else '#{'defn 'defn-}))
+         :exclude ~exclude}
         ~forms))))
 
 
@@ -988,10 +987,10 @@
                                     :body [nil (val body)])
         process-arg (fn [[arg-type arg]]
                       (as-> arg arg
-                            (case arg-type
-                              :sym [arg-type arg]
-                              :seq [arg-type (update arg :as #(or % {:as :as :sym (gensym "arg_")}))]
-                              :map [arg-type (update arg :as #(or % (gensym "arg_")))])))
+                        (case arg-type
+                          :sym [arg-type arg]
+                          :seq [arg-type (update arg :as #(or % {:as :as :sym (gensym "arg_")}))]
+                          :map [arg-type (update arg :as #(or % (gensym "arg_")))])))
         ;; NOTE: usage of extract-arg isn't elegant, there's duplication, refactor
         extract-arg (fn [[arg-type arg]]
                       (case arg-type
@@ -1336,14 +1335,14 @@
       (and (seq? expr)
            (contains? l/ops-with-bindings (first expr)))
       (as-> (trace-threading-macros expr trace cljs?) expr
-            (if (and (#{'fn 'fn*} (first expr))
-                     (not (symbol? (second expr))))
-              `(~(first expr) ~(gensym "fn_") ~@(rest expr))
-              expr)
-            ;; REVIEW: Clairvoyant doesn't work on Clojure yet
-            (if cljs?
-              (clairvoyant-trace expr trace color env label position)
-              expr))
+        (if (and (#{'fn 'fn*} (first expr))
+                 (not (symbol? (second expr))))
+          `(~(first expr) ~(gensym "fn_") ~@(rest expr))
+          expr)
+        ;; REVIEW: Clairvoyant doesn't work on Clojure yet
+        (if cljs?
+          (clairvoyant-trace expr trace color env label position)
+          expr))
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
