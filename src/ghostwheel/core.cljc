@@ -931,6 +931,7 @@
                       2 '#{'fn 'fn* 'let}
                       3 '#{'fn 'fn*}
                       4 '#{'fn 'fn*}
+                      5 '#{:unnamed-fn}
                       nil)
         ;; Uncommenting the block below will strip nested `|>` or `tr` traces
         #_(comment
@@ -967,7 +968,7 @@
                     :background ~color
                     :prefix ~label
                     :suffix ~position
-                    :expand ~(cond (= trace 6) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
+                    :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
                                    (>= trace 3) '#{:bindings 'let 'defn 'defn-}
                                    :else '#{'defn 'defn-}))
          :exclude  ~exclude}
@@ -1295,7 +1296,7 @@
   (let [cfg      (merge-config env (meta expr))
         color    (resolve-trace-color (::trace-color cfg))
         trace    (let [trace (::trace cfg)]
-                   (if (= trace 0) 6 trace))
+                   (if (= trace 0) 5 trace))
         cljs?    (cljs-env? env)
         position (get-file-position env)
         context  (str (when label (str label " – "))
