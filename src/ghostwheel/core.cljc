@@ -1083,7 +1083,7 @@
                                 :else 'defn)
         trace             (if (cljs-env? env)
                             (cond empty-bodies 0
-                                  (true? trace) 4
+                                  (true? trace) 5
                                   :else trace)
                             0)                        ; TODO: Clojure
         ;;; Code generation
