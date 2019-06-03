@@ -1276,36 +1276,35 @@
                       (-> env :ns :name) ":" position)
         generic-trace
                  (fn generic-trace
-                   ([expr expanded?]
-                    (generic-trace expr expanded? nil))
-                   ([expr expanded? nested]
-                    (let [style {::l/background (:cyan l/ghostwheel-colors)}]
-                      (gen-cleanup-console-on-exception
-                       cljs?
-                       (if ((some-fn string? number? nil? boolean? keyword?) expr)
-                         `(let [ret# ~expr]
-                            (l/log ret# ~style)
-                            ret#)
-                         `(let [code# ~(str expr)]
-                            ((if ~expanded? l/group l/group-collapsed) code# ~style 55 ~context)
-                            ~(when (and (coll? expr)
-                                        (> (-> expr str count) 55))
-                               `(do
-                                  (l/group-collapsed "...")
-                                  #_(~(if (list? expr) `l/group `l/group-collapsed)
-                                     "...")
-                                  (l/log ~(-> expr pprint/pprint with-out-str))
-                                  (l/group-end)))
-                            (let [ret# ~expr]
-                              ~(when nested
-                                 `(do
-                                    ~@(for [x nested
-                                            :when (not (and (seq? x)
-                                                            (#{'tr '|>} (-> x first name symbol))))]
-                                        (generic-trace x true))))
-                              (l/log-exit ret#)
-                              (l/group-end)
-                              ret#)))))))]
+                   [expr expanded? & [has-nested is-nested?]]
+                   (let [style {::l/background (:cyan l/ghostwheel-colors)}]
+                     (gen-cleanup-console-on-exception
+                      cljs?
+                      (if ((some-fn string? number? nil? boolean? keyword?) expr)
+                        `(let [ret# ~expr]
+                           (l/log ret# ~style)
+                           ret#)
+                        `(let [code# ~(str expr)]
+                           ((if ~expanded? l/group l/group-collapsed) code# ~style 55 ~context)
+                           ~(when (and (not is-nested?)
+                                       (coll? expr)
+                                       (> (-> expr str count) 55))
+                              `(do
+                                 (l/group-collapsed "...")
+                                 #_(~(if (list? expr) `l/group `l/group-collapsed)
+                                    "...")
+                                 (l/log ~(-> expr pprint/pprint with-out-str))
+                                 (l/group-end)))
+                           (let [ret# ~expr]
+                             ~(when has-nested
+                                `(do
+                                   ~@(for [x has-nested
+                                           :when (not (and (seq? x)
+                                                           (#{'tr '|>} (-> x first name symbol))))]
+                                       (generic-trace x true nil true))))
+                             (l/log-exit ret#)
+                             (l/group-end)
+                             ret#))))))]
     (cond
       (and (seq? expr)
            (contains? #{'>defn '>defn-} (first expr)))
