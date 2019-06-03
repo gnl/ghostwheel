@@ -22,9 +22,6 @@
 (def ^:dynamic *report-output* #?(:clj  :repl
                                   :cljs :js-console))
 
-(def arrow {:symbol #_"=>" ""
-            :style         {::weight "bold"}})
-
 
 (def ghostwheel-colors
   {:purple0 "#967a93"
@@ -171,6 +168,9 @@
 
 
 (defn log-exit [data]
+  #_(log "=>" #_""
+         {::weight "bold"}
+         data)
   (log data))
 
 

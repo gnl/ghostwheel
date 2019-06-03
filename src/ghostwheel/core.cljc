@@ -1323,7 +1323,7 @@
                     (l/log ~(-> expr pprint/pprint with-out-str))
                     (l/group-end)))
               (let [ret# ~expr]
-                (l/log (:symbol l/arrow) (:style l/arrow) ret#)
+                (l/log-exit ret#)
                 (l/group-end)
                 ret#))))))))
 
