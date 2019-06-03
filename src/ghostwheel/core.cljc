@@ -1273,7 +1273,30 @@
         cljs?    (cljs-env? env)
         position (get-file-position env)
         context  (str (when label (str label " – "))
-                      (-> env :ns :name) ":" position)]
+                      (-> env :ns :name) ":" position)
+        generic-trace
+        (fn [expr]
+          (let [style {::l/background (:cyan l/ghostwheel-colors)}]
+            (gen-cleanup-console-on-exception
+             cljs?
+             (if ((some-fn string? number? nil? boolean? keyword?) expr)
+               `(let [ret# ~expr]
+                  (l/log ret# ~style)
+                  ret#)
+               `(let [code# ~(str expr)]
+                  (l/group code# ~style 55 ~context)
+                  ~(when (and (coll? expr)
+                              (> (-> expr str count) 55))
+                     `(do
+                        (l/group-collapsed "...")
+                        #_(~(if (list? expr) `l/group `l/group-collapsed)
+                           "...")
+                        (l/log ~(-> expr pprint/pprint with-out-str))
+                        (l/group-end)))
+                  (let [ret# ~expr]
+                    (l/log-exit ret#)
+                    (l/group-end)
+                    ret#))))))]
     (cond
       (and (seq? expr)
            (contains? #{'>defn '>defn-} (first expr)))
@@ -1305,27 +1328,7 @@
       (trace-threading-macros expr trace cljs?)
 
       :else
-      (let [style {::l/background (:cyan l/ghostwheel-colors)}]
-        (gen-cleanup-console-on-exception
-         cljs?
-         (if ((some-fn string? number? nil? boolean? keyword?) expr)
-           `(let [ret# ~expr]
-              (l/log ret# ~style)
-              ret#)
-           `(let [code# ~(str expr)]
-              (l/group code# ~style 55 ~context)
-              ~(when (and (coll? expr)
-                          (> (-> expr str count) 55))
-                 `(do
-                    (l/group-collapsed "...")
-                    #_(~(if (list? expr) `l/group `l/group-collapsed)
-                       "...")
-                    (l/log ~(-> expr pprint/pprint with-out-str))
-                    (l/group-end)))
-              (let [ret# ~expr]
-                (l/log-exit ret#)
-                (l/group-end)
-                ret#))))))))
+      (generic-trace expr))))
 
 
 ;;;; Main macros and public API
