@@ -8,35 +8,10 @@
             [devtools.core]
             [devtools.defaults]
             [ghostwheel.utils :as u]
-            [clojure.string :as string]
-            [cljs.repl :as repl]))
+            [clojure.string :as string]))
+
 
 (def *inside-let (atom false))
-
-
-;; Borrowed from https://github.com/bhb/expound/issues/152#issuecomment-475621181
-;; Uses cljs.repl utilities to format ExceptionInfo objects in Chrome devtools console.
-(def devtools-error-formatter
-  #js{:header  (fn [object config]
-                 (when (instance? ExceptionInfo object)
-                   (let [err     (repl/error->str object)
-                         message (some->> err
-                                          (re-find #"[^\n]+"))]
-                     (println err)
-                     #js["span" message])))
-      :hasBody (constantly true)
-      :body    (fn [object config]
-                 #js["div" (repl/error->str object)])})
-
-
-(defonce _
-  (try (do js/window
-           (some-> js/window.devtoolsFormatters
-                   (.unshift devtools-error-formatter)))
-       (catch :default _# nil)))
-
-
-(u/set-devtools-config!)
 
 
 (defn tracer
