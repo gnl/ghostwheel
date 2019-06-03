@@ -11,6 +11,7 @@
   (:require [ghostwheel.logging :as l
              :refer [ghostwheel-colors dlog group group-collapsed group-end log log-exit]]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
+            [ghostwheel.config :as cfg]
             [clojure.data :as data]
             [clojure.pprint :as pprint]))
 
@@ -71,7 +72,7 @@
   [orig-x & orig-forms]
   (let [untraced `(~'-> ~orig-x ~@orig-forms)]
     (cond->
-     (if-not (u/get-env-config)
+     (if-not (cfg/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -98,7 +99,7 @@
   [orig-x & orig-forms]
   (let [untraced `(~'->> ~orig-x ~@orig-forms)]
     (cond->
-     (if-not (u/get-env-config)
+     (if-not (cfg/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -127,7 +128,7 @@
   (let [untraced `(~'as-> ~expr ~name ~@forms)
         log-step (fn [form] (gen-log-threading-diff name form form))]
     (cond->
-     (if-not (u/get-env-config)
+     (if-not (cfg/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -148,7 +149,7 @@
   (assert (even? (count clauses)))
   (let [untraced `(~'cond-> ~expr ~@clauses)]
     (cond->
-     (if-not (u/get-env-config)
+     (if-not (cfg/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -177,7 +178,7 @@
   (assert (even? (count clauses)))
   (let [untraced `(~'cond->> ~expr ~@clauses)]
     (cond->
-     (if-not (u/get-env-config)
+     (if-not (cfg/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -205,7 +206,7 @@
   [expr & forms]
   (let [untraced `(~'some-> ~expr ~@forms)]
     (cond->
-     (if-not (u/get-env-config)
+     (if-not (cfg/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
@@ -230,7 +231,7 @@
   [expr & forms]
   (let [untraced `(~'some->> ~expr ~@forms)]
     (cond->
-     (if-not (u/get-env-config)
+     (if-not (cfg/get-env-config)
        untraced
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced

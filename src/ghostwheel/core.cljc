@@ -22,6 +22,7 @@
             [ghostwheel.reporting :as r]
             [ghostwheel.unghost :refer [clean-defn]]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
+            [ghostwheel.config :as cfg]
             [ghostwheel.logging :as l]
             [ghostwheel.threading-macros :include-macros true]
             [expound.alpha :as exp]
@@ -55,7 +56,7 @@
           (catch Exception _ (require '[ghostwheel.stubs.ana-api :as ana-api]))))
 
 
-(when-let [expound-cfg (::expound (u/get-base-config false))]
+(when-let [expound-cfg (::expound (cfg/get-base-config false))]
   #?(:clj  (alter-var-root #'s/*explain-out* (constantly (exp/custom-printer expound-cfg)))
      :cljs (set! s/*explain-out* (exp/custom-printer expound-cfg))))
 
@@ -189,7 +190,7 @@
                        ::gen-tests ::gen-test-profiles ::defn-macro
                        ::instrument ::outstrument ::extrument ::expound ::report-output])))
 
-(s/assert ::ghostwheel-config u/ghostwheel-default-config)
+(s/assert ::ghostwheel-config cfg/ghostwheel-default-config)
 ;; TODO: Add check to make sure instrument and outstrument aren't both on
 
 
@@ -868,20 +869,6 @@
                        {:jsdoc [(str "@return {" (string/join "|" ret-types) "}")]}))))
 
 
-(defn- merge-config [env & meta-maps]
-  (s/assert ::ghostwheel-config
-            (->> (apply merge-with
-                        (fn [a b]
-                          (if (every? map? [a b])
-                            (merge a b)
-                            b))
-                        (u/get-base-config)
-                        (u/get-ns-meta env)
-                        meta-maps)
-                 (filter #(= (-> % key namespace) (name `ghostwheel.core)))
-                 (into {}))))
-
-
 (defn- get-quoted-qualified-fn-name [fn-name env]
   `(quote ~(symbol (str (u/get-ns-name env)) (str fn-name))))
 
@@ -980,7 +967,7 @@
   (let [{[type fn-name] :name bs :bs} (s/conform ::>fdef-args forms)]
     (case type
       :sym (let [quoted-qualified-fn-name (get-quoted-qualified-fn-name fn-name env)
-                 {:keys [::instrument ::outstrument]} (merge-config env (meta fn-name))
+                 {:keys [::instrument ::outstrument]} (cfg/merge-config env (meta fn-name))
                  instrumentation          (cond outstrument `(ost/instrument ~quoted-qualified-fn-name)
                                                 instrument `(st/instrument ~quoted-qualified-fn-name)
                                                 :else nil)
@@ -1074,7 +1061,7 @@
                                  (generate-type-annotations env fn-bodies)
                                  {::ghostwheel true})
         ;;; Assemble the config
-        config            (merge-config env (meta fn-name) meta-map)
+        config            (cfg/merge-config env (meta fn-name) meta-map)
         color             (resolve-trace-color (::trace-color config))
         {:keys [::defn-macro ::instrument ::outstrument ::trace
                 ::check ::gen-tests ::gen-test-profiles]} config
@@ -1141,7 +1128,7 @@
 
 (defn- generate-coverage-check [env nspace]
   (let [cljs?           (cljs-env? env)
-        {:keys [::check-coverage ::check]} (merge (u/get-base-config)
+        {:keys [::check-coverage ::check]} (merge (cfg/get-base-config)
                                                   (if cljs?
                                                     (:meta (ana-api/find-ns nspace))
                                                     #?(:clj (meta nspace))))
@@ -1194,7 +1181,7 @@
 
 (defn- generate-check [env gen-tests-or-profile targets]
   (let [base-config
-        (u/get-base-config)
+        (cfg/get-base-config)
 
         cljs?
         (cljs-env? env)
@@ -1225,7 +1212,7 @@
                            metadata (if cljs? (:meta fn-data) #?(:clj (meta fn-data)))
 
                            {:keys [::check-coverage ::check]}
-                           (merge (u/get-base-config)
+                           (merge (cfg/get-base-config)
                                   (meta (:ns fn-data))
                                   metadata)]
                        (cond (not fn-data)
@@ -1284,7 +1271,7 @@
 
 (defn- generate-after-check [callbacks]
   (let [{:keys [::check]}
-        (merge (u/get-base-config)
+        (merge (cfg/get-base-config)
                (meta *ns*))]
     ;; TODO implement for clj
     (when (and check (seq callbacks))
@@ -1293,7 +1280,7 @@
 
 (defn- generate-traced-expr
   [expr label env]
-  (let [cfg      (merge-config env (meta expr))
+  (let [cfg      (cfg/merge-config env (meta expr))
         color    (resolve-trace-color (::trace-color cfg))
         trace    (let [trace (::trace cfg)]
                    (if (= trace 0) 5 trace))
@@ -1392,7 +1379,7 @@
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
                [name doc-string? attr-map? ([params*] gspec prepost-map? body?) + attr-map?])}
   [& forms]
-  (if (u/get-env-config)
+  (if (cfg/get-env-config)
     (cond-> (remove nil? (generate-defn forms false &env))
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn forms)))
@@ -1409,7 +1396,7 @@
   {:arglists '([name doc-string? attr-map? [params*] gspec prepost-map? body?]
                [name doc-string? attr-map? ([params*] gspec prepost-map? body?) + attr-map?])}
   [& forms]
-  (if (u/get-env-config)
+  (if (cfg/get-env-config)
     (cond-> (remove nil? (generate-defn forms true &env))
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn- forms)))
@@ -1423,7 +1410,7 @@
   of a `(g/check)`-ed namespace and calling `ghostwheel.core/after-check-async`
   correctly in the build system post-reload hooks."
   [& callbacks]
-  (when (u/get-env-config)
+  (when (cfg/get-env-config)
     (cond-> (generate-after-check callbacks)
             (cljs-env? &env) (clj->cljs false))))
 
@@ -1460,16 +1447,17 @@
   {:arglists '([]
                [quoted-sym-or-ns-regex]
                [[quoted-sym-or-ns-regex+]]
-               [gen-tests-or-profile quoted-sym-or-ns-regex]
-               [gen-tests-or-profile [quoted-sym-or-ns-regex+]])}
+               [quoted-sym-or-ns-regex gen-tests-or-profile]
+               [[quoted-sym-or-ns-regex+] gen-tests-or-profile])}
   ([]
-   `(check nil (quote ~(u/get-ns-name &env))))
+   `(check (quote ~(u/get-ns-name &env)) nil))
   ([things]
-   `(check nil ~things))
-  ([gen-tests-or-profile things]
-   (if (u/get-env-config)
+   `(check ~things nil))
+  ([things gen-tests-or-profile]
+   (if (cfg/get-env-config)
      (cond-> (generate-check &env gen-tests-or-profile things)
              (cljs-env? &env) (clj->cljs false))
+     ;; TODO: Fix message
      (str "Ghostwheel disabled => "
           (if (cljs-env? &env)
             "Add `:external-config {:ghostwheel {}}` to your compiler options to enable."
@@ -1497,7 +1485,7 @@
   {:arglists '([name [params*] gspec]
                [name ([params*] gspec) +])}
   [& forms]
-  (when (u/get-env-config)
+  (when (cfg/get-env-config)
     (cond-> (remove nil? (generate-fdef &env forms))
             (cljs-env? &env) clj->cljs)))
 
@@ -1507,7 +1495,7 @@
   ([expr]
    `(|> nil ~expr))
   ([label expr]
-   (if (u/get-env-config)
+   (if (cfg/get-env-config)
      (cond-> (generate-traced-expr expr label &env)
              (cljs-env? &env) clj->cljs)
      expr)))
