@@ -1114,7 +1114,7 @@
                               (if (= trace 1)
                                 traced-defn
                                 (clairvoyant-trace traced-defn trace color env nil (get-file-position env)))))]
-    `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test)))
+    `(do ~fdef (declare ~fn-name) ~traced-defn ~main-defn ~instrumentation ~generated-test)))
 
 
 (defn after-check-async [done]
