@@ -935,16 +935,18 @@
     (if (< trace 2)
       forms
       `(~clairvoyant
-        {:enabled true
-         :tracer  (~tracer
-                   :color "#fff"
-                   :background ~color
-                   :prefix ~label
-                   :suffix ~position
-                   :expand ~(cond (= trace 6) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
-                                  (>= trace 3) '#{:bindings 'let 'defn 'defn-}
-                                  :else '#{'defn 'defn-}))
-         :exclude ~exclude}
+        {:enabled  true
+         :bindings [~'devtools.prefs/*current-config*
+                    ~(u/devtools-config-override)]
+         :tracer   (~tracer
+                    :color "#fff"
+                    :background ~color
+                    :prefix ~label
+                    :suffix ~position
+                    :expand ~(cond (= trace 6) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
+                                   (>= trace 3) '#{:bindings 'let 'defn 'defn-}
+                                   :else '#{'defn 'defn-}))
+         :exclude  ~exclude}
         ~forms))))
 
 

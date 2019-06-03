@@ -177,19 +177,15 @@
   `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.) ~msg)))
 
 
-(defmacro set-devtools-config!
+(defn devtools-config-override
   []
-  `(let [external-cfg# ~(get-in @cljs-env/*compiler*
-                                [:options :external-config :devtools/config])
-         default-cfg#  @devtools.defaults/config
-         override#     {:max-print-level                                    4
-                        :min-expandable-sequable-count-for-well-known-types 2}
-         left-adjust#  (str "margin-left: -17px;")]
-     (doseq [[k# v#] override#
-             :when (not (contains? external-cfg# k#))]
-       (devtools.core/set-pref! k# v#))
-     (doseq [key# [:header-style]
-             :let [val# (get default-cfg# key#)]]
-       (devtools.core/set-pref! key# (str val# left-adjust#)))))
+  `(let [current-config# (~'devtools.prefs/get-prefs)
+         overrides#   {:max-print-level                                    4
+                       :min-expandable-sequable-count-for-well-known-types 2}
+         left-adjust# (str "margin-left: -17px;")]
+     (merge current-config#
+            (into overrides# (for [k# [:header-style]
+                                   :let [v# (get current-config# k#)]]
+                               [k# (str v# left-adjust#)])))))
 
 
