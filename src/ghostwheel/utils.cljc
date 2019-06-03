@@ -191,5 +191,8 @@
      (doseq [key# [:header-style]
              :let [val# (get default-cfg# key#)]]
        (devtools.core/set-pref! key# (str val# left-adjust#)))
-     (some-> js/window.devtoolsFormatters
-             (.unshift ~error-formatter))))
+     (try (do js/window
+              (some-> js/window.devtoolsFormatters
+                      (.unshift ~error-formatter)))
+          (catch :default _# nil))))
+
