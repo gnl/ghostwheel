@@ -78,40 +78,35 @@
                 ::marked-unsafe ::report-output ::num-tests]} (:message m)]
     (inc-report-counter! :pass)
     #_(when check-coverage)
-    (cond marked-unsafe
-          (do
-            (inc-report-counter! :warn)
-            (group (str "WARNING: "
-                        fn-name
-                        " – Function marked as unsafe."
-                        (::no-gen-testing snippets)
-                        (::incomplete-coverage snippets))
-                   warning-style)
-            (group-end))
+    (cond
+      marked-unsafe
+      (do
+        (inc-report-counter! :warn)
+        (log (str "WARNING: "
+                  fn-name
+                  " – Function marked as unsafe."
+                  (::no-gen-testing snippets))
+             warning-style))
 
-          (not fspec)
-          (do
-            (inc-report-counter! :warn)
-            (group (str "WARNING: "
-                        fn-name
-                        " – Missing fspec(s)"
-                        (::no-gen-testing snippets)
-                        (::incomplete-coverage snippets))
-                   warning-style)
-            (group-end))
+      (not fspec)
+      (do
+        (inc-report-counter! :warn)
+        (log (str "WARNING: "
+                  fn-name
+                  " – Missing fspec(s)"
+                  (::no-gen-testing snippets))
+             warning-style))
 
-          (<= num-tests 0)
-          (do
-            (inc-report-counter! :warn)
-            (group (str "WARNING: "
-                        fn-name
-                        " – `::g/gen-tests` set to 0"
-                        (::no-gen-testing snippets)
-                        (::incomplete-coverage snippets))
-                   warning-style)
-            (group-end))
+      (<= num-tests 0)
+      (do
+        (inc-report-counter! :warn)
+        (log (str "WARNING: "
+                  fn-name
+                  " – `::g/gen-tests` set to 0"
+                  (::no-gen-testing snippets))
+             warning-style))
 
-          :else nil)
+      :else nil)
     (l/log (str "PASSED: " fn-name) {::l/background (:green l/ghostwheel-colors)})))
 
 
