@@ -60,39 +60,61 @@
   [form]
   (process-fdef (second form)))
 
+
+(defn- fn-name-variation
+  [fn-sym & suffixes]
+  (->> suffixes
+       (map #(str "-" %))
+       (apply str fn-sym)
+       symbol))
+
+
+(defn deftest-tracing-permutations*
+  [base-name {:keys [::args-ret-mappings ::expected-fdef]} bodies cljs? nspace]
+  (let [gen-test-assertions (fn [fn-sym]
+                              (for [[args ret] args-ret-mappings]
+                                `(binding [ghostwheel.logging/*report-output* nil]
+                                   (t/is (= (~fn-sym ~@args) ~ret)))))]
+    `(do ~(let [fn-sym (fn-name-variation base-name "plain")]
+            `(do
+               (defn ~fn-sym ~@bodies)
+               (t/deftest ~(fn-name-variation fn-sym "test")
+                 ~@(gen-test-assertions fn-sym))))
+         ~@(for [tracing-wrapper ['|> 'tr]
+                 op              ['defn 'defn- '>defn '>defn-]
+                 :let [fn-sym   (fn-name-variation base-name op tracing-wrapper)
+                       test-sym (fn-name-variation fn-sym "test")]]
+             `(do
+                (~tracing-wrapper (~op ~fn-sym ~@bodies))
+                (t/deftest ~test-sym
+                  ~@(gen-test-assertions fn-sym))))
+         ~@(for [trace-level (range 0 7)
+                 op          ['>defn '>defn-]
+                 :let [fn-sym     (fn-name-variation base-name op "trace" trace-level)
+                       test-sym   (fn-name-variation fn-sym "test")
+                       fdef-sym   (fn-name-variation fn-sym "fdef")
+                       instrumentable-sym
+                                  `(quote ~(symbol (str nspace) (str fn-sym)))
+                       defn-forms `(~op ~fn-sym
+                                    {:ghostwheel.core/no-check-fx true
+                                     :ghostwheel.core/trace       ~trace-level}
+                                    ~@bodies)]]
+             `(do
+                ~defn-forms
+                (ost/instrument ~instrumentable-sym)
+                (t/deftest ~test-sym
+                  (let [~fdef-sym (extract-fdef (~(if cljs? `ucljs/expand `uclj/expand) ~defn-forms))]
+                    ~(when expected-fdef
+                       `(t/is (= ~fdef-sym (setval [(nthpath 1)] (quote ~fn-sym) ~expected-fdef))))
+                    ~@(gen-test-assertions fn-sym))))))))
+
+
 (defmacro deftest-tracing-permutations
   "This creates functions and tests for all possible
   combinations of trace-level, >defn/>defn-, etc."
-  [base-name {:keys [::args-ret-mappings ::expected-fdef]} & bodies]
-  (let [in-cljs (cljs-env? &env)
-        nspace  (.-name *ns*)]
-    (cond-> `(do ~(let [fn-sym   (symbol (str base-name "-plain"))
-                        test-sym (symbol (str fn-sym "-test"))]
-                    `(do
-                       (defn ~fn-sym ~@bodies)
-                       (t/deftest ~test-sym
-                         ~@(for [[args ret] args-ret-mappings]
-                             `(t/is (= (~fn-sym ~@args) ~ret))))))
-                 ~@(for [trace-level (range 0 7)
-                         op          ['>defn '>defn-]
-                         :let [fn-sym     (symbol (str base-name "-trace-" trace-level "-" op))
-                               test-sym   (symbol (str fn-sym "-test"))
-                               fdef-sym   (symbol (str "fdef-" fn-sym))
-                               instrumentable-sym
-                                          `(quote ~(symbol (str nspace) (str fn-sym)))
-                               defn-forms `(~op ~fn-sym
-                                            {:ghostwheel.core/no-check-fx true
-                                             :ghostwheel.core/trace       ~trace-level}
-                                            ~@bodies)]]
-                     `(do
-                        ~defn-forms
-                        (ost/instrument ~instrumentable-sym)
-                        (t/deftest ~test-sym
-                          (binding [ghostwheel.logging/*report-output* nil]
-                            (let [~fdef-sym (extract-fdef (~(if in-cljs `ucljs/expand `uclj/expand) ~defn-forms))]
-                              ~(when expected-fdef
-                                 `(t/is (= ~fdef-sym (setval [(nthpath 1)] (quote ~fn-sym) ~expected-fdef))))
-                              ~@(for [[args ret] args-ret-mappings]
-                                  `(t/is (= (~fn-sym ~@args) ~ret)))))))))
-            in-cljs clj->cljs)))
+  [base-name data & bodies]
+  (let [cljs?  (cljs-env? &env)
+        nspace (.-name *ns*)]
+    (cond-> (deftest-tracing-permutations* base-name data bodies cljs? nspace)
+            cljs? clj->cljs)))
 
