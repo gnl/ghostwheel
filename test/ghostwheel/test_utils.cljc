@@ -12,6 +12,7 @@
             [clojure.walk :as walk]
             [clojure.string :as string]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]]
+            [ghostwheel.logging]
             [ghostwheel.utils :as u :refer [cljs-env? clj->cljs]]
             [ghostwheel.test-utils-cljs :as ucljs]
             #?@(:clj  [[com.rpl.specter
@@ -26,10 +27,11 @@
 
 (defmacro threading-test
   [threading-a threading-b & expr]
-  (cond-> `(= (~threading-a ~@expr)
-              (~threading-b ~@expr)
-              (tr (~threading-a ~@expr))
-              (|> (~threading-a ~@expr)))
+  (cond-> `(binding [ghostwheel.logging/*report-output* nil]
+             (= (~threading-a ~@expr)
+                (~threading-b ~@expr)
+                (tr (~threading-a ~@expr))
+                (|> (~threading-a ~@expr))))
           (cljs-env? &env) clj->cljs))
 
 (defmacro threading-expansion-test
@@ -86,10 +88,11 @@
                         ~defn-forms
                         (ost/instrument ~instrumentable-sym)
                         (t/deftest ~test-sym
-                          (let [~fdef-sym (extract-fdef (~(if in-cljs `ucljs/expand `uclj/expand) ~defn-forms))]
-                            ~(when expected-fdef
-                               `(t/is (= ~fdef-sym (setval [(nthpath 1)] (quote ~fn-sym) ~expected-fdef))))
-                            ~@(for [[args ret] args-ret-mappings]
-                                `(t/is (= (~fn-sym ~@args) ~ret))))))))
+                          (binding [ghostwheel.logging/*report-output* nil]
+                            (let [~fdef-sym (extract-fdef (~(if in-cljs `ucljs/expand `uclj/expand) ~defn-forms))]
+                              ~(when expected-fdef
+                                 `(t/is (= ~fdef-sym (setval [(nthpath 1)] (quote ~fn-sym) ~expected-fdef))))
+                              ~@(for [[args ret] args-ret-mappings]
+                                  `(t/is (= (~fn-sym ~@args) ~ret)))))))))
             in-cljs clj->cljs)))
 
