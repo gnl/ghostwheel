@@ -19,8 +19,7 @@
 (def *nesting (atom ""))
 
 
-(def ^:dynamic *report-output* #?(:clj  :repl
-                                  :cljs :js-console))
+(defonce ^:dynamic *report-output* :repl)
 
 
 (def ghostwheel-colors

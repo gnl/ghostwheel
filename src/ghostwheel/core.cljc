@@ -56,9 +56,15 @@
           (catch Exception _ (require '[ghostwheel.stubs.ana-api :as ana-api]))))
 
 
-(when-let [expound-cfg (::expound (cfg/get-base-config false))]
-  #?(:clj  (alter-var-root #'s/*explain-out* (constantly (exp/custom-printer expound-cfg)))
-     :cljs (set! s/*explain-out* (exp/custom-printer expound-cfg))))
+(let [{:keys [::expound ::report-output]} (cfg/get-base-config-macro)]
+  #?(:clj  (do (alter-var-root #'s/*explain-out*
+                               (constantly (exp/custom-printer expound)))
+               (alter-var-root #'l/*report-output*
+                               (constantly (if (= report-output :js-console)
+                                             :repl
+                                             report-output))))
+     :cljs (do (set! s/*explain-out* (exp/custom-printer expound))
+               (set! l/*report-output* report-output))))
 
 
 ;; Borrowed from https://github.com/bhb/expound/issues/152#issuecomment-475621181
@@ -1127,7 +1133,7 @@
 
 (defn- generate-coverage-check [env nspace]
   (let [cljs?           (cljs-env? env)
-        {:keys [::check-coverage ::no-check]} (merge (cfg/get-base-config)
+        {:keys [::check-coverage ::no-check]} (merge (cfg/get-base-config-fn)
                                                      (if cljs?
                                                        (:meta (ana-api/find-ns nspace))
                                                        #?(:clj (meta nspace))))
@@ -1180,7 +1186,7 @@
 
 (defn- generate-check [targets gen-tests-or-profile env]
   (let [base-config
-        (cfg/get-base-config)
+        (cfg/get-base-config-fn)
 
         cljs?
         (cljs-env? env)
@@ -1221,7 +1227,7 @@
                            metadata (if cljs? (:meta fn-data) #?(:clj (meta fn-data)))
 
                            {:keys [::check-coverage ::no-check]}
-                           (merge (cfg/get-base-config)
+                           (merge (cfg/get-base-config-fn)
                                   (meta (:ns fn-data))
                                   metadata)]
                        (cond (not fn-data)
@@ -1256,8 +1262,7 @@
        cljs?
        `(when *global-check-allowed?*
           (binding [*global-trace-allowed?* false
-                    *gen-tests-or-profile*  ~gen-tests-or-profile
-                    l/*report-output*       ~(if cljs? report-output :repl)]
+                    *gen-tests-or-profile*  ~gen-tests-or-profile]
             (do
               ~@(remove nil?
                         `[~(when extrument
@@ -1280,7 +1285,7 @@
 
 (defn- generate-after-check [callbacks]
   (let [{:keys [::no-check]}
-        (merge (cfg/get-base-config)
+        (merge (cfg/get-base-config-fn)
                (meta *ns*))]
     ;; TODO implement for clj
     (when (and (not no-check) (seq callbacks))

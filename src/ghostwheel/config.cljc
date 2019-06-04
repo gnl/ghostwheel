@@ -151,13 +151,21 @@
           (dissoc :ghostwheel.core/extensive-tests)))
 
 
-(defn get-base-config
+(defn get-base-config-fn
+  "Base config is defaults + env config."
   ([]
-   (get-base-config true))
+   (get-base-config-fn true))
   ([cache?]
    (->> (get-env-config cache?)
         (merge ghostwheel-default-config)
         migrate-deprecated-config)))
+
+
+(defmacro get-base-config-macro
+  ([]
+   (get-base-config-fn))
+  ([cache?]
+   (get-base-config-fn cache?)))
 
 
 (defn merge-config [env & meta-maps]
@@ -166,7 +174,7 @@
                                       (if (every? map? [a b])
                                         (merge a b)
                                         b))
-                                    (get-base-config)
+                                    (get-base-config-fn)
                                     (util/get-ns-meta env)
                                     meta-maps)
                              (filter #(= (-> % key namespace) (name `ghostwheel.core)))
