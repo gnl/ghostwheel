@@ -60,7 +60,7 @@
   [form]
   (process-fdef (second form)))
 
-(defmacro deftest-permutations
+(defmacro deftest-tracing-permutations
   "This creates functions and tests for all possible
   combinations of trace-level, >defn/>defn-, etc."
   [base-name {:keys [::args-ret-mappings ::expected-fdef]} & bodies]
