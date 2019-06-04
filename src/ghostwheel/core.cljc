@@ -187,7 +187,7 @@
 (s/def ::outstrument boolean?)
 (s/def ::extrument (s/nilable (s/coll-of qualified-symbol? :kind vector?)))
 (s/def ::expound (s/nilable (s/map-of keyword? any?)))
-(s/def ::report-output #{:repl :js-console})
+(s/def ::report-output #{:repl :js-console nil})
 
 ;; TODO: Integrate bhauman/spell-spec
 (s/def ::ghostwheel-config

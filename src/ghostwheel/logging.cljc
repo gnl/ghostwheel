@@ -163,7 +163,8 @@
      (case *report-output*
        :repl (apply plain-log styled-data)
        :js-console #?(:cljs (.apply js/console.log js/console (to-array styled-data))
-                      :clj  nil)))))
+                      :clj  nil)
+       nil nil))))
 
 
 (defn log-exit [data]
@@ -192,21 +193,24 @@
   (case *report-output*
     :repl (doseq [obj objs] (plain-log obj))
     :js-console #?(:cljs (.apply js/console.log js/console (to-array (concat format-strings objs)))
-                   :clj  nil)))
+                   :clj  nil)
+    nil nil))
 
 
 (defn error [msg]
   (case *report-output*
     :repl (do (plain-log "ERROR:") (plain-log msg))
     :js-console #?(:cljs (js/console.error msg)
-                   :clj  nil)))
+                   :clj  nil)
+    nil nil))
 
 
 (defn warning [msg]
   (case *report-output*
     :repl (do (plain-log "WARNING:") (plain-log msg))
     :js-console #?(:cljs (js/console.warn msg)
-                   :clj  nil)))
+                   :clj  nil)
+    nil nil))
 
 
 (defn- plain-group [& labels]
@@ -230,7 +234,8 @@
                                       js/console.groupCollapsed)
                                     js/console
                                     (to-array styled-label))
-                      :clj  nil)))))
+                      :clj  nil)
+       nil nil))))
 
 
 (defn group
@@ -257,7 +262,8 @@
     (case *report-output*
       :repl (plain-group-end)
       :js-console #?(:cljs (js/console.groupEnd)
-                     :clj  nil))))
+                     :clj  nil)
+      nil nil)))
 
 
 (defn log-bold [msg]
