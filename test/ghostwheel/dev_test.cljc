@@ -12,7 +12,7 @@
             [clojure.spec.gen.alpha :as gen]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]]
             [ghostwheel.test-utils :as tu
-             :refer [process-fdef extract-fdef threading-test deftest-tracing-permutations]]
+             :refer [process-fdef extract-fdef threading-test deftest-defn-variations]]
             [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
             #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
                        [orchestra.spec.test :as ost]
@@ -66,7 +66,7 @@
                                     ret__1                             :ret}]
                                 (> ret__1 (- a x))))))
 
-(deftest-tracing-permutations arity-1
+(deftest-defn-variations arity-1
   {::tu/args-ret-mappings {[[-2 2] [0 10] {:v 10 :w 30} {:x 40 :y 10} (atom 2)] 100}
    ::tu/expected-fdef     arity-1-fdef}
   [[a b] [c d :as cd] {:keys [v w] :as vw} {:keys [x y]} an-atom**]
@@ -238,7 +238,7 @@
                           (> ret__1 (+ a c))))
                        p1__1)))))
 
-(deftest-tracing-permutations arity-n-multiret
+(deftest-defn-variations arity-n-multiret
   {::tu/args-ret-mappings {[3]     "4"
                            [3 5]   8
                            [3 5 7] 15}
@@ -255,7 +255,7 @@
     => int? | #(> % a) #(> % (+ a c))]
    (apply + a b c more)))
 
-(deftest-tracing-permutations arity-n-uniret
+(deftest-defn-variations arity-n-uniret
   {::tu/args-ret-mappings {[3]              4
                            [3 5]            8
                            [3 5 7 (atom 3)] 15}

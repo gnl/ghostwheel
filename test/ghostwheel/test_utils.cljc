@@ -69,7 +69,7 @@
        symbol))
 
 
-(defn deftest-tracing-permutations*
+(defn deftest-defn-variations*
   [base-name {:keys [::args-ret-mappings ::expected-fdef]} bodies cljs? nspace]
   (let [gen-test-assertions (fn [fn-sym]
                               (for [[args ret] args-ret-mappings]
@@ -109,12 +109,12 @@
                     ~@(gen-test-assertions fn-sym))))))))
 
 
-(defmacro deftest-tracing-permutations
+(defmacro deftest-defn-variations
   "This creates functions and tests for all possible
   combinations of trace-level, >defn/>defn-, etc."
   [base-name data & bodies]
   (let [cljs?  (cljs-env? &env)
         nspace (.-name *ns*)]
-    (cond-> (deftest-tracing-permutations* base-name data bodies cljs? nspace)
+    (cond-> (deftest-defn-variations* base-name data bodies cljs? nspace)
             cljs? clj->cljs)))
 
