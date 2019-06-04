@@ -81,8 +81,19 @@
                (t/deftest ~(fn-name-variation fn-sym "test")
                  ~@(gen-test-assertions fn-sym))))
          ~@(for [tracing-wrapper ['|> 'tr]
+                 :let [fn-sym         (fn-name-variation base-name tracing-wrapper "fn")
+                       test-sym       (fn-name-variation fn-sym "test")
+                       test-sym-named (fn-name-variation fn-sym "named" "test")]]
+             `(do
+                (let [~fn-sym (~tracing-wrapper (~'fn ~@bodies))]
+                  (t/deftest ~test-sym
+                    ~@(gen-test-assertions fn-sym)))
+                (let [~fn-sym (~tracing-wrapper (~'fn ~fn-sym ~@bodies))]
+                  (t/deftest ~test-sym-named
+                    ~@(gen-test-assertions fn-sym)))))
+         ~@(for [tracing-wrapper ['|> 'tr]
                  op              ['defn 'defn- '>defn '>defn-]
-                 :let [fn-sym   (fn-name-variation base-name op tracing-wrapper)
+                 :let [fn-sym   (fn-name-variation base-name tracing-wrapper op)
                        test-sym (fn-name-variation fn-sym "test")]]
              `(do
                 (~tracing-wrapper (~op ~fn-sym ~@bodies))
