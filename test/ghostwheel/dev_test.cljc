@@ -317,6 +317,28 @@
     (is (= fdef arity-n-fdef-multiret))))
 
 
+(>defn arity-1-stub
+  [a b]
+  [string? boolean? => int?])
+
+(deftest arity-1-stub-test
+  (is (binding [ghostwheel.logging/*report-output* nil]
+        (int? (arity-1-stub "abc" true)))))
+
+
+(>defn arity-n-stub
+  ([a]
+   [string? => int?])
+  ([a b]
+   [string? boolean? => int?]))
+
+(deftest arity-n-stub-test
+  (is (binding [ghostwheel.logging/*report-output* nil]
+        (int? (arity-n-stub "abc"))))
+  (is (binding [ghostwheel.logging/*report-output* nil]
+        (int? (arity-n-stub "abc" false)))))
+
+
 (deftest-adhoc-trace-variations trace-let-form
   (let [a 1
         b 2
@@ -345,26 +367,6 @@
 (deftest-adhoc-trace-variations generic-trace-map {:a 123 :b 456})
 (deftest-adhoc-trace-variations generic-trace-vector [:a 1 2 3])
 (deftest-adhoc-trace-variations generic-trace-set #{:a 1 2 3})
-
-
-(deftest arity-1-stub-test
-  (>defn arity-1-stub
-    [a b]
-    [int? string? => int?])
-  (is (int? (with-out-str
-              (arity-1-stub 1 "abc")))))
-
-
-(deftest arity-n-stub-test
-  (>defn arity-n-stub
-    ([a]
-     [int? => int?])
-    ([a b]
-     [int? string? => int?]))
-  (is (int? (with-out-str
-              (arity-n-stub 1))))
-  (is (int? (with-out-str
-              (arity-n-stub 1 "abc")))))
 
 
 (deftest *->-test

@@ -1012,7 +1012,8 @@
         body-forms  (if (and fspec (empty? orig-body-forms))
                       ;; TODO error handling when specs too fancy for stub auto-generation
                       [`(do
-                          (println ~(str fn-name " – No function body => Generating random spec-based output."))
+                          (when l/*report-output*
+                            (println ~(str fn-name " – No function body => Generating random spec-based output.")))
                           (apply (-> ~fspec s/gen gen/generate)
                                  ~@(map extract-arg reg-args) ~(extract-arg var-arg)))]
 
