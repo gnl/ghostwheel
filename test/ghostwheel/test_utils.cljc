@@ -69,6 +69,13 @@
        symbol))
 
 
+(defn- stringify-nilable-keyword
+  [a]
+  (if (nil? a)
+    "nil"
+    (-> a name str)))
+
+
 (defn deftest-defn-variations*
   [base-name {:keys [::args-ret-mappings ::expected-fdef]} bodies cljs? nspace]
   (let [gen-test-assertions (fn [fn-sym]
@@ -81,22 +88,30 @@
                (deftest ~(name-variation fn-sym "test")
                  ~@(gen-test-assertions fn-sym))))
          ~@(for [tracing-wrapper ['|> 'tr]
-                 :let [fn-sym         (name-variation base-name tracing-wrapper "fn")
+                 label           [:label nil]
+                 :let [fn-sym         (name-variation base-name
+                                                      tracing-wrapper
+                                                      (stringify-nilable-keyword label)
+                                                      "fn")
                        test-sym       (name-variation fn-sym "test")
                        test-sym-named (name-variation fn-sym "named" "test")]]
              `(do
-                (let [~fn-sym (~tracing-wrapper (~'fn ~@bodies))]
+                (let [~fn-sym ~(remove nil? `(~tracing-wrapper ~label (~'fn ~@bodies)))]
                   (deftest ~test-sym
                     ~@(gen-test-assertions fn-sym)))
-                (let [~fn-sym (~tracing-wrapper (~'fn ~fn-sym ~@bodies))]
+                (let [~fn-sym ~(remove nil? `(~tracing-wrapper ~label (~'fn ~fn-sym ~@bodies)))]
                   (deftest ~test-sym-named
                     ~@(gen-test-assertions fn-sym)))))
          ~@(for [tracing-wrapper ['|> 'tr]
                  op              ['defn 'defn- '>defn '>defn-]
-                 :let [fn-sym   (name-variation base-name tracing-wrapper op)
+                 label           [:label nil]
+                 :let [fn-sym   (name-variation base-name
+                                                tracing-wrapper
+                                                (stringify-nilable-keyword label)
+                                                op)
                        test-sym (name-variation fn-sym "test")]]
              `(do
-                (~tracing-wrapper (~op ~fn-sym ~@bodies))
+                ~(remove nil? `(~tracing-wrapper ~label (~op ~fn-sym ~@bodies)))
                 (deftest ~test-sym
                   ~@(gen-test-assertions fn-sym))))
          ~@(for [trace-level (range 0 7)
@@ -134,11 +149,15 @@
   [expr-type expr]
   `(do
      ~@(for [tracing-wrapper ['|> 'tr]
-             :let [test-sym (name-variation tracing-wrapper expr-type "test")]]
+             label           [:label nil]
+             :let [test-sym (name-variation tracing-wrapper
+                                            (stringify-nilable-keyword label)
+                                            expr-type
+                                            "test")]]
          `(deftest ~test-sym
             (binding [ghostwheel.logging/*report-output* nil]
               (is (= ~expr
-                     (~tracing-wrapper ~expr))))))))
+                     ~(remove nil? `(~tracing-wrapper ~label ~expr)))))))))
 
 
 (defmacro deftest-adhoc-trace-variations

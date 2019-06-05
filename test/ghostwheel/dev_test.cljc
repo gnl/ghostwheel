@@ -360,7 +360,6 @@
          nil))
 
 
-(deftest-adhoc-trace-variations generic-trace-nil nil)
 (deftest-adhoc-trace-variations generic-trace-string "asdf")
 (deftest-adhoc-trace-variations generic-trace-number 1234)
 (deftest-adhoc-trace-variations generic-trace-boolean true)
