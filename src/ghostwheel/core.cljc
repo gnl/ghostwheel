@@ -146,10 +146,13 @@
 
 
 (defn- get-file-position [env]
-  (let [{:keys [line column]} env]
-    (if (> line 1)
-      (str line ":" column)
-      "REPL")))
+  (if (cljs-env? env)
+    (let [{:keys [line column]} env]
+      (if (> line 1)
+        (str line ":" column)
+        "REPL"))
+    ;; TODO implement for clojure
+    nil))
 
 
 ;;;; Operators
@@ -1302,7 +1305,7 @@
         cljs?    (cljs-env? env)
         position (get-file-position env)
         context  (str (when label (str label " – "))
-                      (-> env :ns :name) ":" position)
+                      (u/get-ns-name env) ":" position)
         generic-trace
                  (fn generic-trace
                    [expr expanded? & [has-nested is-nested?]]
