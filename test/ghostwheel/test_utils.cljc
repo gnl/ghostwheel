@@ -130,13 +130,20 @@
             cljs? clj->cljs)))
 
 
-(defn deftest-let-variations*
-  [expr]
-  `(deftest))
+(defn deftest-adhoc-trace-variations*
+  [expr-type expr]
+  `(do
+     ~@(for [tracing-wrapper ['|> 'tr]
+             :let [test-sym (name-variation tracing-wrapper expr-type "test")]]
+         `(deftest ~test-sym
+            (binding [ghostwheel.logging/*report-output* nil]
+              (is (= ~expr
+                     (~tracing-wrapper ~expr))))))))
 
-(defmacro deftest-let-variations
-  [expr]
+
+(defmacro deftest-adhoc-trace-variations
+  [expr-type expr]
   (let [cljs? (cljs-env? &env)]
-    (cond-> (deftest-let-variations* expr)
+    (cond-> (deftest-adhoc-trace-variations* expr-type expr)
             cljs? clj->cljs)))
 

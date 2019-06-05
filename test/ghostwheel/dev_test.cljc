@@ -12,7 +12,8 @@
             [clojure.spec.gen.alpha :as gen]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]]
             [ghostwheel.test-utils :as tu
-             :refer [process-fdef extract-fdef threading-test deftest-defn-variations]]
+             :refer [process-fdef extract-fdef threading-test deftest-defn-variations
+                     deftest-adhoc-trace-variations]]
             [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
             #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
                        [orchestra.spec.test :as ost]
@@ -314,6 +315,37 @@
                   [nat-int? pos-int? nat-int? (s/* int?) | #(< a b) #(< a b c)
                    => int? | #(> % a) #(> % (+ a c))]))))]
     (is (= fdef arity-n-fdef-multiret))))
+
+
+(deftest-adhoc-trace-variations trace-let-form
+  (let [a 1
+        b 2
+        c [3 4 5]]
+    (apply + a b c)))
+
+
+(deftest-adhoc-trace-variations generic-trace-call
+  (apply str
+         (conj [1 2 3] 4)
+         (drop 1 [4 5 6])
+         (assoc {:a 1 :b 2} :c 3)
+         (set [1 2 3])
+         "asdf"
+         1234
+         true
+         :bla
+         nil
+         nil))
+
+
+(deftest-adhoc-trace-variations generic-trace-nil nil)
+(deftest-adhoc-trace-variations generic-trace-string "asdf")
+(deftest-adhoc-trace-variations generic-trace-number 1234)
+(deftest-adhoc-trace-variations generic-trace-boolean true)
+(deftest-adhoc-trace-variations generic-trace-map {:a 123 :b 456})
+(deftest-adhoc-trace-variations generic-trace-vector [:a 1 2 3])
+(deftest-adhoc-trace-variations generic-trace-set #{:a 1 2 3})
+
 
 (comment
  (deftest arity-1-stub-test
