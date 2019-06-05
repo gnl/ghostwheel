@@ -8,7 +8,7 @@
 
 (ns ghostwheel.test-utils
   #?(:cljs (:require-macros ghostwheel.test-utils))
-  (:require [clojure.test :as t]
+  (:require [clojure.test :refer [deftest is]]
             [clojure.walk :as walk]
             [clojure.string :as string]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]]
@@ -74,11 +74,11 @@
   (let [gen-test-assertions (fn [fn-sym]
                               (for [[args ret] args-ret-mappings]
                                 `(binding [ghostwheel.logging/*report-output* nil]
-                                   (t/is (= (~fn-sym ~@args) ~ret)))))]
+                                   (is (= (~fn-sym ~@args) ~ret)))))]
     `(do ~(let [fn-sym (name-variation base-name "plain")]
             `(do
                (defn ~fn-sym ~@bodies)
-               (t/deftest ~(name-variation fn-sym "test")
+               (deftest ~(name-variation fn-sym "test")
                  ~@(gen-test-assertions fn-sym))))
          ~@(for [tracing-wrapper ['|> 'tr]
                  :let [fn-sym         (name-variation base-name tracing-wrapper "fn")
@@ -86,10 +86,10 @@
                        test-sym-named (name-variation fn-sym "named" "test")]]
              `(do
                 (let [~fn-sym (~tracing-wrapper (~'fn ~@bodies))]
-                  (t/deftest ~test-sym
+                  (deftest ~test-sym
                     ~@(gen-test-assertions fn-sym)))
                 (let [~fn-sym (~tracing-wrapper (~'fn ~fn-sym ~@bodies))]
-                  (t/deftest ~test-sym-named
+                  (deftest ~test-sym-named
                     ~@(gen-test-assertions fn-sym)))))
          ~@(for [tracing-wrapper ['|> 'tr]
                  op              ['defn 'defn- '>defn '>defn-]
@@ -97,7 +97,7 @@
                        test-sym (name-variation fn-sym "test")]]
              `(do
                 (~tracing-wrapper (~op ~fn-sym ~@bodies))
-                (t/deftest ~test-sym
+                (deftest ~test-sym
                   ~@(gen-test-assertions fn-sym))))
          ~@(for [trace-level (range 0 7)
                  op          ['>defn '>defn-]
@@ -113,10 +113,10 @@
              `(do
                 ~defn-forms
                 (ost/instrument ~instrumentable-sym)
-                (t/deftest ~test-sym
+                (deftest ~test-sym
                   (let [~fdef-sym (extract-fdef (~(if cljs? `ucljs/expand `uclj/expand) ~defn-forms))]
                     ~(when expected-fdef
-                       `(t/is (= ~fdef-sym (setval [(nthpath 1)] (quote ~fn-sym) ~expected-fdef))))
+                       `(is (= ~fdef-sym (setval [(nthpath 1)] (quote ~fn-sym) ~expected-fdef))))
                     ~@(gen-test-assertions fn-sym))))))))
 
 
