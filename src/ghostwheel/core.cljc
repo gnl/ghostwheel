@@ -1472,14 +1472,9 @@
   ([things]
    `(check ~things nil))
   ([things gen-tests-or-profile]
-   (if (cfg/get-env-config)
+   (when (cfg/get-env-config)
      (cond-> (generate-check things gen-tests-or-profile &env)
-             (cljs-env? &env) (clj->cljs false))
-     ;; TODO: Fix message
-     (str "Ghostwheel disabled => "
-          (if (cljs-env? &env)
-            "Add `:external-config {:ghostwheel {}}` to your compiler options to enable."
-            "Start the REPL with the `-Dghostwheel.enabled=true` JVM system property to enable.")))))
+             (cljs-env? &env) (clj->cljs false)))))
 
 
 (s/def ::>fdef-args
