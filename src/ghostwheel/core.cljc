@@ -1009,10 +1009,10 @@
         var-arg     (some-> args :varargs :form process-arg)
         arg-list    (vec (concat (map unform-arg reg-args)
                                  (when var-arg ['& (unform-arg var-arg)])))
-        body-forms  (if (and fspec (every? nil? orig-body-forms))
+        body-forms  (if (and fspec (empty? orig-body-forms))
                       ;; TODO error handling when specs too fancy for stub auto-generation
                       [`(do
-                          (println ~(str fn-name " – Function body is nil => Generating random spec-based output."))
+                          (println ~(str fn-name " – No function body => Generating random spec-based output."))
                           (apply (-> ~fspec s/gen gen/generate)
                                  ~@(map extract-arg reg-args) ~(extract-arg var-arg)))]
 

@@ -347,21 +347,25 @@
 (deftest-adhoc-trace-variations generic-trace-set #{:a 1 2 3})
 
 
-(comment
- (deftest arity-1-stub-test
-   (>defn arity-1-stub
-     [a b]
-     [int? string? => string?])
-   (is (string? (arity-1-stub 1 "abc"))))
+(deftest arity-1-stub-test
+  (>defn arity-1-stub
+    [a b]
+    [int? string? => int?])
+  (is (int? (with-out-str
+              (arity-1-stub 1 "abc")))))
 
- (deftest arity-n-stub-test
-   (>defn arity-n-stub
-     ([a]
-      [int? => int?])
-     ([a b]
-      [int? string? => string?]))
-   (is (int? (arity-n-stub 1)))
-   (is (string? (arity-n-stub 1 "abc")))))
+
+(deftest arity-n-stub-test
+  (>defn arity-n-stub
+    ([a]
+     [int? => int?])
+    ([a b]
+     [int? string? => int?]))
+  (is (int? (with-out-str
+              (arity-n-stub 1))))
+  (is (int? (with-out-str
+              (arity-n-stub 1 "abc")))))
+
 
 (deftest *->-test
   (is (threading-test -> *->
@@ -376,6 +380,7 @@
                       (+ 2)
                       (/ 4))))
 
+
 (deftest *->>-test
   (is (threading-test ->> *->>
                       [1 2 3 5 6]
@@ -387,6 +392,7 @@
                       (+ 2)
                       (/ 4))))
 
+
 (deftest *as->-test
   (is (threading-test as-> *as->
                       {:a [1 2 3]} x
@@ -395,6 +401,7 @@
                       (* 3 x)
                       (inc x)
                       (/ x 4))))
+
 
 (deftest *cond->-test
   (is (threading-test cond-> *cond->
@@ -405,6 +412,7 @@
                       true (+ 2)
                       true (/ 4))))
 
+
 (deftest *cond->>-test
   (is (threading-test cond->> *cond->>
                       (+ 1 2)
@@ -414,6 +422,7 @@
                       true (+ 2)
                       true (/ 4))))
 
+
 (deftest *some->-nil-test
   (is (threading-test some-> *some->
                       {:a 123 :b 456}
@@ -422,12 +431,14 @@
                       inc
                       inc)))
 
+
 (deftest *some->-test
   (is (threading-test some-> *some->
                       {:a 123 :b 456}
                       :b
                       inc
                       inc)))
+
 
 (deftest *some->>-nil-test
   (is (threading-test some->> *some->>
@@ -436,6 +447,7 @@
                       (remove #{:b})
                       (some #{:b})
                       (conj [1 2 3]))))
+
 
 (deftest *some->>-test
   (is (threading-test some->> *some->>
