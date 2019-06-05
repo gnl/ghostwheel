@@ -23,15 +23,14 @@
                              :jvm-opts     ["-Dghostwheel.cache=false"]}
              :clj-prod-test {:jvm-opts ["-Dghostwheel.enabled=false"]}
              :clj-dev-test  {}}
-             ;:clj-dev-test  {:jvm-opts ["-Dghostwheel.enabled=true"]}}
   :cljsbuild {:builds [{:id           "dev-test"
                         :source-paths ["src" "test"]
-                        :compiler     {:main            ghostwheel.dev-test-runner
-                                       :asset-path      "base/resources/test/dev"
-                                       :output-dir      "resources/test/dev"
-                                       :output-to       "resources/test/dev.js"
-                                       :pretty-print    true
-                                       :optimizations   :none}}
+                        :compiler     {:main          ghostwheel.dev-test-runner
+                                       :asset-path    "base/resources/test/dev"
+                                       :output-dir    "resources/test/dev"
+                                       :output-to     "resources/test/dev.js"
+                                       :pretty-print  true
+                                       :optimizations :none}}
                        {:id           "prod-test"
                         :source-paths ["src" "test"]
                         :compiler     {:main            ghostwheel.prod-test-runner
@@ -43,13 +42,13 @@
                                        :external-config {:ghostwheel {:enabled false}}}}
                        {:id           "dev-test-node"
                         :source-paths ["src" "test"]
-                        :compiler     {:main            ghostwheel.dev-test-runner
-                                       :asset-path      "base/resources/test/dev_node"
-                                       :output-dir      "resources/test/dev_node"
-                                       :output-to       "resources/test/dev_node.js"
-                                       :pretty-print    true
-                                       :optimizations   :simple
-                                       :target          :nodejs}}
+                        :compiler     {:main          ghostwheel.dev-test-runner
+                                       :asset-path    "base/resources/test/dev_node"
+                                       :output-dir    "resources/test/dev_node"
+                                       :output-to     "resources/test/dev_node.js"
+                                       :pretty-print  true
+                                       :optimizations :simple
+                                       :target        :nodejs}}
                        {:id           "prod-test-node"
                         :source-paths ["src" "test"]
                         :compiler     {:main            ghostwheel.prod-test-runner
