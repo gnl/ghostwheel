@@ -8,7 +8,7 @@
 
 (ns ghostwheel.prod-test
   (:require [ghostwheel.threading-macros :refer [*-> *->> *as-> *cond-> *cond->> *some-> *some->>]]
-            [ghostwheel.core :as g :refer [=> | <- >defn >defn- >fdef ?]]
+            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ? |> tr]]
             [ghostwheel.utils]
             [ghostwheel.test-utils :refer [threading-expansion-test]]
             #?@(:clj  [[clojure.test :as t :refer [deftest testing is]]
@@ -41,6 +41,7 @@
             (do nil)
             (+ a b)))))
 
+
 (deftest >defn-arity-1-nil-gspec-test
   (is (= (expand (>defn foobar-1-prod
                    {::g/trace 5}
@@ -64,6 +65,7 @@
             [a b]
             (do nil)
             (+ a b)))))
+
 
 (deftest >defn-arity-n-test
   (is (= (expand (>defn foobar-n-prod
@@ -99,6 +101,7 @@
             ([a b c]
              (+ a b c))))))
 
+
 (deftest >defn-arity-n-nil-gspec-test
   (is (= (expand (>defn foobar-n-prod
                    {::g/trace 5}
@@ -133,13 +136,36 @@
             ([a b c]
              (+ a b c))))))
 
+
 (deftest >fdef-test
   (is (nil? (expand (>fdef foobar-fdef
                       [a b]
                       [int? int? => int?])))))
 
+
 (deftest check-test
-  (is (string? (expand-full (g/check)))))
+  (is (nil? (expand-full (g/check)))))
+
+
+(deftest after-check-test
+  (is (nil? (expand-full (g/after-check)))))
+
+
+(deftest |>-test
+  (is (= (expand-full (|> (str (str 1 2) 3)))
+         '(str (str 1 2) 3))))
+
+
+(deftest tr-test
+  (is (= (expand-full (tr (str (str 1 2) 3)))
+         '(str (str 1 2) 3))))
+
+
+(deftest ?-test
+  (is (= (expand (? ::some-spec))
+         '(#?(:clj clojure.spec.alpha/nilable :cljs cljs.spec.alpha/nilable)
+           ::some-spec))))
+
 
 (deftest *->-test
   (is (threading-expansion-test -> *->
@@ -150,6 +176,7 @@
                                 (+ 2)
                                 (/ 4))))
 
+
 (deftest *->>-test
   (is (threading-expansion-test ->> *->>
                                 (+ 1 2)
@@ -158,6 +185,7 @@
                                 dec
                                 (+ 2)
                                 (/ 4))))
+
 
 (deftest *as->-test
   (is (threading-expansion-test as-> *as->
@@ -168,6 +196,7 @@
                                 (+ 2 x)
                                 (/ x 4))))
 
+
 (deftest *cond->-test
   (is (threading-expansion-test cond-> *cond->
                                 (+ 1 2)
@@ -176,6 +205,7 @@
                                 false dec
                                 true (+ 2)
                                 true (/ 4))))
+
 
 (deftest *cond->>-test
   (is (threading-expansion-test cond->> *cond->>
@@ -186,6 +216,7 @@
                                 true (+ 2)
                                 true (/ 4))))
 
+
 (deftest *some->-nil-test
   (is (threading-expansion-test some-> *some->
                                 {:a 123 :b 456}
@@ -194,12 +225,14 @@
                                 inc
                                 inc)))
 
+
 (deftest *some->-test
   (is (threading-expansion-test some-> *some->
                                 {:a 123 :b 456}
                                 :b
                                 inc
                                 inc)))
+
 
 (deftest *some->>-nil-test
   (is (threading-expansion-test some->> *some->>
@@ -208,6 +241,7 @@
                                 (remove #{:b})
                                 (some #{:b})
                                 (conj [1 2 3]))))
+
 
 (deftest *some->>-test
   (is (threading-expansion-test some->> *some->>
