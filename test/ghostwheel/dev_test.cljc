@@ -376,7 +376,7 @@
                       (dissoc :b)
                       (get :a)
                       (concat [4 5 6])
-                      (get 3)
+                      (nth 3)
                       (+ 1 2)
                       inc
                       (+ 2)
