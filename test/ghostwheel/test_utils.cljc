@@ -61,7 +61,7 @@
   (process-fdef (second form)))
 
 
-(defn- fn-name-variation
+(defn- name-variation
   [fn-sym & suffixes]
   (->> suffixes
        (map #(str "-" %))
@@ -75,15 +75,15 @@
                               (for [[args ret] args-ret-mappings]
                                 `(binding [ghostwheel.logging/*report-output* nil]
                                    (t/is (= (~fn-sym ~@args) ~ret)))))]
-    `(do ~(let [fn-sym (fn-name-variation base-name "plain")]
+    `(do ~(let [fn-sym (name-variation base-name "plain")]
             `(do
                (defn ~fn-sym ~@bodies)
-               (t/deftest ~(fn-name-variation fn-sym "test")
+               (t/deftest ~(name-variation fn-sym "test")
                  ~@(gen-test-assertions fn-sym))))
          ~@(for [tracing-wrapper ['|> 'tr]
-                 :let [fn-sym         (fn-name-variation base-name tracing-wrapper "fn")
-                       test-sym       (fn-name-variation fn-sym "test")
-                       test-sym-named (fn-name-variation fn-sym "named" "test")]]
+                 :let [fn-sym         (name-variation base-name tracing-wrapper "fn")
+                       test-sym       (name-variation fn-sym "test")
+                       test-sym-named (name-variation fn-sym "named" "test")]]
              `(do
                 (let [~fn-sym (~tracing-wrapper (~'fn ~@bodies))]
                   (t/deftest ~test-sym
@@ -93,17 +93,17 @@
                     ~@(gen-test-assertions fn-sym)))))
          ~@(for [tracing-wrapper ['|> 'tr]
                  op              ['defn 'defn- '>defn '>defn-]
-                 :let [fn-sym   (fn-name-variation base-name tracing-wrapper op)
-                       test-sym (fn-name-variation fn-sym "test")]]
+                 :let [fn-sym   (name-variation base-name tracing-wrapper op)
+                       test-sym (name-variation fn-sym "test")]]
              `(do
                 (~tracing-wrapper (~op ~fn-sym ~@bodies))
                 (t/deftest ~test-sym
                   ~@(gen-test-assertions fn-sym))))
          ~@(for [trace-level (range 0 7)
                  op          ['>defn '>defn-]
-                 :let [fn-sym     (fn-name-variation base-name op "trace" trace-level)
-                       test-sym   (fn-name-variation fn-sym "test")
-                       fdef-sym   (fn-name-variation fn-sym "fdef")
+                 :let [fn-sym     (name-variation base-name op "trace" trace-level)
+                       test-sym   (name-variation fn-sym "test")
+                       fdef-sym   (name-variation fn-sym "fdef")
                        instrumentable-sym
                                   `(quote ~(symbol (str nspace) (str fn-sym)))
                        defn-forms `(~op ~fn-sym
@@ -127,5 +127,16 @@
   (let [cljs?  (cljs-env? &env)
         nspace (.-name *ns*)]
     (cond-> (deftest-defn-variations* base-name data bodies cljs? nspace)
+            cljs? clj->cljs)))
+
+
+(defn deftest-let-variations*
+  [expr]
+  `(deftest))
+
+(defmacro deftest-let-variations
+  [expr]
+  (let [cljs? (cljs-env? &env)]
+    (cond-> (deftest-let-variations* expr)
             cljs? clj->cljs)))
 
