@@ -152,13 +152,17 @@
 
 
 (deftest |>-test
-  (is (= (expand-full (|> (str (str 1 2) 3)))
-         '(str (str 1 2) 3))))
+  (is (= (expand-full (|> (concat (vector 1 2) [3 4 5])))
+         '(concat (vector 1 2) [3 4 5])))
+  (is (= (expand-full (|> :label (concat (vector 1 2) [3 4 5])))
+         '(concat (vector 1 2) [3 4 5]))))
 
 
 (deftest tr-test
-  (is (= (expand-full (tr (str (str 1 2) 3)))
-         '(str (str 1 2) 3))))
+  (is (= (expand-full (tr (concat (vector 1 2) [3 4 5])))
+         '(concat (vector 1 2) [3 4 5])))
+  (is (= (expand-full (tr :label (concat (vector 1 2) [3 4 5])))
+         '(concat (vector 1 2) [3 4 5]))))
 
 
 (deftest ?-test
