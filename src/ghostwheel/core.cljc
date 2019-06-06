@@ -890,7 +890,7 @@
 
                 ;; Make sure we don't trace threading macros in anon-fns
                 ;; when anon-fns themselves aren't traced
-                (< trace 5)
+                (< trace 6)
                 (walk/postwalk
                  (fn [form]
                    (if (and (list? form)
@@ -898,9 +898,9 @@
                             ;; If we trace named anonymous functions – trace
                             ;; level 5 – we don't want to untrace threading
                             ;; macros inside them, only in unnamed ones
-                            #_(if (= trace 5)
-                                (not (symbol? (second form)))
-                                true))
+                            (if (= trace 5)
+                              (not (symbol? (second form)))
+                              true))
                      (walk/postwalk-replace traced-macros->untraced form)
                      form)))
 
