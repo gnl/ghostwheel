@@ -908,17 +908,14 @@
                 (walk/postwalk
                  (fn [form]
                    (if (and (list? form)
-                            (contains? traced-macro-syms (first form)))
-                     (as-> form form
-                       #_(if-not label
-                           form
-                           (let [[op expr & more] form]
-                             `(~op
-                               ~(->> {::trace-label label}
-                                     (merge (meta expr))
-                                     (with-meta expr))
-                               ~@more)))
-                       (gen-cleanup-console-on-exception cljs? form))
+                            (contains? traced-macro-syms (first form))
+                            label)
+                     (let [[op expr & more] form]
+                       `(~op
+                         ~(->> {::trace-label label}
+                               (merge (meta expr))
+                               (with-meta expr))
+                         ~@more))
                      form))))))))
 
 
@@ -934,45 +931,43 @@
                       5 '#{:unnamed-fn}
                       nil)
         context     (u/get-call-context env label)
-        ;; Uncommenting the block below will strip nested `|>` or `tr` traces
-        #_(comment
-           inline-trace? (fn [form]
-                           (and (seq? form)
-                                (symbol? (first form))
-                                (let [sym (first form)
-
-                                      qualified-sym
-                                          (if (cljs-env? env)
-                                            (:name (ana-api/resolve env sym))
-                                            ;; REVIEW: Clairvoyant doesn't work on
-                                            ;; Clojure yet – check this when it does
-                                            #?(:clj (name (resolve sym))))]
-                                  (contains? #{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))
-           forms (walk/postwalk
-                  #(if (inline-trace? %) (second %) %)
-                  forms))]
-    ;; REVIEW: This doesn't quite work right and seems to cause issues for some people. Disabling for now.
-    (comment
-     #?(:clj (if cljs?
-               (when-not (and (find-ns (symbol (namespace clairvoyant)))
-                              (find-ns (symbol (namespace tracer))))
-                 (throw (Exception. "Can't find tracing namespaces. Either add `gnl/ghostwheel-tracer` artifact and `(:require [ghostwheel.tracer])`, or disable tracing in order to compile.")))
-               (throw (Exception. "Tracing is not yet implemented for Clojure.")))))
-    (if (< trace 2)
-      forms
-      `(~clairvoyant
-        {:enabled true
-         :binding [~'devtools.prefs/*current-config*
-                   ~(u/devtools-config-override)]
-         :tracer  (~tracer
-                   :color "#fff"
-                   :background ~color
-                   :suffix ~context
-                   :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
-                                  (>= trace 3) '#{:bindings 'let 'defn 'defn-}
-                                  :else '#{'defn 'defn-}))
-         :exclude ~exclude}
-        ~forms))))
+        ; Uncommenting the following below will strip nested `|>` or `tr` traces
+        inline-macro-trace?
+                    (fn [form]
+                      (when (seq? form)
+                        (let [[op arg] form]
+                          (and (seq? arg)
+                               (#{'->} (first arg))
+                               (symbol? op)
+                               (let [qualified-sym
+                                     (if (cljs-env? env)
+                                       (:name (ana-api/resolve env op))
+                                       ;; REVIEW: Clairvoyant doesn't work on
+                                       ;; Clojure yet – check this when it does
+                                       #?(:clj (name (resolve op))))]
+                                 (#{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))))]
+    (as-> forms forms
+      (walk/postwalk
+       #(if (inline-macro-trace? %) (second %) %)
+       forms)
+      (if (>= trace 4)
+        (trace-threading-macros forms trace (cljs-env? env))
+        forms)
+      (if (>= trace 2)
+        `(~clairvoyant
+          {:enabled true
+           :binding [~'devtools.prefs/*current-config*
+                     ~(u/devtools-config-override)]
+           :tracer  (~tracer
+                     :color "#fff"
+                     :background ~color
+                     :suffix ~context
+                     :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
+                                    (>= trace 3) '#{:bindings 'let 'defn 'defn-}
+                                    :else '#{'defn 'defn-}))
+           :exclude ~exclude}
+          ~forms)
+        forms))))
 
 
 (defn- generate-fdef
@@ -1044,9 +1039,6 @@
                                         ~(str (list fn-name arg-list))
                                         {::l/background ~color})
                                 ~@orig-body-forms)]
-
-                            (>= trace 4)
-                            (trace-threading-macros orig-body-forms trace (cljs-env? env))
 
                             :else
                             orig-body-forms))]
@@ -1355,7 +1347,7 @@
 
       (and (seq? expr)
            (contains? l/ops-with-bindings (first expr)))
-      (as-> (trace-threading-macros expr trace cljs?) expr
+      (as-> expr expr
         (if (and (#{'fn 'fn*} (first expr))
                  (not (symbol? (second expr))))
           `(~(first expr) ~(gensym "fn_") ~@(rest expr))
@@ -1367,13 +1359,16 @@
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
-      (trace-threading-macros (if cljs?
-                                `(binding [~'devtools.prefs/*current-config* ~(u/devtools-config-override)]
-                                   ~expr)
-                                expr)
-                              trace
-                              cljs?
-                              label)
+      (gen-cleanup-console-on-exception
+       cljs?
+       (trace-threading-macros
+        (if cljs?
+          `(binding [~'devtools.prefs/*current-config* ~(u/devtools-config-override)]
+             ~expr)
+          expr)
+        trace
+        cljs?
+        label))
 
       (seq? expr)
       (generic-trace expr true (rest expr))
