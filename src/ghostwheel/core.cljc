@@ -1297,12 +1297,22 @@
 
 
 (defn- generate-traced-expr
-  [expr label env]
+  [expr env]
   (let [cfg     (cfg/merge-config env (meta expr))
         color   (resolve-trace-color (::trace-color cfg))
         trace   (let [trace (::trace cfg)]
                   (if (= trace 0) 5 trace))
         cljs?   (cljs-env? env)
+        label   (some->> expr
+                         meta
+                         keys
+                         (filter qualified-keyword?)
+                         not-empty
+                         (map (fn [tag]
+                                (if (= (namespace tag) (str (u/get-ns-name env)))
+                                  (->> tag name (str "::"))
+                                  tag)))
+                         (string/join " "))
         context (u/get-call-context env label)
         generic-trace
                 (fn generic-trace
@@ -1507,17 +1517,14 @@
 
 (defmacro |>
   "Traces and returns the wrapped expression, depending on its type"
-  ([expr]
-   `(|> nil ~expr))
-  ([label expr]
-   (if (cfg/get-env-config)
-     (cond-> (generate-traced-expr expr label &env)
-             (cljs-env? &env) clj->cljs)
-     expr)))
+  [expr]
+  (if (cfg/get-env-config)
+    (cond-> (generate-traced-expr expr &env)
+            (cljs-env? &env) clj->cljs)
+    expr))
 
 
 (defmacro tr
   "Traces and returns the wrapped expression, depending on its type"
-  ([expr] `(|> ~expr))
-  ([label expr] `(|> ~label ~expr)))
+  [expr] `(|> ~expr))
 
