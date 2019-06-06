@@ -137,7 +137,7 @@
 
 
 (defn gen-cleanup-console-on-exception
-  [cljs? form]
+  [form cljs?]
   `(try ~form
         (catch ~(if cljs? :default 'Throwable) e#
           (do
@@ -871,6 +871,27 @@
   `(quote ~(symbol (str (u/get-ns-name env)) (str fn-name))))
 
 
+(defn- inline-complex-trace? [form env]
+  (when (seq? form)
+    (let [[op arg] form]
+      (and (seq? arg)
+           (or (#{'-> '->> 'as-> 'cond-> 'cond->> 'some-> 'some->>} (first arg))
+               (contains? l/ops-with-bindings (first arg)))
+           (symbol? op)
+           (let [qualified-sym
+                 (if (cljs-env? env)
+                   (:name (ana-api/resolve env op))
+                   ;; REVIEW: Clairvoyant doesn't work on
+                   ;; Clojure yet – check this when it does
+                   #?(:clj (name (resolve op))))]
+             (#{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))))
+
+
+(defn- strip-nested-complex-adhoc-trace [forms env]
+  (walk/postwalk #(if (inline-complex-trace? % env) (second %) %)
+                 forms))
+
+
 (defn- trace-threading-macros
   ([forms trace cljs?]
    (trace-threading-macros forms trace cljs? nil))
@@ -930,26 +951,9 @@
                       4 '#{'fn 'fn*}
                       5 '#{:unnamed-fn}
                       nil)
-        context     (u/get-call-context env label)
-        ; Uncommenting the following below will strip nested `|>` or `tr` traces
-        inline-macro-trace?
-                    (fn [form]
-                      (when (seq? form)
-                        (let [[op arg] form]
-                          (and (seq? arg)
-                               (#{'->} (first arg))
-                               (symbol? op)
-                               (let [qualified-sym
-                                     (if (cljs-env? env)
-                                       (:name (ana-api/resolve env op))
-                                       ;; REVIEW: Clairvoyant doesn't work on
-                                       ;; Clojure yet – check this when it does
-                                       #?(:clj (name (resolve op))))]
-                                 (#{'ghostwheel.core/|> 'ghostwheel.core/tr} qualified-sym))))))]
+        context     (u/get-call-context env label)]
     (as-> forms forms
-      (walk/postwalk
-       #(if (inline-macro-trace? %) (second %) %)
-       forms)
+      (strip-nested-complex-adhoc-trace forms env)
       (if (>= trace 4)
         (trace-threading-macros forms trace (cljs-env? env))
         forms)
@@ -1259,29 +1263,28 @@
              (remove nil?))]
     (if (not-empty errors)
       (u/gen-exception env (str "\n" (string/join "\n" errors)))
-      (gen-cleanup-console-on-exception
-       cljs?
-       `(when *global-check-allowed?*
-          (binding [*global-trace-allowed?* false
-                    *gen-tests-or-profile*  ~gen-tests-or-profile]
-            (do
-              ~@(remove nil?
-                        `[~(when extrument
-                             `(st/instrument (quote ~extrument)))
-                          ~@(for [target processed-targets
-                                  :let [[type sym] target]]
-                              (case type
-                                :fn `(binding [t/report r/report]
-                                       (~(symbol (str sym test-suffix))))
-                                :ns `(binding [t/report r/report]
-                                       (t/run-tests (quote ~sym)))))
-                          ~@(->> (for [target processed-targets
-                                       :let [[type sym] target]
-                                       :when (= type :ns)]
-                                   (generate-coverage-check env sym))
-                                 (remove nil?))
-                          ~(when extrument
-                             `(st/unstrument (quote ~extrument)))]))))))))
+      (-> `(when *global-check-allowed?*
+             (binding [*global-trace-allowed?* false
+                       *gen-tests-or-profile*  ~gen-tests-or-profile]
+               (do
+                 ~@(remove nil?
+                           `[~(when extrument
+                                `(st/instrument (quote ~extrument)))
+                             ~@(for [target processed-targets
+                                     :let [[type sym] target]]
+                                 (case type
+                                   :fn `(binding [t/report r/report]
+                                          (~(symbol (str sym test-suffix))))
+                                   :ns `(binding [t/report r/report]
+                                          (t/run-tests (quote ~sym)))))
+                             ~@(->> (for [target processed-targets
+                                          :let [[type sym] target]
+                                          :when (= type :ns)]
+                                      (generate-coverage-check env sym))
+                                    (remove nil?))
+                             ~(when extrument
+                                `(st/unstrument (quote ~extrument)))]))))
+          (gen-cleanup-console-on-exception cljs?)))))
 
 
 (defn- generate-after-check [callbacks]
@@ -1305,33 +1308,28 @@
                 (fn generic-trace
                   [expr expanded? & [has-nested is-nested?]]
                   (let [style {::l/background (:cyan l/ghostwheel-colors)}]
-                    (gen-cleanup-console-on-exception
-                     cljs?
-                     (if ((some-fn string? number? nil? boolean? keyword?) expr)
-                       `(let [ret# ~expr]
-                          (l/log ret# ~style ~context)
-                          ret#)
-                       `(let [code# ~(str expr)]
-                          ((if ~expanded? l/group l/group-collapsed) code# ~style 55 ~context)
-                          ~(when (and (not is-nested?)
-                                      (coll? expr)
-                                      (> (-> expr str count) 55))
-                             `(do
-                                (l/group-collapsed "...")
-                                #_(~(if (list? expr) `l/group `l/group-collapsed)
-                                   "...")
-                                (l/log ~(-> expr pprint/pprint with-out-str))
-                                (l/group-end)))
-                          (let [ret# ~expr]
-                            ~(when has-nested
-                               `(do
-                                  ~@(for [x has-nested
-                                          :when (not (and (seq? x)
-                                                          (#{'tr '|>} (-> x first name symbol))))]
-                                      (generic-trace x true nil true))))
-                            (l/log-exit ret#)
-                            (l/group-end)
-                            ret#))))))]
+                    (-> `(let [code# ~(str expr)]
+                           ((if ~expanded? l/group l/group-collapsed) code# ~style 55 ~context)
+                           ~(when (and (not is-nested?)
+                                       (coll? expr)
+                                       (> (-> expr str count) 55))
+                              `(do
+                                 (l/group-collapsed "...")
+                                 #_(~(if (list? expr) `l/group `l/group-collapsed)
+                                    "...")
+                                 (l/log ~(-> expr pprint/pprint with-out-str))
+                                 (l/group-end)))
+                           (let [ret# ~expr]
+                             ~(when has-nested
+                                `(do
+                                   ~@(for [x has-nested
+                                           :when (not (and (seq? x)
+                                                           (#{'tr '|>} (-> x first name symbol))))]
+                                       (generic-trace x true nil true))))
+                             (l/log-exit ret#)
+                             (l/group-end)
+                             ret#))
+                        (gen-cleanup-console-on-exception cljs?))))]
     (cond
       (and (seq? expr)
            (contains? #{'>defn '>defn-} (first expr)))
@@ -1359,16 +1357,17 @@
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
-      (gen-cleanup-console-on-exception
-       cljs?
-       (trace-threading-macros
-        (if cljs?
-          `(binding [~'devtools.prefs/*current-config* ~(u/devtools-config-override)]
-             ~expr)
-          expr)
-        trace
-        cljs?
-        label))
+      (as-> expr expr
+        (strip-nested-complex-adhoc-trace expr env)
+        (trace-threading-macros (if cljs?
+                                  `(binding [~'devtools.prefs/*current-config*
+                                             ~(u/devtools-config-override)]
+                                     ~expr)
+                                  expr)
+                                trace
+                                cljs?
+                                label)
+        (gen-cleanup-console-on-exception expr cljs?))
 
       (seq? expr)
       (generic-trace expr true (rest expr))
