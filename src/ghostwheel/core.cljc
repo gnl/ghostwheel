@@ -910,14 +910,14 @@
                    (if (and (list? form)
                             (contains? traced-macro-syms (first form)))
                      (as-> form form
-                       (if-not label
-                         form
-                         (let [[op expr & more] form]
-                           `(~op
-                             ~(->> {::trace-label label}
-                                   (merge (meta expr))
-                                   (with-meta expr))
-                             ~@more)))
+                       #_(if-not label
+                           form
+                           (let [[op expr & more] form]
+                             `(~op
+                               ~(->> {::trace-label label}
+                                     (merge (meta expr))
+                                     (with-meta expr))
+                               ~@more)))
                        (gen-cleanup-console-on-exception cljs? form))
                      form))))))))
 
@@ -1367,7 +1367,13 @@
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
-      (trace-threading-macros expr trace cljs? label)
+      (trace-threading-macros (if cljs?
+                                `(binding [~'devtools.prefs/*current-config* ~(u/devtools-config-override)]
+                                   ~expr)
+                                expr)
+                              trace
+                              cljs?
+                              label)
 
       (seq? expr)
       (generic-trace expr true (rest expr))
