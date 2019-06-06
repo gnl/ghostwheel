@@ -81,8 +81,7 @@
                      {::logging/background background
                       ::logging/foreground color
                       ::logging/weight     "bold"}
-                     80
-                     suffix))
+                     80))
 
             (#{'binding} op)
             (let [max-length 80
