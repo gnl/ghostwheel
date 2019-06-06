@@ -77,7 +77,12 @@
             (#{'let `let} op)
             (do
               (reset! *inside-let true)
-              (group (str op)))
+              (group (str op)
+                     {::logging/background background
+                      ::logging/foreground color
+                      ::logging/weight     "bold"}
+                     80
+                     suffix))
 
             (#{'binding} op)
             (let [max-length 80

@@ -21,8 +21,9 @@
 
 (defn gen-log-threading-header
   [threading-type expr env & [name]]
-  (let [context (str (-> env :ns :name) ":" (str (-> env :line) ":" (-> env :column)))]
-    `(group (str "(" ~threading-type " " ~expr (when ~name " ") ~name " ...)")
+  (let [label   (:ghostwheel.core/trace-label (meta expr))
+        context (u/get-call-context env label)]
+    `(group (str "(" ~threading-type " " ~(str expr) (when ~name " ") ~name " ...)")
             {::l/background (:black ~ghostwheel-colors)}
             55
             ~context)))
@@ -85,7 +86,7 @@
                      threaded-print (gen-log-threading-diff x-print threaded form)]
                  (recur threaded threaded-print (next forms)))
                `(do
-                  ~(gen-log-threading-header "->" (str orig-x) &env)
+                  ~(gen-log-threading-header "->" orig-x &env)
                   (dlog ~orig-x ~(str orig-x))
                   (let [x# ~x-print]
                     (log-exit x#)
@@ -113,7 +114,7 @@
                        threaded-print (gen-log-threading-diff x-print threaded form)]
                    (recur threaded threaded-print (next forms)))
                  `(do
-                    ~(gen-log-threading-header "->>" (str orig-x) &env)
+                    ~(gen-log-threading-header "->>" orig-x &env)
                     (dlog ~orig-x ~(str orig-x))
                     (let [x# ~x-print]
                       (log-exit x#)
@@ -133,7 +134,7 @@
        `(if-not ghostwheel.core/*global-trace-allowed?*
           ~untraced
           (do
-            ~(gen-log-threading-header "as->" (str expr) &env (str name))
+            ~(gen-log-threading-header "as->" expr &env (str name))
             (dlog ~expr ~(str name))
             (let [~name ~expr
                   ~@(interleave (repeat name) (map log-step forms))]
@@ -162,7 +163,7 @@
                                   (group-end)
                                   ~g))))]
              `(do
-                ~(gen-log-threading-header "cond->" (str expr) &env)
+                ~(gen-log-threading-header "cond->" expr &env)
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
@@ -191,7 +192,7 @@
                                   (group-end)
                                   ~g))))]
              `(do
-                ~(gen-log-threading-header "cond->>" (str expr) &env)
+                ~(gen-log-threading-header "cond->>" expr &env)
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map pstep (partition 2 clauses)))]
@@ -216,7 +217,7 @@
                                 nil
                                 ~(gen-log-threading-diff g `(-> ~g ~step) step)))]
              `(do
-                ~(gen-log-threading-header "some->" (str expr) &env)
+                ~(gen-log-threading-header "some->" expr &env)
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-pstep forms))]
@@ -241,7 +242,7 @@
                                 nil
                                 ~(gen-log-threading-diff g `(->> ~g ~step) step)))]
              `(do
-                ~(gen-log-threading-header "some->>" (str expr) &env)
+                ~(gen-log-threading-header "some->>" expr &env)
                 (dlog ~expr ~(str expr))
                 (let [~g ~expr
                       ~@(interleave (repeat g) (map log-pstep forms))]

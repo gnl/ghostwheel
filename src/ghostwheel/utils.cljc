@@ -45,6 +45,25 @@
      (walk/postwalk replace-namespace form))))
 
 
+(defn get-file-position
+  [env]
+  (if (cljs-env? env)
+    (let [{:keys [line column]} env]
+      (str line ":" column))
+    ;; TODO implement for clojure
+    nil))
+
+
+(defn get-call-context
+  ([env]
+   (get-call-context env nil))
+  ([env label]
+   (str (when label (str label " – "))
+        (get-ns-name env)
+        ":"
+        (get-file-position env))))
+
+
 (defn gen-exception [env msg]
   `(throw (~(if (cljs-env? env) 'js/Error. 'Exception.) ~msg)))
 

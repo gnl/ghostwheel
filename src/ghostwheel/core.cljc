@@ -145,16 +145,6 @@
             (throw e#)))))
 
 
-(defn- get-file-position [env]
-  (if (cljs-env? env)
-    (let [{:keys [line column]} env]
-      (if (> line 1)
-        (str line ":" column)
-        "REPL"))
-    ;; TODO implement for clojure
-    nil))
-
-
 ;;;; Operators
 
 
@@ -881,45 +871,60 @@
   `(quote ~(symbol (str (u/get-ns-name env)) (str fn-name))))
 
 
-(defn- trace-threading-macros [forms trace cljs?]
-  (if (< trace 4)
-    forms
-    (let [untraced-macros->traced
-          {'->      'ghostwheel.threading-macros/*->
-           '->>     'ghostwheel.threading-macros/*->>
-           'as->    'ghostwheel.threading-macros/*as->
-           'cond->  'ghostwheel.threading-macros/*cond->
-           'cond->> 'ghostwheel.threading-macros/*cond->>
-           'some->  'ghostwheel.threading-macros/*some->
-           'some->> 'ghostwheel.threading-macros/*some->>}
+(defn- trace-threading-macros
+  ([forms trace cljs?]
+   (trace-threading-macros forms trace cljs? nil))
+  ([forms trace cljs? label]
+   (if (< trace 4)
+     forms
+     (let [untraced-macros->traced {'->      'ghostwheel.threading-macros/*->
+                                    '->>     'ghostwheel.threading-macros/*->>
+                                    'as->    'ghostwheel.threading-macros/*as->
+                                    'cond->  'ghostwheel.threading-macros/*cond->
+                                    'cond->> 'ghostwheel.threading-macros/*cond->>
+                                    'some->  'ghostwheel.threading-macros/*some->
+                                    'some->> 'ghostwheel.threading-macros/*some->>}
+           traced-macros->untraced (map-invert untraced-macros->traced)
+           traced-macro-syms       (set (keys traced-macros->untraced))]
+       (cond->> (walk/postwalk-replace untraced-macros->traced forms)
 
-          traced-macros->untraced
-          (map-invert untraced-macros->traced)]
-      (cond->> (walk/postwalk-replace untraced-macros->traced forms)
+                ;; Make sure we don't trace threading macros in anon-fns
+                ;; when anon-fns themselves aren't traced
+                (< trace 5)
+                (walk/postwalk
+                 (fn [form]
+                   (if (and (list? form)
+                            (#{'fn 'fn*} (first form))
+                            ;; If we trace named anonymous functions – trace
+                            ;; level 5 – we don't want to untrace threading
+                            ;; macros inside them, only in unnamed ones
+                            #_(if (= trace 5)
+                                (not (symbol? (second form)))
+                                true))
+                     (walk/postwalk-replace traced-macros->untraced form)
+                     form)))
 
-               ;; Make sure we don't trace threading macros in anon-fns
-               ;; when anon-fns themselves aren't traced
-               (< trace 5)
-               (walk/postwalk
-                (fn [form]
-                  (if (and (list? form)
-                           (#{'fn 'fn*} (first form)))
-                    (walk/postwalk-replace traced-macros->untraced form)
-                    form)))
-
-               :always
-               (walk/postwalk
-                (fn [form]
-                  (if (and (list? form)
-                           (-> (keys traced-macros->untraced)
-                               set
-                               (contains? (first form))))
-                    (gen-cleanup-console-on-exception cljs? form)
-                    form)))))))
+                :always
+                (walk/postwalk
+                 (fn [form]
+                   (if (and (list? form)
+                            (contains? traced-macro-syms (first form)))
+                     (as-> form form
+                       (if-not label
+                         form
+                         (let [[op expr & more] form]
+                           `(~op
+                             ~(->> {::trace-label label}
+                                   (merge (meta expr))
+                                   (with-meta expr))
+                             ~@more)))
+                       (gen-cleanup-console-on-exception cljs? form))
+                     form))))))))
 
 
 ;; REVIEW – refactor/keywordify args, this is getting unwieldy
-(defn- clairvoyant-trace [forms trace color env label position]
+(defn- clairvoyant-trace
+  [forms trace color env label]
   (let [clairvoyant 'clairvoyant.core/trace-forms
         tracer      'ghostwheel.tracer/tracer
         exclude     (case trace
@@ -928,6 +933,7 @@
                       4 '#{'fn 'fn*}
                       5 '#{:unnamed-fn}
                       nil)
+        context     (u/get-call-context env label)
         ;; Uncommenting the block below will strip nested `|>` or `tr` traces
         #_(comment
            inline-trace? (fn [form]
@@ -961,8 +967,7 @@
          :tracer  (~tracer
                    :color "#fff"
                    :background ~color
-                   :prefix ~label
-                   :suffix ~position
+                   :suffix ~context
                    :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
                                   (>= trace 3) '#{:bindings 'let 'defn 'defn-}
                                   :else '#{'defn 'defn-}))
@@ -1123,7 +1128,7 @@
                                                              ~@(process-fn-bodies trace)))]
                               (if (= trace 1)
                                 traced-defn
-                                (clairvoyant-trace traced-defn trace color env nil (get-file-position env)))))]
+                                (clairvoyant-trace traced-defn trace color env (::trace-label (meta fn-name))))))]
     `(do ~fdef (declare ~fn-name) ~traced-defn ~main-defn ~instrumentation ~generated-test)))
 
 
@@ -1298,57 +1303,54 @@
 
 (defn- generate-traced-expr
   [expr label env]
-  (let [cfg      (cfg/merge-config env (meta expr))
-        color    (resolve-trace-color (::trace-color cfg))
-        trace    (let [trace (::trace cfg)]
-                   (if (= trace 0) 5 trace))
-        cljs?    (cljs-env? env)
-        position (get-file-position env)
-        context  (str (when label (str label " – "))
-                      (u/get-ns-name env) ":" position)
+  (let [cfg     (cfg/merge-config env (meta expr))
+        color   (resolve-trace-color (::trace-color cfg))
+        trace   (let [trace (::trace cfg)]
+                  (if (= trace 0) 5 trace))
+        cljs?   (cljs-env? env)
+        context (u/get-call-context env label)
         generic-trace
-                 (fn generic-trace
-                   [expr expanded? & [has-nested is-nested?]]
-                   (let [style {::l/background (:cyan l/ghostwheel-colors)}]
-                     (gen-cleanup-console-on-exception
-                      cljs?
-                      (if ((some-fn string? number? nil? boolean? keyword?) expr)
-                        `(let [ret# ~expr]
-                           (l/log ret# ~style)
-                           ret#)
-                        `(let [code# ~(str expr)]
-                           ((if ~expanded? l/group l/group-collapsed) code# ~style 55 ~context)
-                           ~(when (and (not is-nested?)
-                                       (coll? expr)
-                                       (> (-> expr str count) 55))
-                              `(do
-                                 (l/group-collapsed "...")
-                                 #_(~(if (list? expr) `l/group `l/group-collapsed)
-                                    "...")
-                                 (l/log ~(-> expr pprint/pprint with-out-str))
-                                 (l/group-end)))
-                           (let [ret# ~expr]
-                             ~(when has-nested
-                                `(do
-                                   ~@(for [x has-nested
-                                           :when (not (and (seq? x)
-                                                           (#{'tr '|>} (-> x first name symbol))))]
-                                       (generic-trace x true nil true))))
-                             (l/log-exit ret#)
-                             (l/group-end)
-                             ret#))))))]
+                (fn generic-trace
+                  [expr expanded? & [has-nested is-nested?]]
+                  (let [style {::l/background (:cyan l/ghostwheel-colors)}]
+                    (gen-cleanup-console-on-exception
+                     cljs?
+                     (if ((some-fn string? number? nil? boolean? keyword?) expr)
+                       `(let [ret# ~expr]
+                          (l/log ret# ~style ~context)
+                          ret#)
+                       `(let [code# ~(str expr)]
+                          ((if ~expanded? l/group l/group-collapsed) code# ~style 55 ~context)
+                          ~(when (and (not is-nested?)
+                                      (coll? expr)
+                                      (> (-> expr str count) 55))
+                             `(do
+                                (l/group-collapsed "...")
+                                #_(~(if (list? expr) `l/group `l/group-collapsed)
+                                   "...")
+                                (l/log ~(-> expr pprint/pprint with-out-str))
+                                (l/group-end)))
+                          (let [ret# ~expr]
+                            ~(when has-nested
+                               `(do
+                                  ~@(for [x has-nested
+                                          :when (not (and (seq? x)
+                                                          (#{'tr '|>} (-> x first name symbol))))]
+                                      (generic-trace x true nil true))))
+                            (l/log-exit ret#)
+                            (l/group-end)
+                            ret#))))))]
     (cond
       (and (seq? expr)
            (contains? #{'>defn '>defn-} (first expr)))
       `(~(first expr)
-        ~(let [fname (second expr)
-               fmeta (meta fname)]
-           (->> fmeta
+        ~(let [fname (second expr)]
+           (->> (meta fname)
                 (merge
                  {::trace       trace
+                  ::trace-label label
                   ::trace-color color})
                 (with-meta fname)))
-
         ~@(drop 2 expr))
 
       (and (seq? expr)
@@ -1360,12 +1362,12 @@
           expr)
         ;; REVIEW: Clairvoyant doesn't work on Clojure yet
         (if cljs?
-          (clairvoyant-trace expr trace color env label position)
+          (clairvoyant-trace expr trace color env label)
           expr))
 
       (and (seq? expr)
            (contains? threading-macro-syms (first expr)))
-      (trace-threading-macros expr trace cljs?)
+      (trace-threading-macros expr trace cljs? label)
 
       (seq? expr)
       (generic-trace expr true (rest expr))
