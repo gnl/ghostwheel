@@ -136,7 +136,7 @@ Both provide the same public namespaces and API, but the stubs don't do anything
 .ClojureScript only:
 link:https://github.com/binaryage/cljs-devtools[Setup CLJS DevTools]
 +
-WARNING: Make sure you use Clojure `1.10.0`/ClojureScript `1.10.520` or higher; if you're using figwheel-main, use `0.2.1-SNAPSHOT` or higher; don't override Ghostwheel's dependencies with lower versions or you might get link:https://github.com/gnl/ghostwheel/issues/9[strange behaviour].
+WARNING: Make sure you use Clojure `1.10.0`/ClojureScript `1.10.520` or higher; if you're using figwheel-main, use `0.2.1-SNAPSHOT` or higher.
 +
 [TIP]
 --
@@ -145,19 +145,13 @@ To set up the stubs, you can use link:https://clojure.org/reference/deps_and_cli
 +
 [NOTE]
 --
-You can disable Ghostwheel manually:
-- Clojure – launch the REPL / build with the JVM system property `-Dghostwheel.enabled=false`
-- ClojureScript – either set `-Dghostwheel.enabled=false` or add `:external-config {:ghostwheel {:enabled false}}` to the compiler options in your build config.
-That being said, it's recommended to use the stubs artifact in production as it ensures that no tracing or testing code can be generated and it's significantly more reliable in reducing dependencies and build size than relying on dead code elimination alone.
---
-+
-[NOTE]
---
+You can disable Ghostwheel by building with the JVM system property `-Dghostwheel.enabled=false`
+
 When disabled, Ghostwheel doesn't generate any extra code whatsoever other than simply passing through the plain, unchanged `defn` s.
 
-When `gnl/ghostwheel.stubs` is used, any configuration is ignored and Ghostwheel simply cannot be enabled.
+That being said, it's recommended to use the stubs artifact in production as it does the same and has the additional advantage of having no external dependencies. This is a significantly more reliable way to reduce build size than dead code elimination.
 --
-
++
 . *Configure*
 +
 Ghostwheel's behaviour is determined individually for each function by merging the configuration maps:
