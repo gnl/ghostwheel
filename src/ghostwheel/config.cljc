@@ -101,8 +101,7 @@
               (let [cljs-compiler-config
                     (when cljs-env/*compiler*
                       (get-in @cljs-env/*compiler* [:options :external-config :ghostwheel]))]
-                (when (and (not #?(:clj (= (System/getProperty "ghostwheel.enabled") "false") :cljs false))
-                           (not (false? (get cljs-compiler-config :enabled))))
+                (when (not #?(:clj (= (System/getProperty "ghostwheel.enabled") "false") :cljs false))
                   (merge {}
                          (read-config-file)
                          cljs-compiler-config)))]
