@@ -960,17 +960,17 @@
         forms)
       (if (>= trace 2)
         `(~clairvoyant
-          {:enabled true
-           :binding [~'devtools.prefs/*current-config*
-                     ~(u/devtools-config-override)]
-           :tracer  (~tracer
-                     :color "#fff"
-                     :background ~color
-                     :suffix ~context
-                     :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
-                                    (>= trace 3) '#{:bindings 'let 'defn 'defn-}
-                                    :else '#{'defn 'defn-}))
-           :exclude ~exclude}
+          {:enabled? true
+           :binding  [~'devtools.prefs/*current-config*
+                      ~(u/devtools-config-override)]
+           :tracer   (~tracer
+                      :color "#fff"
+                      :background ~color
+                      :suffix ~context
+                      :expand ~(cond (>= trace 5) '#{:bindings 'let 'defn 'defn- 'fn 'fn*}
+                                     (>= trace 3) '#{:bindings 'let 'defn 'defn-}
+                                     :else '#{'defn 'defn-}))
+           :excluded ~exclude}
           ~forms)
         forms))))
 
