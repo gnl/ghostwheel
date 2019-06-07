@@ -961,7 +961,7 @@
       (if (>= trace 2)
         `(~clairvoyant
           {:enabled? true
-           :binding  [~'devtools.prefs/*current-config*
+           :bindings [~'devtools.prefs/*current-config*
                       ~(u/devtools-config-override)]
            :tracer   (~tracer
                       :color "#fff"
@@ -1316,7 +1316,8 @@
         label   (some->> expr
                          meta
                          keys
-                         (filter qualified-keyword?)
+                         (remove #{:file :line :column :end-line :end-column :source})
+                         (remove #(= (namespace %) (str 'ghostwheel.core)))
                          not-empty
                          (map (fn [tag]
                                 (if (= (namespace tag) (str (u/get-ns-name env)))
@@ -1523,6 +1524,7 @@
             (cljs-env? &env) clj->cljs)))
 
 
+;; TODO: improve docstring
 (defmacro |>
   "Traces and returns the wrapped expression, depending on its type"
   [expr]
