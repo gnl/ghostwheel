@@ -15,3 +15,4 @@ pom.xml.asc
 .idea/
 /*.iml
 .DS_Store
+/test/playground
