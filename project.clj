@@ -12,7 +12,7 @@
                  [org.clojure/test.check "0.10.0-alpha4"]
                  [orchestra "2019.02.06-1"]
                  [expound "0.7.2"]
-                 [gnl/clairvoyant "0.2.3"]]
+                 [gnl/clairvoyant "0.3.0"]]
   :source-paths ["src"]
   :clean-targets ^{:protect false} ["target" "resources"]
   :profiles {:dev {:dependencies [[org.clojure/clojurescript "1.10.520"]
