@@ -99,6 +99,7 @@
 
 (def ^:dynamic *gen-tests-or-profile* nil)
 
+
 ;;;; Misc helper functions
 
 
@@ -1296,6 +1297,15 @@
       `(swap! *after-check-callbacks (comp vec concat) ~(vec callbacks)))))
 
 
+(defn- bind-devtools-config
+  [expr cljs?]
+  (if cljs?
+    `(binding [~'devtools.prefs/*current-config*
+               ~(u/devtools-config-override)]
+       ~expr)
+    expr))
+
+
 (defn- generate-traced-expr
   [expr env]
   (let [cfg     (cfg/merge-config env (meta expr))
@@ -1339,6 +1349,7 @@
                              (l/log-exit ret#)
                              (l/group-end)
                              ret#))
+                        (bind-devtools-config cljs?)
                         (gen-cleanup-console-on-exception cljs?))))]
     (cond
       (and (seq? expr)
@@ -1369,14 +1380,11 @@
            (contains? threading-macro-syms (first expr)))
       (as-> expr expr
         (strip-nested-complex-adhoc-trace expr env)
-        (trace-threading-macros (if cljs?
-                                  `(binding [~'devtools.prefs/*current-config*
-                                             ~(u/devtools-config-override)]
-                                     ~expr)
-                                  expr)
+        (trace-threading-macros expr
                                 trace
                                 cljs?
                                 label)
+        (bind-devtools-config expr cljs?)
         (gen-cleanup-console-on-exception expr cljs?))
 
       (seq? expr)
