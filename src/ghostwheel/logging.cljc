@@ -50,28 +50,32 @@
    :green   "#859900"})
 
 
-(def ops-with-bindings
+(def fn-like-ops
   #{'fn*
     'fn
-    'ghostwheel.tracer/fn
     'defn
-    'ghostwheel.tracer/defn
     'defn-
-    'ghostwheel.tracer/defn-
     'defmethod
-    'ghostwheel.tracer/defmethod
     'deftype
-    'ghostwheel.tracer/deftype
     'defrecord
-    'ghostwheel.tracer/defrecord
     'reify
-    'ghostwheel.tracer/reify
-    'let
-    'ghostwheel.tracer/let
     'extend-type
-    'ghostwheel.tracer/extend-type
-    'extend-protocol
-    'ghostwheel.tracer/extend-protocol})
+    'extend-protocol})
+
+(def nested-binding-ops
+  #{'let
+    'if-let
+    'if-some
+    'when-let
+    'when-some})
+
+(def conditional-ops
+  #{'cond
+    'case})
+
+
+(def complex-trace-ops
+  (clojure.set/union fn-like-ops nested-binding-ops conditional-ops))
 
 
 ;; Borrowed from Rosetta Code

@@ -9,6 +9,7 @@
 (ns ghostwheel.tracer
   (:require [clojure.walk :refer [prewalk walk]]
             [clojure.pprint :as ppr :refer [pprint]]
+            [clojure.set :as set]
             [clairvoyant.core
              :refer [ITraceEnter ITraceError ITraceExit]
              :include-macros true]
@@ -35,8 +36,8 @@
   (let [binding-group (if (contains? expand :bindings)
                         group
                         group-collapsed)
-        has-bindings? logging/ops-with-bindings
-        fn-like?      (disj has-bindings? 'let `let)]
+        has-bindings? (set/union logging/fn-like-ops logging/nested-binding-ops)
+        fn-like?      logging/fn-like-ops]
     (reify
       ITraceEnter
       (-trace-enter
@@ -74,14 +75,15 @@
                      80
                      suffix))
 
-            (#{'let `let} op)
+            (#{'let} op)
             (do
               (reset! *inside-let true)
               (group (str op)
                      {::logging/background background
                       ::logging/foreground color
                       ::logging/weight     "bold"}
-                     80))
+                     80
+                     suffix))
 
             (#{'binding} op)
             (let [max-length 80

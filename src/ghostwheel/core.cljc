@@ -877,7 +877,7 @@
     (let [[op arg] form]
       (and (seq? arg)
            (or (#{'-> '->> 'as-> 'cond-> 'cond->> 'some-> 'some->>} (first arg))
-               (contains? l/ops-with-bindings (first arg)))
+               (contains? l/complex-trace-ops (first arg)))
            (symbol? op)
            (let [qualified-sym
                  (if (cljs-env? env)
@@ -1366,7 +1366,7 @@
         ~@(drop 2 expr))
 
       (and (seq? expr)
-           (contains? l/ops-with-bindings (first expr)))
+           (contains? l/complex-trace-ops (first expr)))
       (as-> expr expr
         (if (and (#{'fn 'fn*} (first expr))
                  (not (symbol? (second expr))))
