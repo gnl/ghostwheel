@@ -1053,8 +1053,7 @@
                               (if (= trace 1)
                                 traced-defn
                                 (clairvoyant-trace traced-defn trace color env))))]
-    `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test)))
-
+    `(do ~fdef ~traced-defn ~main-defn ~instrumentation ~generated-test ~fn-name)))
 
 (defn after-check-async [done]
   (let [success @r/*all-tests-successful]
