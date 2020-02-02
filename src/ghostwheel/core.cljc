@@ -1273,6 +1273,22 @@
             (cljs-env? &env) clj->cljs)
     (clean-defn 'defn- forms)))
 
+(defmacro >defmethod
+  "Like defmethod, but requires a (nilable) gspec definition and generates
+  additional `s/fdef`, generative tests, instrumentation code, an
+  fspec-based stub, and/or tracing code, depending on the configuration
+  metadata and the existence of a valid gspec and non-nil body."
+  [multifn dispatch-val argv gspec & body]
+  (let [delegate-defn-name (symbol (str multifn "_" (gensym)))]
+    `(do
+       (>defn ~delegate-defn-name
+         ~argv
+         ~gspec
+         ~@body)
+       (defmethod ~multifn
+         ~dispatch-val
+         ~argv
+         (~delegate-defn-name ~@argv)))))
 
 (defmacro after-check
   "Takes a number of 0-arity functions to run
