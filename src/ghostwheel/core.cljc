@@ -237,12 +237,15 @@
 (s/def ::such-that-op #{:st '|})
 (s/def ::ret-op #{:ret '=>})
 (s/def ::gen-op #{:gen '<-})
+(s/def ::args-gen-op #{:args-gen '<<})
 
 (s/def ::gspec
   (s/and vector?
          (s/cat :args (s/? (s/cat :args (s/+ ::spec-elem)
                                   :args-such-that (s/? (s/cat :op ::such-that-op
                                                               :preds (s/+ ::pred-fn)))))
+                :args-gen (s/? (s/cat :op ::args-gen-op
+                                      :args-gen-fn any?))
                 :ret-op ::ret-op
                 :ret ::spec-elem
                 :fn-such-that (s/? (s/cat :op ::such-that-op
@@ -546,6 +549,7 @@
          retspec                  :ret
          fn-such-that             :fn-such-that
          {:keys [gen-fn] :as gen} :gen}
+         {:keys [args-gen-fn] :as args-gen} :args-gen}
         conformed-gspec]
     (if (and anon-fspec?
              argspec-def
@@ -633,7 +637,10 @@
 
             final-fspec
             (concat (when anon-fspec? [`s/fspec])
-                    [:args processed-args]
+                    (if args-gen-fn
+                      [:args `(s/with-gen ~processed-args
+                                ~args-gen-fn)]
+                      [:args processed-args])
                     [:ret (extract-spec retspec)]
                     (when fn-spec [:fn fn-spec])
                     (when gen-fn [:gen gen-fn]))]
