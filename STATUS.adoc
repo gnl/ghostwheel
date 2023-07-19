@@ -1,0 +1,41 @@
+## Project update July 2023: DO NOT PANIC – this is not a eulogy
+
+Rather, it's a kind of reincarnation notice. Hi, everyone. Ghostwheel's been looking quite dead for a while now, despite having experienced a faux resurrection a while back, and open issues have piled up. First things first – rest assured that the core functionality is alive, well and being actively maintained, now split into multiple parts.
+
+This was an exciting omnibus of a library trying to discover new and better lands in a number of only partially related directions simultaneously. Some of these experiments I consider highly successful, others – almost there, and some were promising but in need of a major rewrite to be useful in practice. They now each go their separate ways (and have, to some extent, already done so for some time), while remaining friends and continuing to talk to each other as best they can.
+
+### Specs
+
+The core of Ghostwheel and the part I consider its unqualified and greatest success is the introduction of the gspec syntax for defining inline function specs with the ability to use them for runtime checking of inputs and outputs. This lives on in Tony Kay's fork under the name of https://github.com/fulcrologic/guardrails[Guardrails].
+
+Tony has done a fantastic job in not only maintaining the library, but also streamlining and significantly improving the core experience. By using it extensively throughout the Fulcro codebase he has also given it some serious real-world battle-testing and it appears to have stood the test of time. Last but not least – as a talking point, "it's part of Fulcro" is a succinct and highly effective way to nip any "dunno about that, seems hacky" attitudes in the bud.
+
+As such, Guardrails is where it's at and it gets my official Guardian of the Ghostwheel Magic and Keeper of the Flame stamp of approval (despite using the simplified non-semantic universal 2-space indentation style throughout the code in blatant, borderline heretical disregard for the will of the LISP Gods and everything that is good and right. But I forgive you, Tony.)
+
+### Tracing
+
+This was the 'almost there' part. In addition to some rough edges and a hacky implementation, it was missing some important features and was also only really useful in ClojureScript. Behold, it's actually good now: https://github.com/gnl/playback[gnl/playback].
+
+The new reincarnation is the love child of the highly impressive https://github.com/philoskim/debux[debux] and https://github.com/djblue/portal[portal] by Philos Kim and Chris Badahdah respectively.
+
+It makes most (~all) config decisions for you (one might call it "refreshingly simple" or "annoyingly opinionated", depending), tweaks things here and there, adds some minor patches to debux which I hope to have merged upstream soon, and puts a cherry on top with the result being two and a half reader tags you can drop on anything you want traced and 95% of the time they do exactly what you need, plus a thing or two you probably don't expect, but will almost certainly find useful. My elevator pitch is that it'll make you forget all about regular print debugging in 10 minutes straight.
+
+I think you'll probably like it, unless you are married to Ghostwheel's tracing's tree-like output which comes from Clairvoyant and is, for the time being, dead. Sorry about that, but I promise you gain much more than you lose and you'll particularly appreciate this when you get into dissecting data with Portal.
+
+### Generative Testing
+
+The automatic gen-testing and side effect detection is what I consider "almost good enough in the lab, but please don't let it escape". I still think it's extremely promising but the concept needs a lot more love to get there. Quite specific thoughts are currently being had over here about what the next generation of this might look like, but don't get your hopes up because not a single line of code has been written, there's nothing even remotely resembling a timeline, and if there was I would certainly not announce it or commit to it in any way whatsoever.
+
+Feel free to watch any changes to this repository though, and perhaps enable e-mail notifications, because I'll be turning off issues and PRs soon and the only change notifications would be hypothetical updates to this document in which I would link any related announcements. Think of it as a highly convoluted way of subscribing to an extremely low-frequency newsletter which you may or may not receive.
+
+### Final Thoughts
+
+Thank you for using this thing that I built and being part of the process with code, feedback, constructive criticism, a draft of a logo (!), words of appreciation, and GitHub stars, which, it turns out, do actually help one get paid out there in the real world.
+
+Speaking of which, shameless plug – if that is something that you'd like to do for me in exchange for borrowing my brain's propensity for coming up with creative ways to connect humans and machines without them ending up hating each other; making dry, complex stuff palatable; or just general across-the-stack dev stuff – preferably, but not necessarily, involving Clojure, functional programming, interaction design and/or information security – feel free to get in touch.
+
+Anyway, to wrap this up, I hope that you're not too disappointed with these developments or with being left hanging with eternally unanswered questions, issues and PRs while I was busy working or doing life things (or occasionally being run over by them), but such is the prerogative of the volunteer open-source developer.
+
+As always, go forth, make things, you know the drill.
+
+George

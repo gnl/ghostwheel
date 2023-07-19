@@ -16,6 +16,8 @@ ifdef::env-github,env-cljdoc[]
 :warning-caption: :warning:
 endif::[]
 
+https://github.com/gnl/ghostwheel/blob/master/STATUS.adoc[Project update July 2023: DO NOT PANIC – this is not a eulogy]
+
 [quote, 'Roger Zelazny, Trumps of Doom']
 Random let me get through half a cup of coffee before he said, “Tell me about the Ghostwheel.“
 “It's a kind of para-physical surveillance device and library.“
@@ -699,4 +701,3 @@ Now go forth and create, fellow maker. Use your new-found powers for good.
 
 Copyright (c) 2019 George Lipov +
 Licensed under the link:https://choosealicense.com/licenses/epl-2.0/[Eclipse Public License 2.0]
-
