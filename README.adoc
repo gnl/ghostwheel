@@ -536,8 +536,6 @@ Specs are all nice and good, but often enough we want to take a peek at what's g
 |All anonymous functions
 |===
 
---
-
 [[adhoc-tracing]]
 TIP: Use `|>` or `tr` (they are aliases) to wrap any expression for more granular tracing or if you are only interested in Ghostwheel's tracing functionality. They work standalone, default to trace level `5` and will generally do the right thing depending on the type of wrapped form – functions and threading macros get proper in-depth tracing, while other expressions are pretty-printed and returned.
 
