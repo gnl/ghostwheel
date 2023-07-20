@@ -1,5 +1,11 @@
 https://github.com/gnl/ghostwheel/blob/master/STATUS.adoc[Project update July 2023: DO NOT PANIC – this is not a eulogy]
 
+TL;DR: Ghostwheel core functionality has been mostly split into independent (but compatible) projects, which also improve on it in various ways:
+
+- Inline gspec-definitions and runtime spec-checking – https://github.com/fulcrologic/guardrails[fulcrologic/guardrails]
+- Evaluation tracing – https://github.com/gnl/playback[gnl/playback]
+- Generative testing and side-effect detection – TBD
+
 
 # Robustness and Observability Without the Pain
 :linkattrs:
