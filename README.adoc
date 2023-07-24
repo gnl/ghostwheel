@@ -193,7 +193,7 @@ There's no need for this in the function metadata – if you alias Ghostwheel wi
 Depending on how you intend to use Ghostwheel only some of these will be required:
 
 `>defn`, `>defn-`, `>fdef` – main Ghostwheel macros, described in detail in the next section
-`=>`, `|`, `<-`, `?` – optional shortcuts to help write function specs using the <<gspec-syntax, gspec syntax>>.
+`\=>`, `|`, `\<-`, `?` – optional shortcuts to help write function specs using the <<gspec-syntax, gspec syntax>>.
 `|>`, `tr` – `println` on steroids – wrappers for easy <<adhoc-tracing, ad-hoc code evaluation tracing>>.
 --
 
